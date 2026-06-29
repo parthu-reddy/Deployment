@@ -3,7 +3,7 @@
 # Default values
 MODE="prod"
 SERVICES=()
-ALL_SERVICES=("CustomerApplication" "PaymentGatewayIntegration" "MapsIntegration" "CommunicationIntegration")
+ALL_SERVICES=("CustomerApplication" "RestaurantApplication" "DeliveryExecutiveApplication" "PaymentGatewayIntegration" "MapsIntegration" "CommunicationIntegration")
 
 # Help function
 show_help() {
@@ -42,7 +42,7 @@ while [[ "$#" -gt 0 ]]; do
             show_help
             exit 0
             ;;
-        CustomerApplication|PaymentGatewayIntegration|MapsIntegration|CommunicationIntegration) 
+        CustomerApplication|RestaurantApplication|DeliveryExecutiveApplication|PaymentGatewayIntegration|MapsIntegration|CommunicationIntegration) 
             SERVICES+=("$1") 
             ;;
         *) 
