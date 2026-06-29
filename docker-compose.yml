@@ -26,6 +26,11 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   postgres:
@@ -40,6 +45,11 @@ services:
     volumes:
       - shared_pgdata:/var/lib/postgresql/data
       - ./init-multiple-dbs.sql:/docker-entrypoint-initdb.d/init-multiple-dbs.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   redis:
@@ -49,6 +59,150 @@ services:
       - "6379:6379"
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  customer-service:
+    build:
+      context: ../
+      dockerfile: CustomerApplication/Dockerfile
+    container_name: customer-service
+    ports:
+      - "8092:8092"
+    environment:
+      - DB_URL=jdbc:postgresql://postgres:5432/food_delivery
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=password
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - REDIS_HOST=redis
+      - PAYMENT_SERVICE_URL=http://payment-gateway:8085
+      - RESTAURANT_SERVICE_URL=http://restaurant-service:8094
+      - MAPS_SERVICE_URL=http://maps-integration:8083
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: on-failure
+
+  restaurant-service:
+    build:
+      context: ../
+      dockerfile: RestaurantApplication/Dockerfile
+    container_name: restaurant-service
+    ports:
+      - "8094:8094"
+    environment:
+      - DB_URL=jdbc:postgresql://postgres:5432/restaurant_db
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=password
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - REDIS_HOST=redis
+      - PAYMENT_SERVICE_URL=http://payment-gateway:8085
+      - MAPS_SERVICE_URL=http://maps-integration:8083
+      - KYB_FSSAI_API_URL=http://localhost:8080/mock/fssai
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: on-failure
+
+  delivery-service:
+    build:
+      context: ../
+      dockerfile: DeliveryExecutiveApplication/Dockerfile
+    container_name: delivery-service
+    ports:
+      - "8095:8095"
+    environment:
+      - DB_URL=jdbc:postgresql://postgres:5432/delivery_db
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=password
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - REDIS_HOST=redis
+      - PAYMENT_SERVICE_URL=http://payment-gateway:8085
+      - MAPS_SERVICE_URL=http://maps-integration:8083
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: on-failure
+
+  payment-gateway:
+    build:
+      context: ../
+      dockerfile: PaymentGatewayIntegration/Dockerfile
+    container_name: payment-gateway
+    ports:
+      - "8085:8085"
+    environment:
+      - PORT=8085
+      - DB_URL=jdbc:postgresql://postgres:5432/payment_db
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=password
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - REDIS_HOST=redis
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: on-failure
+
+  maps-integration:
+    build:
+      context: ../
+      dockerfile: MapsIntegration/Dockerfile
+    container_name: maps-integration
+    ports:
+      - "8083:8083"
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - REDIS_HOST=redis
+    depends_on:
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: on-failure
+
+  communication-integration:
+    build:
+      context: ../
+      dockerfile: CommunicationIntegration/Dockerfile
+    container_name: communication-integration
+    ports:
+      - "8081:8081"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=notification_db
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+      - KAFKA_BROKERS=kafka:29092
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: on-failure
 
 volumes:
   shared_pgdata:
