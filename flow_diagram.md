@@ -1,147 +1,131 @@
-# Order Saga Orchestration Flow
+# Order Saga Orchestration & Event Flow
 
 This document details the complete end-to-end lifecycle of an order within the Food Delivery system. The architecture relies on an Event-Driven Saga pattern where the `OrderSagaOrchestrator` coordinates transactions across the Payment, Restaurant, and Delivery microservices. 
 
-The diagram below maps every action to its corresponding system actor, outlining all happy paths and edge cases (such as payment failures, restaurant rejections, and dispatch timeouts).
+It explicitly maps how events are triggered (via synchronous REST APIs vs. asynchronous Kafka messages) and details the specific Kafka topics used. It also covers the delayed dispatch edge case using Redis ZSETs.
 
-## Architecture Swimlane Flowchart
+## Comprehensive Flow Diagram
 
 ```mermaid
-flowchart TD
-    %% Styling Configuration
-    classDef customer fill:#ffcdd2,stroke:#c62828,stroke-width:2px,color:#000;
-    classDef orchestrator fill:#bbdefb,stroke:#1565c0,stroke-width:2px,color:#000;
-    classDef payment fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px,color:#000;
-    classDef restaurant fill:#fff9c4,stroke:#fbc02d,stroke-width:2px,color:#000;
-    classDef delivery fill:#e1bee7,stroke:#6a1b9a,stroke-width:2px,color:#000;
-    classDef decision fill:#ffe0b2,stroke:#e65100,stroke-width:2px,color:#000,shape:rhombus;
-    classDef failure fill:#f8bbd0,stroke:#c2185b,stroke-width:2px,color:#000;
-    classDef success fill:#a5d6a7,stroke:#2e7d32,stroke-width:2px,color:#000;
+sequenceDiagram
+    autonumber
     
-    subgraph Customer [Customer Swimlane]
-        direction TB
-        C1([Initiate Order]):::customer
-        C2([Complete Checkout Payment]):::customer
-        C3([Push Notification: Driver Assigned]):::customer
-        C4([Push Notification: Order Delivered]):::customer
+    actor Customer
+    participant CA as Customer Application
+    participant PGI as Payment Gateway Integration
+    participant K_PE as Kafka (payment-events)
+    participant K_OE as Kafka (order-events)
+    participant RA as Restaurant Application
+    participant DEA as Delivery Executive Application
+    participant Redis as Redis (ZSET & Geo)
+    actor Executive
+    
+    %% Scenario 1: Order Creation and Payment
+    Note over Customer, Executive: SCENARIO: SUCCESSFUL ORDER & PAYMENT
+    
+    Customer->>CA: POST /api/v1/orders (Place Order)
+    CA->>RA: GET /api/v1/restaurants/{id} (Check if Active)
+    RA-->>CA: REST Response (Active)
+    CA->>RA: GET /api/v1/restaurants/{id}/menu/batch (Fetch Menu & Prep Time)
+    RA-->>CA: REST Response (Menu details, max Prep Time)
+    
+    CA->>PGI: POST /api/v1/payment/intent (Create Payment Intent)
+    PGI-->>CA: Payment Intent Response
+    CA-->>Customer: Order Created (Status: CREATED)
+    
+    Customer->>PGI: User completes payment (UPI/Card)
+    PGI->>PGI: Webhook triggered: POST /api/payment/webhook
+    PGI->>K_PE: Publish PaymentCompletedEvent
+    
+    CA->>K_PE: Consume PaymentCompletedEvent
+    CA->>CA: Update Order Status -> PAID
+    CA->>K_OE: Publish OrderPaidEvent (includes estimatedPrepTimeMinutes)
+    
+    %% Scenario 2: Restaurant Acceptance and Prep
+    Note over Customer, Executive: SCENARIO: RESTAURANT ACCEPTANCE
+    
+    RA->>K_OE: Consume OrderPaidEvent
+    RA->>RA: Accept Order & Start Preparation
+    RA->>K_OE: Publish OrderAcceptedEvent
+    
+    %% Scenario 3: Delayed Delivery Dispatch (Redis ZSET)
+    Note over Customer, Executive: SCENARIO: DELAYED DELIVERY DISPATCH
+    
+    DEA->>K_OE: Consume OrderAcceptedEvent
+    DEA->>DEA: Calculate dispatchTime = (Now + PrepTime) - 15 mins
+    DEA->>Redis: ZADD delayed_dispatch_queue dispatchTime orderId
+    
+    loop Every 1 Minute (DelayedDispatchPoller)
+        DEA->>Redis: ZRANGEBYSCORE delayed_dispatch_queue 0 Now
+        Redis-->>DEA: Returns orders ready for dispatch
+        DEA->>Redis: ZREM delayed_dispatch_queue (remove processed orders)
+        DEA->>Redis: GEORADIUS (Find nearby executives)
+        Redis-->>DEA: Returns available executives
+        DEA->>DEA: Assign Executive to Order
+        DEA->>K_OE: Publish DeliveryExecutiveAssignedEvent
     end
-
-    subgraph Saga [Orchestrator Swimlane]
-        direction TB
-        S1[Create Order\nStatus: CREATED]:::orchestrator
-        S2{Payment Status?}:::decision
-        S3[Update Status: PAID]:::orchestrator
-        S4{Restaurant Choice?}:::decision
-        S5[Update Status: ACCEPTED]:::orchestrator
-        S6{Dispatch Status?}:::decision
-        S7[Update Status: DISPATCHED]:::orchestrator
-        S8[Update Status: READY_FOR_PICKUP]:::orchestrator
-        S9{Delivery Outcome?}:::decision
-        S10[Update Status: DELIVERED\nProcess Ledger Payouts]:::success
-        S11[Initiate Refund Process]:::failure
-        S12[Update Status: FAILED / CANCELLED]:::failure
-    end
-
-    subgraph Payment [Payment Swimlane]
-        direction TB
-        P1[Process Payment\nvia Vyapar Gateway]:::payment
-        P2[Issue Refund\nvia Vyapar Gateway]:::payment
-    end
-
-    subgraph Restaurant [Restaurant Swimlane]
-        direction TB
-        R1[Review Order\nAccept/Reject]:::restaurant
-        R2[Prepare Food]:::restaurant
-        R3[Mark Order Ready]:::restaurant
-    end
-
-    subgraph Delivery [Delivery Swimlane]
-        direction TB
-        D1[Ping Nearest Driver]:::delivery
-        D2[Driver Accepts/Rejects]:::delivery
-        D3[Redispatch Logic\nFind Next Driver]:::delivery
-        D4[Pickup Order]:::delivery
-        D5[Deliver to Customer]:::delivery
-    end
-
-    %% Order Initiation
-    C1 -- "HTTP POST /api/v1/customer/orders" --> S1
-    S1 -- "HTTP POST /api/v1/payments/intent" --> P1
-    C2 -. "Redirect to Gateway" .-> P1
     
-    %% Payment Phase
-    P1 -- "Webhook -> Kafka (payment-events)" --> S2
-    P1 -- "Failure / Timeout" --> S2
+    %% Scenario 4: Food Ready & Pickup
+    Note over Customer, Executive: SCENARIO: FOOD READY & DELIVERY
     
-    S2 -- "Success" --> S3
-    S2 -- "Failed" --> S12
+    RA->>RA: Food Preparation Complete
+    RA->>K_OE: Publish FoodReadyEvent
     
-    %% Restaurant Acceptance Phase
-    S3 -- "Kafka (order-events): ORDER_PAID" --> R1
-    R1 -- "Kafka (order-events): ORDER_ACCEPTED" --> S4
-    R1 -- "Kafka (order-events): ORDER_REJECTED / CANCELLED" --> S4
+    Executive->>DEA: PUT /api/v1/delivery/{orderId}/pickup
+    DEA->>K_OE: Publish OrderPickedUpEvent
     
-    S4 -- "Accepted" --> S5
-    S4 -- "Rejected / Cancelled" --> S11
+    Executive->>DEA: PUT /api/v1/delivery/{orderId}/deliver
+    DEA->>K_OE: Publish OrderDeliveredEvent
     
-    %% Dispatch Phase
-    S5 -- "Kafka (order-events): ORDER_ACCEPTED" --> D1
-    D1 -- "HTTP API / Push Notification" --> D2
-    D2 -- "Kafka (order-events): DRIVER_ASSIGNED" --> S6
-    D2 -- "Kafka (order-events): ORDER_DRIVER_REJECTED" --> D3
-    D3 -- "Try Next Nearest Driver" --> D1
-    D3 -- "Kafka (order-events): DISPATCH_FAILED" --> S6
+    %% Scenario 5: Edge Cases
+    Note over Customer, Executive: SCENARIO: PAYMENT FAILURE
+    PGI->>PGI: Webhook: Payment Failed
+    PGI->>K_PE: Publish PaymentFailedEvent
+    CA->>K_PE: Consume PaymentFailedEvent
+    CA->>CA: Update Order Status -> CANCELLED
     
-    S6 -- "Driver Assigned" --> S7
-    S6 -- "Dispatch Failed" --> S11
-    
-    %% Preparation and Delivery Phase
-    S7 -. "Kafka (notifications-dispatch)" .-> C3
-    S7 --> R2
-    R2 --> R3
-    R3 -- "Kafka (order-events): ORDER_READY" --> S8
-    S8 -- "Push Notification to Driver" --> D4
-    D4 --> D5
-    
-    D5 -- "Kafka (order-events): ORDER_DELIVERED" --> S9
-    D5 -- "Kafka (order-events): DELIVERY_FAILED" --> S9
-    
-    S9 -- "Delivered" --> S10
-    S9 -- "Failed" --> S11
-    
-    S10 -. "Kafka (notifications-dispatch)" .-> C4
-    
-    %% Refund Flow
-    S11 -- "HTTP POST /api/v1/payments/refund" --> P2
-    P2 --> S12
+    Note over Customer, Executive: SCENARIO: RESTAURANT REJECTION
+    RA->>K_OE: Consume OrderPaidEvent
+    RA->>RA: Reject Order (e.g., Too busy)
+    RA->>K_OE: Publish OrderRejectedEvent
+    CA->>K_OE: Consume OrderRejectedEvent
+    CA->>CA: Update Order Status -> CANCELLED
+    CA->>PGI: Initiate Refund (REST/API)
 ```
 
-## Scenario Breakdown & Edge Cases
+## Detailed Explanations
 
-The following details all scenarios handled by the `OrderSagaOrchestrator` through the Kafka event streams.
+### 1. Synchronous vs Asynchronous Triggers
+- **Synchronous (REST APIs)**: Used when immediate responses are required for the user or between systems.
+  - Creating an order (`POST /api/v1/orders`)
+  - Validating Restaurant & Menu during order creation (`GET /api/v1/restaurants...`)
+  - Initiating Payment Intents (`POST /api/v1/payment/intent`)
+  - Executive updating status to picked up / delivered (`PUT /api/v1/delivery/...`)
+- **Asynchronous (Kafka & Redis)**: Used for eventual consistency, cross-service workflows, and temporal operations.
+  - Order state transitions (`order-events`)
+  - Payment status updates (`payment-events`)
+  - Delayed dispatching based on preparation time (Redis Scheduled Poller)
 
-### 1. Payment Phase
-- **Happy Path:** The external payment gateway successfully captures the funds. `PaymentSucceededEvent` is published to the `payment-events` topic. Orchestrator updates order to `PAID` and emits `ORDER_PAID`.
-- **Edge Case (Payment Failure/Timeout):** The order stays in `CREATED` or moves directly to a failed state. The Saga does not proceed to the restaurant.
-- **Edge Case (Duplicate Payment Events):** If the payment gateway fires duplicate webhooks, the orchestrator detects the order is already in `PAID` state and ignores the duplicate to maintain idempotency.
+### 2. Kafka Topics & Events
+- `payment-events`:
+  - `PaymentCompletedEvent`: Triggered by payment gateway webhook. Consumed by `CustomerApplication` to transition order to `PAID`.
+  - `PaymentFailedEvent`: Consumed by `CustomerApplication` to transition order to `CANCELLED`.
+- `order-events`:
+  - `OrderPaidEvent`: Published by `CustomerApplication`. Consumed by `RestaurantApplication` to begin food preparation.
+  - `OrderAcceptedEvent`: Published by `RestaurantApplication`. Consumed by `DeliveryExecutiveApplication` to schedule delivery dispatch.
+  - `DeliveryExecutiveAssignedEvent`: Published by `DeliveryExecutiveApplication`.
+  - `FoodReadyEvent`: Published by `RestaurantApplication` when cooking is complete.
+  - `OrderPickedUpEvent` & `OrderDeliveredEvent`: Published by `DeliveryExecutiveApplication` when the driver updates their app.
+  - `OrderRejectedEvent`: Published by `RestaurantApplication` if they cannot fulfill the order.
 
-### 2. Restaurant Acceptance Phase
-- **Happy Path:** Restaurant receives `ORDER_PAID`. The staff reviews and accepts the order. Emits `ORDER_ACCEPTED`. Orchestrator updates status to `ACCEPTED`.
-- **Edge Case (Restaurant Rejects):** Staff emits `ORDER_REJECTED` or `ORDER_CANCELLED_BY_RESTAURANT`. Orchestrator catches this, immediately sets order to `DELIVERY_FAILED` and invokes the Refund process via `PaymentGatewayIntegration`.
-- **Edge Case (Restaurant Timeout):** If the restaurant doesn't accept in a configured time window (configurable via a scheduler), a timeout event is fired causing automatic rejection and refund.
+### 3. The "Just-In-Time" Dispatch Mechanism (Redis ZSET)
+Why wait until 15 minutes before the food is ready? 
+- If a delivery partner arrives too early, they waste time waiting at the restaurant. 
+- If we assign them immediately for a 45-minute preparation, they are blocked from taking other deliveries.
 
-### 3. Driver Dispatch Phase
-- **Happy Path:** Following `ORDER_ACCEPTED`, the `DeliveryExecutiveApplication` queries `MapsIntegration` to find the closest driver and pings them. The driver accepts, emitting `DRIVER_ASSIGNED`. Orchestrator updates to `DISPATCHED` and notifies the customer via `NotificationService`.
-- **Edge Case (Driver Rejects Ping):** Driver declines or lets the ping timeout. Emits `ORDER_DRIVER_REJECTED`. The Orchestrator ignores this event, as the `DeliveryExecutiveApplication` internally handles redispatch logic to find the *next* closest driver.
-- **Edge Case (Total Dispatch Failure):** The system exhausts all nearby drivers, or no drivers are online. Emits `DISPATCH_FAILED`. Orchestrator catches this, updates status to `DELIVERY_FAILED`, and processes a full refund to the customer.
-
-### 4. Preparation & Delivery Phase
-- **Happy Path:** Restaurant staff finishes the food and emits `ORDER_READY`. Orchestrator updates status to `READY_FOR_PICKUP`. Driver picks it up, drives to the customer, and emits `ORDER_DELIVERED`. 
-- **Ledger Settlement:** On `ORDER_DELIVERED`, the Orchestrator calculates the financial splits (e.g., 80% to Restaurant, 20% to Platform, flat rate to Driver) and records the double-entry accounting transactions in the `LedgerService`. A final push notification is sent to the customer.
-- **Edge Case (Delivery Fails in Transit):** If the driver gets into an accident or cannot find the customer, they emit `DELIVERY_FAILED` (via generic `ORDER_STATUS_UPDATED` event). Orchestrator catches this, logs the failure, and issues a Refund.
-
-### 5. Automated Refund Engine
-> [!WARNING]
-> The orchestrator implements a unified `processRefund()` mechanism to prevent phantom charges. Any edge case that breaks the Saga chain after payment capture (Restaurant Rejects, Dispatch Fails, Delivery Fails) funnels into this engine.
-
-The engine directly queries the `PaymentGatewayIntegration` REST API using the original `gatewayOrderId`. If the refund REST call fails (e.g., due to network partition), the system logs an error but relies on external reconciliation or retry mechanisms to eventually process the refund, ensuring the double-entry ledger reverse transactions are only recorded upon successful HTTP 2xx confirmation from Vyapar.
+**Implementation**:
+1. When `DeliveryExecutiveApplication` consumes `OrderAcceptedEvent`, it does not immediately assign a driver.
+2. It calculates `dispatchTime = (CurrentTime + estimatedPrepTimeMinutes) - 15 minutes`.
+3. It stores the `orderId` in a Redis Sorted Set (`ZSET`) called `delayed_dispatch_queue` with the `dispatchTime` (Unix timestamp) as the score.
+4. A `@Scheduled` background worker (`DelayedDispatchPoller`) runs every 60 seconds, querying Redis using `ZRANGEBYSCORE 0 {currentTime}` to find orders that are due for dispatch.
+5. It then uses Redis Geospatial queries to find the nearest available executive and assigns the order.
