@@ -225,3 +225,6 @@ These explicit Ledger transfers ensure that all financial settlements are fully 
 
 ### 5. CommunicationIntegration Microservice
 The system abstracts away external communication providers (AWS SES, Twilio, Firebase) via the `CommunicationIntegration` service. It dynamically routes `NotificationRequestEvent` messages to the correct channel and logs every outbound message to `notification_db` for compliance and auditing.
+
+### 6. State Transition Integrity
+The `OrderSagaOrchestrator` enforces strict forward-only state transitions based on the ordinal values of the `OrderStatus` enum. Any attempt to regress the order state (e.g. from `DELIVERED` back to `DISPATCHED`, or `PAID` back to `CREATED`) is actively blocked, logging a `BACKWARD_STATE_TRANSITION_ATTEMPT` error. This guarantees state machine immutability and protects downstream idempotent operations like ledger transfers and notification dispatches.
