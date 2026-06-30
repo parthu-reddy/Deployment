@@ -65,54 +65,54 @@ flowchart TD
     end
 
     %% Order Initiation
-    C1 --> S1
-    S1 --> P1
-    C2 -.-> P1
+    C1 -- "HTTP POST /api/v1/customer/orders" --> S1
+    S1 -- "HTTP POST /api/v1/payments/intent" --> P1
+    C2 -. "Redirect to Gateway" .-> P1
     
     %% Payment Phase
-    P1 -- "PaymentSucceededEvent" --> S2
+    P1 -- "Webhook -> Kafka (payment-events)" --> S2
     P1 -- "Failure / Timeout" --> S2
     
     S2 -- "Success" --> S3
     S2 -- "Failed" --> S12
     
     %% Restaurant Acceptance Phase
-    S3 -- "OrderPaidEvent" --> R1
-    R1 -- "ORDER_ACCEPTED" --> S4
-    R1 -- "ORDER_REJECTED\nORDER_CANCELLED_BY_RESTAURANT" --> S4
+    S3 -- "Kafka (order-events): ORDER_PAID" --> R1
+    R1 -- "Kafka (order-events): ORDER_ACCEPTED" --> S4
+    R1 -- "Kafka (order-events): ORDER_REJECTED / CANCELLED" --> S4
     
     S4 -- "Accepted" --> S5
     S4 -- "Rejected / Cancelled" --> S11
     
     %% Dispatch Phase
-    S5 -- "OrderAcceptedEvent" --> D1
-    D1 --> D2
-    D2 -- "DRIVER_ASSIGNED" --> S6
-    D2 -- "ORDER_DRIVER_REJECTED" --> D3
+    S5 -- "Kafka (order-events): ORDER_ACCEPTED" --> D1
+    D1 -- "HTTP API / Push Notification" --> D2
+    D2 -- "Kafka (order-events): DRIVER_ASSIGNED" --> S6
+    D2 -- "Kafka (order-events): ORDER_DRIVER_REJECTED" --> D3
     D3 -- "Try Next Nearest Driver" --> D1
-    D3 -- "Max Retries Exceeded\n(DISPATCH_FAILED)" --> S6
+    D3 -- "Kafka (order-events): DISPATCH_FAILED" --> S6
     
     S6 -- "Driver Assigned" --> S7
     S6 -- "Dispatch Failed" --> S11
     
     %% Preparation and Delivery Phase
-    S7 -. "Send Push Notification" .-> C3
+    S7 -. "Kafka (notifications-dispatch)" .-> C3
     S7 --> R2
     R2 --> R3
-    R3 -- "ORDER_READY" --> S8
-    S8 --> D4
+    R3 -- "Kafka (order-events): ORDER_READY" --> S8
+    S8 -- "Push Notification to Driver" --> D4
     D4 --> D5
     
-    D5 -- "ORDER_DELIVERED" --> S9
-    D5 -- "DELIVERY_FAILED" --> S9
+    D5 -- "Kafka (order-events): ORDER_DELIVERED" --> S9
+    D5 -- "Kafka (order-events): DELIVERY_FAILED" --> S9
     
     S9 -- "Delivered" --> S10
     S9 -- "Failed" --> S11
     
-    S10 -. "Send Push Notification" .-> C4
+    S10 -. "Kafka (notifications-dispatch)" .-> C4
     
     %% Refund Flow
-    S11 --> P2
+    S11 -- "HTTP POST /api/v1/payments/refund" --> P2
     P2 --> S12
 ```
 
