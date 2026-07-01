@@ -155,6 +155,7 @@ services:
       - DB_PASSWORD=password
       - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - REDIS_HOST=redis
+      - SPRING_PROFILES_ACTIVE=debug
     depends_on:
       postgres:
         condition: service_healthy
