@@ -37,9 +37,10 @@ sequenceDiagram
     %% Scenario 1: Order Creation and Payment
     Note over Customer, Executive: SCENARIO: SUCCESSFUL ORDER & PAYMENT
     
-    Customer->>CA: POST /api/v1/orders (Place Order)
-    CA->>RA: GET /api/v1/restaurants/{id} (Check if Active)
-    RA-->>CA: REST Response (Active)
+    Customer->>CA: POST /api/v1/orders (Place Order with deliveryAddressId)
+    CA->>RA: GET /api/v1/restaurants/{id} (Fetch Location & Active Status)
+    CA->>CA: Validate Delivery Address is within 5km
+    RA-->>CA: REST Response (Active, Location)
     CA->>RA: GET /api/v1/restaurants/{id}/menu/batch (Fetch Menu & Prep Time)
     RA-->>CA: REST Response (Menu details, max Prep Time)
     
@@ -55,7 +56,7 @@ sequenceDiagram
     CA->>DB: Transaction: Update Order Status -> PAID & Save Outbox Events
     Outbox->>DB: Query UNPROCESSED Outbox Events
     Outbox->>K_NE: Publish NotificationRequestEvent (ORDER_PAID)
-    Outbox->>K_OE: Publish OrderPaidEvent (includes estimatedPrepTime)
+    Outbox->>K_OE: Publish OrderPaidEvent (includes estimatedPrepTime, deliveryLat, deliveryLng)
     CS->>K_NE: Consume Event
     CS-->>Customer: Push Notification: Order Paid (via SES/Twilio)
     
@@ -66,7 +67,7 @@ sequenceDiagram
     
     alt Prep Time <= 10 mins extra (or null)
         RA->>RA: Accept Order & Start Preparation
-        RA->>K_OE: Publish OrderAcceptedEvent
+        RA->>K_OE: Publish OrderAcceptedEvent (includes deliveryLat, deliveryLng)
     else Prep Time > 10 mins extra
         RA->>K_OE: Publish OrderDelayApprovalRequestedEvent
         CA->>K_OE: Consume Event
@@ -81,7 +82,7 @@ sequenceDiagram
             Outbox->>K_OE: Publish OrderDelayApprovedEvent
             RA->>K_OE: Consume Approved Event
             RA->>RA: Accept Order & Start Preparation
-            RA->>K_OE: Publish OrderAcceptedEvent
+            RA->>K_OE: Publish OrderAcceptedEvent (includes deliveryLat, deliveryLng)
         else Customer Rejects
             Customer->>CA: POST /api/v1/orders/{orderId}/delay-approval (false)
             CA->>DB: Transaction: Update DB (CANCELLED) & Save Outbox
@@ -113,7 +114,7 @@ sequenceDiagram
     %% Scenario 3: Delayed Delivery Dispatch (MapsIntegration & Fleet Tracking)
     Note over Customer, Executive: SCENARIO: DELAYED DELIVERY DISPATCH
     
-    DEA->>K_OE: Consume OrderAcceptedEvent
+    DEA->>K_OE: Consume OrderAcceptedEvent (includes deliveryLat, deliveryLng)
     DEA->>DEA: Calculate dispatchTime = (Now + PrepTime) - 15 mins
     DEA->>Redis: ZADD delayed_dispatch_queue dispatchTime orderId
     
@@ -121,7 +122,7 @@ sequenceDiagram
         DEA->>Redis: ZRANGEBYSCORE delayed_dispatch_queue 0 Now
         Redis-->>DEA: Returns orders ready for dispatch
         DEA->>Redis: ZREM delayed_dispatch_queue (remove processed orders)
-        DEA->>K_LD: Publish Dispatch Request
+        DEA->>K_LD: Publish Dispatch Request (includes deliveryLat, deliveryLng)
         
         Maps->>K_LD: Consume Dispatch Request
         Maps->>Redis: GEORADIUS driver_locations (Find nearby available)
@@ -129,7 +130,7 @@ sequenceDiagram
         Maps->>Maps: Sort & Atomically Lock best Driver (Redis)
         
         alt Driver Found
-            Maps->>K_OE: Publish DISPATCH_CANDIDATE_FOUND
+            Maps->>K_OE: Publish DISPATCH_CANDIDATE_FOUND (includes delivery destination)
             DEA->>K_OE: Consume DISPATCH_CANDIDATE_FOUND
             DEA->>Executive: Push Notification to Driver App
             
@@ -203,8 +204,8 @@ Finding the best driver requires matching real-world coordinates, which is handl
   - `PaymentCompletedEvent`: Signals successful payment from PaymentGatewayIntegration.
   - `PaymentFailedEvent`: Signals a failed transaction (e.g., failed webhook from gateway). Refunds correctly handle API failures gracefully to avoid poison pill retries by transitioning the intent to `REFUND_FAILED`.
 - `order-events`:
-  - `OrderPaidEvent`: Triggers restaurant fulfillment logic.
-  - `OrderAcceptedEvent`: Triggers the delivery dispatch timer.
+  - `OrderPaidEvent`: Triggers restaurant fulfillment logic and forwards `deliveryLat`/`deliveryLng`.
+  - `OrderAcceptedEvent`: Triggers the delivery dispatch timer, propagating delivery coordinates.
   - `OrderDelayApprovalRequestedEvent` / `OrderDelayApprovedEvent` / `OrderDelayRejectedEvent`: Manages the dynamic prep time negotiation.
   - `DRIVER_ASSIGNED`: Signals the order is successfully assigned.
   - `ORDER_DRIVER_REJECTED`: Signals the driver rejected the ping.
