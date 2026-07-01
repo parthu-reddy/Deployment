@@ -40,6 +40,8 @@ sequenceDiagram
     Customer->>CA: POST /api/v1/orders (Place Order with deliveryAddressId)
     CA->>RA: GET /api/v1/restaurants/{id} (Fetch Location & Active Status)
     CA->>CA: Validate Delivery Address is within 5km
+    CA->>Maps: GET /api/v1/integration/fleet/availability (Check if drivers are nearby)
+    Maps-->>CA: Boolean response
     RA-->>CA: REST Response (Active, Location)
     CA->>RA: GET /api/v1/restaurants/{id}/menu/batch (Fetch Menu & Prep Time)
     RA-->>CA: REST Response (Menu details, max Prep Time)
@@ -49,8 +51,9 @@ sequenceDiagram
     CA-->>Customer: Order Created (Status: CREATED)
     
     Customer->>PGI: User completes payment (UPI/Card)
-    PGI->>PGI: Webhook triggered: POST /api/payment/webhook
-    PGI->>K_PE: Publish PaymentCompletedEvent
+    PGI->>PGI: Webhook triggered: POST /api/v1/webhooks/* (Verified securely)
+    PGI->>DB: Transaction: Save Outbox PaymentCompletedEvent
+    Outbox->>K_PE: Publish PaymentCompletedEvent
     
     CA->>K_PE: Consume PaymentCompletedEvent
     CA->>DB: Transaction: Update Order Status -> PAID & Save Outbox Events
