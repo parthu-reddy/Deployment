@@ -40,13 +40,13 @@ sequenceDiagram
     Customer->>CA: POST /api/v1/orders (Place Order with deliveryAddressId)
     CA->>RA: GET /api/v1/restaurants/{id} (Fetch Location & Active Status)
     CA->>CA: Validate Delivery Address is within 5km
-    CA->>Maps: GET /api/v1/integration/fleet/availability (Check if drivers are nearby)
+    CA->>Maps: GET /api/fleet/availability/check (Check if drivers are nearby)
     Maps-->>CA: Boolean response
     RA-->>CA: REST Response (Active, Location)
     CA->>RA: GET /api/v1/restaurants/{id}/menu/batch (Fetch Menu & Prep Time)
     RA-->>CA: REST Response (Menu details, max Prep Time)
     
-    CA->>PGI: POST /api/v1/payment/intent (Create Payment Intent)
+    CA->>PGI: POST /api/v1/payments/create-order (Create Payment Intent)
     PGI-->>CA: Payment Intent Response
     CA-->>Customer: Order Created (Status: CREATED)
     
@@ -171,14 +171,14 @@ sequenceDiagram
     Outbox->>K_NE: Publish NotificationRequestEvent
     CS-->>Customer: Push Notification: Food Ready
     
-    Executive->>DEA: PUT /api/v1/delivery/{orderId}/pickup
+    Executive->>DEA: POST /api/delivery/drivers/{driverId}/orders/{orderId}/status (PICKED_UP)
     DEA->>K_OE: Publish OrderPickedUpEvent
     CA->>K_OE: Consume OrderPickedUpEvent
     CA->>DB: Transaction: Update DB (OUT_FOR_DELIVERY) & Save Outbox
     Outbox->>K_NE: Publish NotificationRequestEvent
     CS-->>Customer: Push Notification: Order Picked Up
     
-    Executive->>DEA: PUT /api/v1/delivery/{orderId}/deliver
+    Executive->>DEA: POST /api/delivery/drivers/{driverId}/orders/{orderId}/status (DELIVERED)
     DEA->>K_OE: Publish OrderDeliveredEvent
     CA->>K_OE: Consume OrderDeliveredEvent
     CA->>DB: Transaction: Update DB (DELIVERED) & Save Outbox
