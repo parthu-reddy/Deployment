@@ -232,3 +232,11 @@ The system abstracts away external communication providers (AWS SES, Twilio, Fir
 
 ### 6. State Transition Integrity
 The `OrderSagaOrchestrator` enforces strict forward-only state transitions based on the ordinal values of the `OrderStatus` enum. Any attempt to regress the order state (e.g. from `DELIVERED` back to `DISPATCHED`, or `PAID` back to `CREATED`) is actively blocked, logging a `BACKWARD_STATE_TRANSITION_ATTEMPT` error. This guarantees state machine immutability and protects downstream idempotent operations like ledger transfers and notification dispatches.
+
+### 7. Hierarchical Restaurant Data Model (3-Phase Registration)
+The system utilizes a 3-phase hierarchical registration model for restaurants:
+1. **Brand Onboarding**: Creating the corporate entity (GSTIN, PAN, Bank Details).
+2. **Outlet Onboarding**: Creating physical storefronts under a Brand (Location, FSSAI, Operating Hours).
+3. **Menu Setup**: Brands define a global `MasterMenu`, while Outlets can override prices or availability via `OutletMenuOverride`.
+
+*Note: For the purpose of the Order Saga and backwards compatibility, any reference to `restaurantId` or the `/api/v1/restaurants/{id}` endpoint in the Customer Application maps directly to a specific physical **Outlet** ID.*
