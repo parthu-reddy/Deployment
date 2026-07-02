@@ -34,24 +34,34 @@ sequenceDiagram
         DEA->>Redis: GEOADD driver_locations (Lat, Lng)
     end
     
-    %% Scenario 1: Order Creation and Payment
-    Note over Customer, Executive: SCENARIO: SUCCESSFUL ORDER & PAYMENT
-    
-    Customer->>CA: POST /api/v1/orders (Place Order with deliveryAddressId)
-    CA->>RA: GET /api/v1/restaurants/{id} (Fetch Location & Active Status)
-    CA->>CA: Validate Delivery Address is within 5km
-    CA->>Maps: GET /api/fleet/availability/check (Check if drivers are nearby)
-    Maps-->>CA: Boolean response
-    RA-->>CA: REST Response (Active, Location)
+    %% Phase 3: Menu Creation & Overrides
+    Restaurant Owner->>RA: POST /api/v1/brands/{brandId}/master-menu
+    RA->>DB: Save MasterMenuItem (brand_id, name, base_price, active)
+    RA-->>Restaurant Owner: Return 200 OK
+    Restaurant Owner->>RA: POST /api/v1/outlets/{outletId}/menu-overrides/{itemId}
+    RA->>DB: Save OutletMenuOverride (price, available)
+    RA-->>Restaurant Owner: Return 200 OK
+
+    %% --------------------------------------------------------
+    %% Core Scenario 1: Order Creation and Payment
+    %% --------------------------------------------------------
+    Customer->>CA: POST /api/v1/orders (Create Order)
     CA->>RA: GET /api/v1/restaurants/{id}/menu/batch (Fetch Menu & Prep Time)
-    RA-->>CA: REST Response (Menu details, max Prep Time)
-    
-    CA->>PGI: POST /api/v1/payments/create-order (Create Payment Intent)
-    PGI-->>CA: Payment Intent Response
-    CA-->>Customer: Order Created (Status: CREATED)
-    
-    Customer->>PGI: User completes payment (UPI/Card)
-    PGI->>PGI: Webhook triggered: POST /api/v1/webhooks/* (Verified securely)
+    CA->>RA: GET /api/v1/restaurants/{id} (Fetch Location & Active Status)
+    CA->>Maps: GET /api/fleet/availability/check (Check if drivers are nearby)
+    Maps-->>CA: Return Available Driver Status
+    CA->>CA: Validate Delivery Address is within 5km
+    CA->>CA: Compute Order Total & Estimated Prep Time
+    CA->>DB: Transaction: Save Order (CREATED)
+    CA-->>Customer: Return Order Summary & Payment Intent (Amount)
+
+    Customer->>PGI: POST /api/v1/payments/intent (Create Payment Intent)
+    PGI->>DB: Save PaymentIntent (PENDING)
+    PGI-->>Customer: Return Client Secret/Payment URL
+    Customer->>PaymentGateway: Submit Payment Details (Stripe/Razorpay)
+    PaymentGateway-->>Customer: Payment Success Screen
+
+    PaymentGateway->>PGI: POST /api/v1/webhooks/{gateway} (Payment Success)
     PGI->>DB: Transaction: Save Outbox PaymentCompletedEvent
     Outbox->>K_PE: Publish PaymentCompletedEvent
     
@@ -67,9 +77,12 @@ sequenceDiagram
     Note over Customer, Executive: SCENARIO: RESTAURANT ACCEPTANCE & DELAY NEGOTIATION
     
     RA->>K_OE: Consume OrderPaidEvent
+    RA->>DB: Save RestaurantOrder (PENDING)
+    
+    Restaurant Staff->>RA: POST /api/v1/restaurants/{restaurantId}/fulfillment/orders/{orderId}/accept
     
     alt Prep Time <= 10 mins extra (or null)
-        RA->>RA: Accept Order & Start Preparation
+        RA->>RA: Update Order (ACCEPTED) & Start Preparation
         RA->>K_OE: Publish OrderAcceptedEvent (includes deliveryLat, deliveryLng)
     else Prep Time > 10 mins extra
         RA->>K_OE: Publish OrderDelayApprovalRequestedEvent
@@ -164,9 +177,9 @@ sequenceDiagram
     %% Scenario 4: Food Ready & Pickup
     Note over Customer, Executive: SCENARIO: FOOD READY & DELIVERY
     
-    RA->>RA: Food Preparation Complete
-    RA->>K_OE: Publish FoodReadyEvent
-    CA->>K_OE: Consume FoodReadyEvent
+    Restaurant Staff->>RA: POST /api/v1/restaurants/{restaurantId}/fulfillment/orders/{orderId}/ready
+    RA->>K_OE: Publish ORDER_READY
+    CA->>K_OE: Consume ORDER_READY
     CA->>DB: Transaction: Update DB (READY_FOR_PICKUP) & Save Outbox
     Outbox->>K_NE: Publish NotificationRequestEvent
     CS-->>Customer: Push Notification: Food Ready
