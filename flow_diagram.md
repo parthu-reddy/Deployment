@@ -257,3 +257,11 @@ The system utilizes a 3-phase hierarchical registration model for restaurants:
 3. **Menu Setup**: Brands define a global `MasterMenu`, while Outlets can override prices or availability via `OutletMenuOverride`.
 
 *Note: For the purpose of the Order Saga and backwards compatibility, any reference to `restaurantId` or the `/api/v1/restaurants/{id}` endpoint in the Customer Application maps directly to a specific physical **Outlet** ID.*
+
+### 8. Reliability & Sweepers (Zero-Event-Loss)
+To ensure system resilience and prevent orders from getting stuck in limbo due to missed events, network failures, or app crashes, the architecture utilizes several background sweeping mechanisms:
+- **`StaleOrderSweeper` (CustomerApp)**: Auto-cancels `CREATED` orders if payment is not completed within 15 minutes.
+- **`AbandonedDeliverySweeper` (CustomerApp)**: Marks orders stuck in `DISPATCHED` or `OUT_FOR_DELIVERY` for over 2 hours as `DELIVERY_FAILED`, issuing automatic refunds.
+- **`RestaurantAcceptanceTimeoutPoller` (RestaurantApp)**: Auto-rejects `CREATED` orders (which are `PAID` from customer POV) if the restaurant fails to accept them within 10 minutes.
+- **`DriverPingTimeoutPoller` (DeliveryExecutiveApp)**: Removes unresponsive drivers who fail to accept or reject an order ping within 30 seconds, allowing dispatch to retry finding a new driver.
+- **`Outbox DLQ & Kafka DefaultErrorHandler` (CommonLibrary)**: Unprocessed Outbox events are retried and moved to DLQ status after 5 failures. Kafka consumer failures use a fixed backoff strategy before logging fatal errors, ensuring resilience against transient downtime.
