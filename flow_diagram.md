@@ -104,6 +104,8 @@ sequenceDiagram
             CA->>DB: Transaction: Update DB (CANCELLED) & Save Outbox
             Outbox->>K_OE: Publish OrderDelayRejectedEvent
             Outbox->>K_NE: Publish NotificationRequestEvent
+            RA->>K_OE: Consume OrderDelayRejectedEvent (Stop Preparation)
+            DEA->>K_OE: Consume OrderDelayRejectedEvent (Abort Dispatch / Release Driver)
             CS-->>Customer: Push Notification: Order Cancelled & Refunded
             CA->>PGI: Initiate Refund (REST/API)
         else Customer ignores (10 min Timeout)
@@ -111,6 +113,8 @@ sequenceDiagram
             CA->>DB: Transaction: Update DB (CANCELLED) & Save Outbox
             Outbox->>K_OE: Publish OrderDelayRejectedEvent (Auto)
             Outbox->>K_NE: Publish NotificationRequestEvent
+            RA->>K_OE: Consume OrderDelayRejectedEvent (Stop Preparation)
+            DEA->>K_OE: Consume OrderDelayRejectedEvent (Abort Dispatch / Release Driver)
             CS-->>Customer: Push Notification: Order Auto-cancelled
             CA->>PGI: Initiate Refund (REST/API)
         end
