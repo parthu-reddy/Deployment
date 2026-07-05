@@ -38,8 +38,8 @@ services:
     image: kartoza/postgis:16-3.4
     container_name: shared_postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASS: password
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASS: ${POSTGRES_PASS}
     ports:
       - "5432:5432"
     volumes:
@@ -67,6 +67,28 @@ services:
       timeout: 5s
       retries: 5
 
+  config-service:
+    build:
+      context: ../
+      dockerfile: ConfigService/Dockerfile
+    container_name: config-service
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./:/config
+    environment:
+      - SPRING_PROFILES_ACTIVE=native
+      - SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=file:/config
+      - SPRING_CONFIG_IMPORT=optional:file:/config/config-service.yml
+      - CONFIG_USER=${CONFIG_USER}
+      - CONFIG_PASSWORD=${CONFIG_PASSWORD}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://${CONFIG_USER}:${CONFIG_PASSWORD}@localhost:8888/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   customer-service:
     build:
       context: ../
@@ -75,15 +97,18 @@ services:
     ports:
       - "8092:8092"
     environment:
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
       - DB_URL=jdbc:postgresql://postgres:5432/food_delivery
-      - DB_USERNAME=postgres
-      - DB_PASSWORD=password
+      - DB_USERNAME=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASS}
       - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - REDIS_HOST=redis
       - PAYMENT_SERVICE_URL=http://payment-gateway:8085
       - RESTAURANT_SERVICE_URL=http://restaurant-service:8094
       - MAPS_SERVICE_URL=http://maps-integration:8083
     depends_on:
+      config-service:
+        condition: service_healthy
       postgres:
         condition: service_healthy
       kafka:
@@ -100,15 +125,18 @@ services:
     ports:
       - "8094:8094"
     environment:
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
       - DB_URL=jdbc:postgresql://postgres:5432/restaurant_db
-      - DB_USERNAME=postgres
-      - DB_PASSWORD=password
+      - DB_USERNAME=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASS}
       - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - REDIS_HOST=redis
       - PAYMENT_SERVICE_URL=http://payment-gateway:8085
       - MAPS_SERVICE_URL=http://maps-integration:8083
       - KYB_FSSAI_API_URL=http://localhost:8080/mock/fssai
     depends_on:
+      config-service:
+        condition: service_healthy
       postgres:
         condition: service_healthy
       kafka:
@@ -125,14 +153,17 @@ services:
     ports:
       - "8095:8095"
     environment:
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
       - DB_URL=jdbc:postgresql://postgres:5432/delivery_db
-      - DB_USERNAME=postgres
-      - DB_PASSWORD=password
+      - DB_USERNAME=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASS}
       - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - REDIS_HOST=redis
       - PAYMENT_SERVICE_URL=http://payment-gateway:8085
       - MAPS_SERVICE_URL=http://maps-integration:8083
     depends_on:
+      config-service:
+        condition: service_healthy
       postgres:
         condition: service_healthy
       kafka:
@@ -149,14 +180,17 @@ services:
     ports:
       - "8085:8085"
     environment:
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
       - PORT=8085
       - DB_URL=jdbc:postgresql://postgres:5432/payment_db
-      - DB_USERNAME=postgres
-      - DB_PASSWORD=password
+      - DB_USERNAME=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASS}
       - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - REDIS_HOST=redis
       - SPRING_PROFILES_ACTIVE=debug
     depends_on:
+      config-service:
+        condition: service_healthy
       postgres:
         condition: service_healthy
       kafka:
@@ -173,9 +207,12 @@ services:
     ports:
       - "8083:8083"
     environment:
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
       - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - REDIS_HOST=redis
     depends_on:
+      config-service:
+        condition: service_healthy
       kafka:
         condition: service_healthy
       redis:
@@ -190,15 +227,81 @@ services:
     ports:
       - "8081:8081"
     environment:
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_NAME=notification_db
-      - DB_USER=postgres
-      - DB_PASSWORD=password
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASS}
       - KAFKA_BROKERS=kafka:29092
       - REDIS_HOST=redis
       - REDIS_PORT=6379
     depends_on:
+      config-service:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: on-failure
+
+  api-gateway:
+    build:
+      context: ../
+      dockerfile: ApiGateway/Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./certs:/certs
+    environment:
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
+      - JWT_PUBLIC_KEY_PATH=file:/certs/public.pem
+      - CUSTOMER_SERVICE_URL=http://customer-service:8092
+      - RESTAURANT_SERVICE_URL=http://restaurant-service:8094
+      - DELIVERY_SERVICE_URL=http://delivery-service:8095
+      - IDENTITY_SERVICE_URL=http://identity-service:8086
+      - PAYMENT_SERVICE_URL=http://payment-gateway:8085
+      - MAPS_SERVICE_URL=http://maps-integration:8083
+    depends_on:
+      config-service:
+        condition: service_healthy
+      customer-service:
+        condition: service_started
+      restaurant-service:
+        condition: service_started
+      delivery-service:
+        condition: service_started
+      identity-service:
+        condition: service_started
+      payment-gateway:
+        condition: service_started
+      maps-integration:
+        condition: service_started
+    restart: on-failure
+
+  identity-service:
+    build:
+      context: ../
+      dockerfile: IdentityService/Dockerfile
+    container_name: identity-service
+    ports:
+      - "8086:8086"
+    volumes:
+      - ./certs:/certs
+    environment:
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
+      - JWT_PRIVATE_KEY_PATH=file:/certs/private.pem
+      - DB_URL=jdbc:postgresql://postgres:5432/identity_db
+      - DB_USERNAME=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASS}
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - REDIS_HOST=redis
+    depends_on:
+      config-service:
+        condition: service_healthy
       postgres:
         condition: service_healthy
       kafka:

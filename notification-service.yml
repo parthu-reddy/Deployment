@@ -1,0 +1,73 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: notification-service
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:notification_db}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:password}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  kafka:
+    bootstrap-servers: ${KAFKA_BROKERS:localhost:9092}
+    consumer:
+      group-id: notification-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+        spring.json.value.default.type: com.fooddelivery.common.event.NotificationRequestEvent
+        spring.json.trusted.packages: "*"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+exotel:
+  api:
+    key: ${EXOTEL_API_KEY:dummy_key}
+    token: ${EXOTEL_API_TOKEN:dummy_token}
+  account:
+    sid: ${EXOTEL_ACCOUNT_SID:dummy_sid}
+  subdomain: ${EXOTEL_SUBDOMAIN:api.in.exotel.com}
+
+twilio:
+  account:
+    sid: ${TWILIO_ACCOUNT_SID:dummy_sid}
+  auth:
+    token: ${TWILIO_AUTH_TOKEN:dummy_token}
+  phone:
+    number: ${TWILIO_PHONE_NUMBER:1234567890}
+
+
+gupshup:
+  api:
+    key: ${GUPSHUP_API_KEY:dummy_key}
+  source:
+    number: ${GUPSHUP_SOURCE_NUMBER:919876543210}
+
+aws:
+  ses:
+    configuration-set-name: ${AWS_SES_CONFIG_SET:NotificationConfigSet}
+
+brevo:
+  api:
+    key: ${BREVO_API_KEY:dummy_key}
+
+platform:
+  providers:
+    email:
+      active: ${ACTIVE_EMAIL_PROVIDER:aws} # Options: aws, brevo
+  webhook:
+    base-url: ${WEBHOOK_BASE_URL:http://localhost:8081}

@@ -1,0 +1,57 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "${ALLOWED_ORIGINS:http://localhost:3000}"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+      routes:
+        - id: customer-service
+          uri: ${CUSTOMER_SERVICE_URL:http://localhost:8092}
+          predicates:
+            - Path=/api/v1/customers/**, /api/v1/orders/**, /api/v1/places/**
+        
+        - id: restaurant-service
+          uri: ${RESTAURANT_SERVICE_URL:http://localhost:8094}
+          predicates:
+            - Path=/api/v1/brands/**, /api/v1/restaurants/**, /api/v1/outlets/**
+            
+        - id: delivery-service
+          uri: ${DELIVERY_SERVICE_URL:http://localhost:8095}
+          predicates:
+            - Path=/api/delivery/**, /api/v1/delivery/**, /api/v1/logistics/**
+            
+        - id: identity-service
+          uri: ${IDENTITY_SERVICE_URL:http://localhost:8086}
+          predicates:
+            - Path=/api/v1/internal/auth/**
+            
+        - id: payment-service
+          uri: ${PAYMENT_SERVICE_URL:http://localhost:8085}
+          predicates:
+            - Path=/api/v1/payments/**, /api/v1/webhooks/**
+            
+        - id: maps-service
+          uri: ${MAPS_SERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/places/**, /api/fleet/**, /api/config/maps-key
+
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
