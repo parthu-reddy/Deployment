@@ -82,8 +82,51 @@ services:
       - SPRING_CONFIG_IMPORT=optional:file:/config/config-service.yml
       - CONFIG_USER=${CONFIG_USER}
       - CONFIG_PASSWORD=${CONFIG_PASSWORD}
+      - EUREKA_CLIENT_ENABLED=false
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://${CONFIG_USER}:${CONFIG_PASSWORD}@localhost:8888/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  eureka-server-1:
+    build:
+      context: ../
+      dockerfile: EurekaServer/Dockerfile
+    container_name: eureka-server-1
+    ports:
+      - "8761:8761"
+    environment:
+      - EUREKA_USER=${EUREKA_USER:-admin}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
+      - EUREKA_HOSTNAME=eureka-server-1
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
+      - EUREKA_CLIENT_FETCH_REGISTRY=true
+      - EUREKA_DEFAULT_ZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@localhost:8761/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  eureka-server-2:
+    build:
+      context: ../
+      dockerfile: EurekaServer/Dockerfile
+    container_name: eureka-server-2
+    ports:
+      - "8762:8761"
+    environment:
+      - EUREKA_USER=${EUREKA_USER:-admin}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
+      - EUREKA_HOSTNAME=eureka-server-2
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
+      - EUREKA_CLIENT_FETCH_REGISTRY=true
+      - EUREKA_DEFAULT_ZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@localhost:8761/actuator/health"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -103,11 +146,13 @@ services:
       - DB_PASSWORD=${POSTGRES_PASS}
       - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - REDIS_HOST=redis
-      - PAYMENT_SERVICE_URL=http://payment-gateway:8085
-      - RESTAURANT_SERVICE_URL=http://restaurant-service:8094
-      - MAPS_SERVICE_URL=http://maps-integration:8083
+      - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+      - EUREKA_USER=${EUREKA_USER:-admin}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     depends_on:
       config-service:
+        condition: service_healthy
+      eureka-server-1:
         condition: service_healthy
       postgres:
         condition: service_healthy
@@ -131,11 +176,14 @@ services:
       - DB_PASSWORD=${POSTGRES_PASS}
       - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - REDIS_HOST=redis
-      - PAYMENT_SERVICE_URL=http://payment-gateway:8085
-      - MAPS_SERVICE_URL=http://maps-integration:8083
+      - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+      - EUREKA_USER=${EUREKA_USER:-admin}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
       - KYB_FSSAI_API_URL=http://localhost:8080/mock/fssai
     depends_on:
       config-service:
+        condition: service_healthy
+      eureka-server-1:
         condition: service_healthy
       postgres:
         condition: service_healthy
@@ -159,10 +207,13 @@ services:
       - DB_PASSWORD=${POSTGRES_PASS}
       - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - REDIS_HOST=redis
-      - PAYMENT_SERVICE_URL=http://payment-gateway:8085
-      - MAPS_SERVICE_URL=http://maps-integration:8083
+      - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+      - EUREKA_USER=${EUREKA_USER:-admin}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     depends_on:
       config-service:
+        condition: service_healthy
+      eureka-server-1:
         condition: service_healthy
       postgres:
         condition: service_healthy
@@ -188,8 +239,13 @@ services:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - REDIS_HOST=redis
       - SPRING_PROFILES_ACTIVE=debug
+      - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+      - EUREKA_USER=${EUREKA_USER:-admin}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     depends_on:
       config-service:
+        condition: service_healthy
+      eureka-server-1:
         condition: service_healthy
       postgres:
         condition: service_healthy
@@ -210,8 +266,13 @@ services:
       - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
       - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - REDIS_HOST=redis
+      - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+      - EUREKA_USER=${EUREKA_USER:-admin}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     depends_on:
       config-service:
+        condition: service_healthy
+      eureka-server-1:
         condition: service_healthy
       kafka:
         condition: service_healthy
@@ -236,8 +297,13 @@ services:
       - KAFKA_BROKERS=kafka:29092
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+      - EUREKA_USER=${EUREKA_USER:-admin}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     depends_on:
       config-service:
+        condition: service_healthy
+      eureka-server-1:
         condition: service_healthy
       postgres:
         condition: service_healthy
@@ -259,27 +325,14 @@ services:
     environment:
       - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
       - JWT_PUBLIC_KEY_PATH=file:/certs/public.pem
-      - CUSTOMER_SERVICE_URL=http://customer-service:8092
-      - RESTAURANT_SERVICE_URL=http://restaurant-service:8094
-      - DELIVERY_SERVICE_URL=http://delivery-service:8095
-      - IDENTITY_SERVICE_URL=http://identity-service:8086
-      - PAYMENT_SERVICE_URL=http://payment-gateway:8085
-      - MAPS_SERVICE_URL=http://maps-integration:8083
+      - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+      - EUREKA_USER=${EUREKA_USER:-admin}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     depends_on:
       config-service:
         condition: service_healthy
-      customer-service:
-        condition: service_started
-      restaurant-service:
-        condition: service_started
-      delivery-service:
-        condition: service_started
-      identity-service:
-        condition: service_started
-      payment-gateway:
-        condition: service_started
-      maps-integration:
-        condition: service_started
+      eureka-server-1:
+        condition: service_healthy
     restart: on-failure
 
   identity-service:
@@ -299,8 +352,13 @@ services:
       - DB_PASSWORD=${POSTGRES_PASS}
       - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - REDIS_HOST=redis
+      - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+      - EUREKA_USER=${EUREKA_USER:-admin}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     depends_on:
       config-service:
+        condition: service_healthy
+      eureka-server-1:
         condition: service_healthy
       postgres:
         condition: service_healthy

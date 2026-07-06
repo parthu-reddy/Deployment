@@ -6,6 +6,17 @@ spring:
     name: api-gateway
   cloud:
     gateway:
+      default-filters:
+        - name: Retry
+          args:
+            retries: 3
+            statuses: BAD_GATEWAY, GATEWAY_TIMEOUT, SERVICE_UNAVAILABLE
+            methods: GET
+            backoff:
+              firstBackoff: 50ms
+              maxBackoff: 500ms
+              factor: 2
+              basedOnPreviousValue: false
       globalcors:
         cors-configurations:
           '[/**]':
@@ -19,36 +30,49 @@ spring:
             allowedHeaders: "*"
       routes:
         - id: customer-service
-          uri: ${CUSTOMER_SERVICE_URL:http://localhost:8092}
+          uri: lb://customer-service
           predicates:
-            - Path=/api/v1/customers/**, /api/v1/orders/**, /api/v1/places/**
+            - Path=/api/v1/customers/**, /api/v1/orders/**, /api/v1/places/**, /api/v1/restaurants/nearby, /api/v1/restaurants/*/delivery-availability
         
         - id: restaurant-service
-          uri: ${RESTAURANT_SERVICE_URL:http://localhost:8094}
+          uri: lb://restaurant-service
           predicates:
             - Path=/api/v1/brands/**, /api/v1/restaurants/**, /api/v1/outlets/**
             
         - id: delivery-service
-          uri: ${DELIVERY_SERVICE_URL:http://localhost:8095}
+          uri: lb://delivery-service
           predicates:
             - Path=/api/delivery/**, /api/v1/delivery/**, /api/v1/logistics/**
             
         - id: identity-service
-          uri: ${IDENTITY_SERVICE_URL:http://localhost:8086}
+          uri: lb://identity-service
           predicates:
-            - Path=/api/v1/internal/auth/**
+            - Path=/api/v1/internal/auth/**, /api/v1/internal/users/**
             
         - id: payment-service
-          uri: ${PAYMENT_SERVICE_URL:http://localhost:8085}
+          uri: lb://payment-service
           predicates:
-            - Path=/api/v1/payments/**, /api/v1/webhooks/**
+            - Path=/api/v1/webhooks/**
             
         - id: maps-service
-          uri: ${MAPS_SERVICE_URL:http://localhost:8083}
+          uri: lb://mapsintegration
           predicates:
-            - Path=/api/places/**, /api/fleet/**, /api/config/maps-key
+            - Path=/api/places/**, /api/fleet/**, /api/config/maps-key, /api/logistics/**, /api/maps/tracking
+            
+        - id: notification-service
+          uri: lb://notification-service
+          predicates:
+            - Path=/webhooks/providers/**
 
-
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URLS:http://localhost:8761/eureka/}
+    registry-fetch-interval-seconds: 5
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 15
+    lease-expiration-duration-in-seconds: 30
 
 management:
   endpoints:
