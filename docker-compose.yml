@@ -46,7 +46,7 @@ services:
       - shared_pgdata:/var/lib/postgresql/data
       - ./init-multiple-dbs.sql:/docker-entrypoint-initdb.d/init-multiple-dbs.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -h localhost -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
