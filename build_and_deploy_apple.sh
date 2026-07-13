@@ -13,7 +13,7 @@ echo "======================================"
 echo " Building FoodDeliveryAppUI..."
 echo "======================================"
 cd "$PROJECT_ROOT/FoodDeliveryAppUI"
-npm i
+npm i --cache .npm-cache
 npm run build
 
 echo "======================================"
