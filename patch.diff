@@ -1,0 +1,15 @@
+--- /Users/parthureddy/Documents/Food Delivery/CommonLibrary/src/main/java/com/fooddelivery/common/service/RateLimitingService.java
++++ /Users/parthureddy/Documents/Food Delivery/CommonLibrary/src/main/java/com/fooddelivery/common/service/RateLimitingService.java
+@@ -35,6 +35,13 @@
+         return proxyManager.builder().build(key, configuration);
+     }
+ 
++    public void enforceRateLimit(String key, String eventName) {
++        Bucket bucket = resolveBucket("rate_limit:" + key + ":" + eventName, 10, 10, Duration.ofMinutes(1));
++        if (!bucket.tryConsume(1)) {
++            throw new RuntimeException("Rate limit exceeded for " + eventName);
++        }
++    }
++
+     @Configuration
+     public static class RateLimitConfig {
