@@ -95,12 +95,21 @@ if [ "$COMMAND" == "up" ]; then
     
     DEPLOYMENT_DIR="$PWD"
     
-    TARGET_SERVICE=$1
+    TARGET_SERVICES=("$@")
     for service_entry in "${SERVICES[@]}"; do
         IFS='|' read -r dir name port type <<< "$service_entry"
         
-        if [ ! -z "$TARGET_SERVICE" ] && [ "$TARGET_SERVICE" != "$name" ]; then
-            continue
+        if [ ${#TARGET_SERVICES[@]} -gt 0 ] && [ "${TARGET_SERVICES[0]}" != "infra" ]; then
+            MATCH=false
+            for target in "${TARGET_SERVICES[@]}"; do
+                if [ "$target" == "$name" ]; then
+                    MATCH=true
+                    break
+                fi
+            done
+            if [ "$MATCH" = false ]; then
+                continue
+            fi
         fi
         
         echo "Starting $name..."
@@ -108,7 +117,7 @@ if [ "$COMMAND" == "up" ]; then
         
         ENV_VARS=""
         if [ "$name" == "config-service" ]; then
-            ENV_VARS="-e SPRING_PROFILES_ACTIVE=native -e SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=file:/config/ -e SPRING_CONFIG_IMPORT=optional:file:/config/config-service.yml -e CONFIG_USER=${CONFIG_USER} -e CONFIG_PASSWORD=${CONFIG_PASSWORD} -e SPRING_SECURITY_USER_NAME=${CONFIG_USER} -e SPRING_SECURITY_USER_PASSWORD=${CONFIG_PASSWORD} -e EUREKA_CLIENT_ENABLED=false"
+            ENV_VARS="-e SPRING_PROFILES_ACTIVE=native -e SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=file:/config/ -e SPRING_CONFIG_IMPORT=optional:file:/config/config-service.yml -e CONFIG_USER=${CONFIG_USER} -e CONFIG_PASSWORD=${CONFIG_PASSWORD} -e SPRING_SECURITY_USER_NAME=${CONFIG_USER} -e SPRING_SECURITY_USER_PASSWORD=${CONFIG_PASSWORD} -e EUREKA_CLIENT_ENABLED=false -v \"$DEPLOYMENT_DIR:/config\""
         elif [ "$name" == "eureka-server-1" ]; then
             ENV_VARS="-e EUREKA_USER=${EUREKA_USER:-admin} -e EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin} -e EUREKA_HOSTNAME=$HOST_IP -e EUREKA_CLIENT_REGISTER_WITH_EUREKA=false -e EUREKA_CLIENT_FETCH_REGISTRY=false -e EUREKA_DEFAULT_ZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@$HOST_IP:8761/eureka/"
         elif [ "$name" == "customer-service" ]; then
@@ -124,20 +133,20 @@ if [ "$COMMAND" == "up" ]; then
         elif [ "$name" == "communication-integration" ]; then
             ENV_VARS="-e SPRING_CONFIG_IMPORT=optional:configserver:http://$HOST_IP:8888 -e SPRING_CLOUD_CONFIG_USERNAME=${CONFIG_USER} -e SPRING_CLOUD_CONFIG_PASSWORD=${CONFIG_PASSWORD} -e DB_HOST=$HOST_IP -e DB_PORT=5432 -e DB_NAME=notification_db -e DB_USER=${POSTGRES_USER} -e DB_PASSWORD=${POSTGRES_PASS} -e KAFKA_BROKERS=$HOST_IP:29092 -e REDIS_HOST=$HOST_IP -e REDIS_PORT=6379 -e EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@$HOST_IP:8761/eureka/ -e EUREKA_USER=${EUREKA_USER:-admin} -e EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin} -e EUREKA_INSTANCE_IP_ADDRESS=$HOST_IP -e SPRING_PROFILES_ACTIVE=dev"
         elif [ "$name" == "api-gateway" ]; then
-            ENV_VARS="-e SPRING_CONFIG_IMPORT=optional:configserver:http://$HOST_IP:8888 -e SPRING_CLOUD_CONFIG_USERNAME=${CONFIG_USER} -e SPRING_CLOUD_CONFIG_PASSWORD=${CONFIG_PASSWORD} -e JWT_PUBLIC_KEY_PATH=file:/certs/public.pem -e EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@$HOST_IP:8761/eureka/ -e EUREKA_USER=${EUREKA_USER:-admin} -e EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin} -e REDIS_HOST=$HOST_IP -e EUREKA_INSTANCE_IP_ADDRESS=$HOST_IP -e SPRING_PROFILES_ACTIVE=dev"
+            ENV_VARS="-e SPRING_CONFIG_IMPORT=optional:configserver:http://$HOST_IP:8888 -e SPRING_CLOUD_CONFIG_USERNAME=${CONFIG_USER} -e SPRING_CLOUD_CONFIG_PASSWORD=${CONFIG_PASSWORD} -e JWT_PUBLIC_KEY_PATH=file:/certs/public.pem -e EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@$HOST_IP:8761/eureka/ -e EUREKA_USER=${EUREKA_USER:-admin} -e EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin} -e REDIS_HOST=$HOST_IP -e EUREKA_INSTANCE_IP_ADDRESS=$HOST_IP -e SPRING_PROFILES_ACTIVE=dev -v \"$DEPLOYMENT_DIR/certs:/certs\""
         elif [ "$name" == "identity-service" ]; then
-            ENV_VARS="-e SPRING_CONFIG_IMPORT=optional:configserver:http://$HOST_IP:8888 -e SPRING_CLOUD_CONFIG_USERNAME=${CONFIG_USER} -e SPRING_CLOUD_CONFIG_PASSWORD=${CONFIG_PASSWORD} -e SPRING_PROFILES_ACTIVE=dev -e JWT_PRIVATE_KEY_PATH=file:/certs/private.pem -e DB_URL=jdbc:postgresql://$HOST_IP:5432/identity_db -e DB_USERNAME=${POSTGRES_USER} -e DB_PASSWORD=${POSTGRES_PASS} -e KAFKA_BOOTSTRAP_SERVERS=$HOST_IP:29092 -e REDIS_HOST=$HOST_IP -e EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@$HOST_IP:8761/eureka/ -e EUREKA_USER=${EUREKA_USER:-admin} -e EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin} -e EUREKA_INSTANCE_IP_ADDRESS=$HOST_IP"
+            ENV_VARS="-e SPRING_CONFIG_IMPORT=optional:configserver:http://$HOST_IP:8888 -e SPRING_CLOUD_CONFIG_USERNAME=${CONFIG_USER} -e SPRING_CLOUD_CONFIG_PASSWORD=${CONFIG_PASSWORD} -e SPRING_PROFILES_ACTIVE=dev -e JWT_PRIVATE_KEY_PATH=file:/certs/private.pem -e DB_URL=jdbc:postgresql://$HOST_IP:5432/identity_db -e DB_USERNAME=${POSTGRES_USER} -e DB_PASSWORD=${POSTGRES_PASS} -e KAFKA_BOOTSTRAP_SERVERS=$HOST_IP:29092 -e REDIS_HOST=$HOST_IP -e EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@$HOST_IP:8761/eureka/ -e EUREKA_USER=${EUREKA_USER:-admin} -e EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin} -e EUREKA_INSTANCE_IP_ADDRESS=$HOST_IP -v \"$DEPLOYMENT_DIR/certs:/certs\""
         elif [ "$name" == "food-delivery-app-ui" ]; then
             ENV_VARS="-e VITE_API_GATEWAY_URL=http://$HOST_IP:8080 -e VITE_MAPS_API_KEY=${OLA_MAPS_API_KEY}"
         fi
         
         (cd "../$dir" && eval "./run_container.sh --apple -d  --name \"$name\" -p \"$port\" $ENV_VARS")
         
-        if [ "$name" == "config-service" ] && [ -z "$TARGET_SERVICE" ]; then
+        if [ "$name" == "config-service" ] && [ ${#TARGET_SERVICES[@]} -eq 0 ]; then
             echo "Waiting for config-service to be healthy..."
             while ! curl -s -u "${CONFIG_USER}:${CONFIG_PASSWORD}" http://localhost:8888/actuator/health | grep -q 'UP'; do sleep 2; done
             echo "config-service is healthy!"
-        elif [ "$name" == "eureka-server-1" ] && [ -z "$TARGET_SERVICE" ]; then
+        elif [ "$name" == "eureka-server-1" ] && [ ${#TARGET_SERVICES[@]} -eq 0 ]; then
             echo "Waiting for eureka-server to be healthy..."
             while ! curl -s -u "${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}" http://localhost:8761/actuator/health | grep -q 'UP'; do sleep 2; done
             echo "eureka-server is healthy!"

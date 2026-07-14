@@ -14,7 +14,7 @@ for arg in "$@"; do
     fi
 done
 
-PROJECT_ROOT="/Users/parthureddy/Documents/Food Delivery"
+PROJECT_ROOT="/Users/parthureddy/Documents/Food Delivery.nosync"
 DEPLOYMENT_DIR="$PROJECT_ROOT/Deployment"
 
 SERVICE_DIR="CommunicationIntegration"

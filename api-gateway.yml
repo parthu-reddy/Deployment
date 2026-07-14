@@ -4,6 +4,10 @@ server:
 spring:
   application:
     name: api-gateway
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
   cloud:
     gateway:
       default-filters:
@@ -47,7 +51,7 @@ spring:
         - id: identity-service
           uri: lb://identity-service
           predicates:
-            - Path=/api/v1/internal/auth/**, /api/v1/internal/users/**
+            - Path=/api/v1/internal/auth/**, /api/v1/internal/users/**, /api/v1/users/**
             
         - id: payment-service
           uri: lb://payment-service
