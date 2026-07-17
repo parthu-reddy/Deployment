@@ -23,7 +23,10 @@ if [ "$COMMAND" == "up" ]; then
     echo "Starting Apple containers..."
     
     # Get host IP for container-to-container communication (since each is its own VM)
-    HOST_IP="192.168.64.1"
+    HOST_IP=$(ipconfig getifaddr en0)
+    if [ -z "$HOST_IP" ]; then
+        HOST_IP=$(ifconfig bridge100 | grep inet | awk '{print $2}')
+    fi
     TARGET_SERVICE=$1
     
     echo "Host IP detected as $HOST_IP. Using this for cross-container communication."

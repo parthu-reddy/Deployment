@@ -19,8 +19,16 @@ management:
       probability: 1.0
 
 logging:
+  file:
+    name: logs/${spring.application.name}.log
   pattern:
     level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} %5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}] [%t] %logger{36} - %msg%n"
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 30
+      total-size-cap: 1GB
 
 # Eureka Service Discovery (default for all services)
 eureka:

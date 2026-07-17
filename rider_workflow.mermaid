@@ -1,0 +1,33 @@
+stateDiagram-v2
+    [*] --> Initialization
+    Initialization --> FetchProfile : Component Mounts
+    FetchProfile --> ProfileIncomplete : Missing Vehicle/Photo
+    FetchProfile --> Offline : isOnline == false
+    FetchProfile --> Online : isOnline == true
+
+    ProfileIncomplete --> ProfileComplete : User fills details
+    ProfileComplete --> Offline
+
+    Offline --> RequestPermissions : Click "Go Online"
+    RequestPermissions --> PermissionDenied : Location/Notif Denied
+    PermissionDenied --> Offline : Show Error Modal
+    RequestPermissions --> SetStatusOnline : Permissions Granted
+    SetStatusOnline --> Online : POST /api/delivery/status (available=true)
+
+    state Online {
+        [*] --> Polling
+        Polling --> FetchOrders : Every 5s
+        FetchOrders --> NewOrderPing : New Unaccepted Order
+        NewOrderPing --> AcceptOrder
+        NewOrderPing --> RejectOrder
+        NewOrderPing --> TimeoutOrder : No response in 30s
+        
+        AcceptOrder --> ActiveJob
+        ActiveJob --> TransitToRestaurant
+        TransitToRestaurant --> PickedUp
+        PickedUp --> TransitToCustomer
+        TransitToCustomer --> Delivered
+        Delivered --> Polling
+    }
+
+    Online --> Offline : Click "Go Offline" or Error

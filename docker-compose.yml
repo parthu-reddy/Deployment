@@ -368,6 +368,17 @@ services:
         condition: service_healthy
     restart: on-failure
 
+  food-delivery-app-ui:
+    build:
+      context: ../FoodDeliveryAppUI
+      dockerfile: Dockerfile
+    container_name: food-delivery-app-ui
+    ports:
+      - "80:80"
+    depends_on:
+      - api-gateway
+    restart: on-failure
+
 volumes:
   shared_pgdata:
   shared_redis_data:
