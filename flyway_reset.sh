@@ -56,14 +56,9 @@ for i in "${!DATABASES[@]}"; do
         "SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'flyway_schema_history');" 2>/dev/null || echo "false")
 
     if [ "$TABLE_EXISTS" = "t" ]; then
-        # Delete all rows from flyway_schema_history
+        # Drop flyway_schema_history completely
         psql -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$db" -c \
-            "DELETE FROM flyway_schema_history;" 2>/dev/null
-        
-        # Insert a baseline record so Flyway treats V1 as already applied
-        psql -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$db" -c \
-            "INSERT INTO flyway_schema_history (installed_rank, version, description, type, script, checksum, installed_by, execution_time, success)
-             VALUES (1, '1', '<< Flyway Baseline >>', 'BASELINE', '<< Flyway Baseline >>', NULL, '$PG_USER', 0, true);" 2>/dev/null
+            "DROP TABLE IF EXISTS flyway_schema_history CASCADE;" 2>/dev/null
         
         echo "  ✅ Cleared history and inserted baseline."
     else
