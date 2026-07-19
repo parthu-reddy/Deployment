@@ -17,11 +17,11 @@ sequenceDiagram
     participant PGI as Payment Gateway
     participant K_PE as Kafka (payment-events)
     participant K_OE as Kafka (order-events)
-    participant K_NE as Kafka (notification-events)
+    participant K_NE as Kafka (platform.notifications.dispatch)
     participant CS as CommunicationIntegration
     participant RA as Restaurant Application
     participant DEA as Delivery Exec App
-    participant K_LD as Kafka (logistics.dispatch)
+    participant K_LD as Kafka (platform.logistics.dispatch)
     participant Redis as Redis (ZSET & Geo)
     participant Maps as MapsIntegration
     participant Ledger as Accounting Ledger
@@ -55,7 +55,7 @@ sequenceDiagram
     CA->>DB: Transaction: Save Order (CREATED)
     CA-->>Customer: Return Order Summary & Payment Intent (Amount)
 
-    Customer->>PGI: POST /api/v1/payments/intent (Create Payment Intent)
+    Customer->>PGI: POST /api/v1/payments/create-order (Create Payment Intent)
     PGI->>DB: Save PaymentIntent (PENDING)
     PGI-->>Customer: Return Client Secret/Payment URL
     Customer->>PaymentGateway: Submit Payment Details (Stripe/Razorpay)
@@ -63,58 +63,58 @@ sequenceDiagram
 
     PaymentGateway->>PGI: POST /api/v1/webhooks/{gateway} (Payment Success)
     PGI->>DB: Transaction: Save Outbox PaymentCompletedEvent
-    Outbox->>K_PE: Publish PaymentCompletedEvent
+    Outbox->>K_PE: Publish PAYMENT_COMPLETED
     
-    CA->>K_PE: Consume PaymentCompletedEvent
+    CA->>K_PE: Consume PAYMENT_COMPLETED
     CA->>DB: Transaction: Update Order Status -> PAID & Save Outbox Events
     Outbox->>DB: Query UNPROCESSED Outbox Events
     Outbox->>K_NE: Publish NotificationRequestEvent (ORDER_PAID)
-    Outbox->>K_OE: Publish OrderPaidEvent (includes estimatedPrepTime, deliveryLat, deliveryLng)
-    CS->>K_NE: Consume Event
+    Outbox->>K_OE: Publish ORDER_PAID (includes estimatedPrepTime, deliveryLat, deliveryLng)
+    CS->>K_NE: Consume NotificationRequestEvent
     CS-->>Customer: Push Notification: Order Paid (via SES/Twilio)
     
     %% Scenario 2: Restaurant Acceptance and Delay Negotiation
     Note over Customer, Executive: SCENARIO: RESTAURANT ACCEPTANCE & DELAY NEGOTIATION
     
-    RA->>K_OE: Consume OrderPaidEvent
-    RA->>DB: Save RestaurantOrder (PENDING)
+    RA->>K_OE: Consume ORDER_PAID
+    RA->>DB: Save RestaurantOrder (CREATED)
     
     Restaurant Staff->>RA: POST /api/v1/restaurants/{restaurantId}/fulfillment/orders/{orderId}/accept
     
     alt Prep Time <= 10 mins extra (or null)
         RA->>RA: Update Order (ACCEPTED) & Start Preparation
-        RA->>K_OE: Publish OrderAcceptedEvent (includes deliveryLat, deliveryLng)
+        RA->>K_OE: Publish ORDER_ACCEPTED (includes deliveryLat, deliveryLng)
     else Prep Time > 10 mins extra
-        RA->>K_OE: Publish OrderDelayApprovalRequestedEvent
-        CA->>K_OE: Consume Event
+        RA->>K_OE: Publish ORDER_DELAY_APPROVAL_REQUESTED
+        CA->>K_OE: Consume ORDER_DELAY_APPROVAL_REQUESTED
         CA->>DB: Transaction: Update DB (AWAITING_DELAY_APPROVAL) & Save Outbox
         Outbox->>K_NE: Publish NotificationRequestEvent
-        CS->>K_NE: Consume Event
+        CS->>K_NE: Consume NotificationRequestEvent
         CS-->>Customer: Push Notification: Delay approval needed
         
         alt Customer Approves
             Customer->>CA: POST /api/v1/orders/{orderId}/delay-approval (true)
-            CA->>DB: Transaction: Save Outbox (OrderDelayApprovedEvent)
-            Outbox->>K_OE: Publish OrderDelayApprovedEvent
-            RA->>K_OE: Consume Approved Event
+            CA->>DB: Transaction: Save Outbox (ORDER_DELAY_APPROVED)
+            Outbox->>K_OE: Publish ORDER_DELAY_APPROVED
+            RA->>K_OE: Consume ORDER_DELAY_APPROVED
             RA->>RA: Accept Order & Start Preparation
-            RA->>K_OE: Publish OrderAcceptedEvent (includes deliveryLat, deliveryLng)
+            RA->>K_OE: Publish ORDER_ACCEPTED (includes deliveryLat, deliveryLng)
         else Customer Rejects
             Customer->>CA: POST /api/v1/orders/{orderId}/delay-approval (false)
             CA->>DB: Transaction: Update DB (CANCELLED) & Save Outbox
-            Outbox->>K_OE: Publish OrderDelayRejectedEvent
+            Outbox->>K_OE: Publish ORDER_DELAY_REJECTED
             Outbox->>K_NE: Publish NotificationRequestEvent
-            RA->>K_OE: Consume OrderDelayRejectedEvent (Stop Preparation)
-            DEA->>K_OE: Consume OrderDelayRejectedEvent (Abort Dispatch / Release Driver)
+            RA->>K_OE: Consume ORDER_DELAY_REJECTED (Stop Preparation)
+            DEA->>K_OE: Consume ORDER_DELAY_REJECTED (Abort Dispatch / Release Driver)
             CS-->>Customer: Push Notification: Order Cancelled & Refunded
             CA->>PGI: Initiate Refund (REST/API)
         else Customer ignores (10 min Timeout)
             CA->>CA: Scheduled Poller detects 10 min timeout
             CA->>DB: Transaction: Update DB (CANCELLED) & Save Outbox
-            Outbox->>K_OE: Publish OrderDelayRejectedEvent (Auto)
+            Outbox->>K_OE: Publish ORDER_DELAY_REJECTED (Auto)
             Outbox->>K_NE: Publish NotificationRequestEvent
-            RA->>K_OE: Consume OrderDelayRejectedEvent (Stop Preparation)
-            DEA->>K_OE: Consume OrderDelayRejectedEvent (Abort Dispatch / Release Driver)
+            RA->>K_OE: Consume ORDER_DELAY_REJECTED (Stop Preparation)
+            DEA->>K_OE: Consume ORDER_DELAY_REJECTED (Abort Dispatch / Release Driver)
             CS-->>Customer: Push Notification: Order Auto-cancelled
             CA->>PGI: Initiate Refund (REST/API)
         end
@@ -122,19 +122,19 @@ sequenceDiagram
     
     %% Scenario 2.5: Restaurant Cancels After Accept
     Note over Customer, Executive: SCENARIO: RESTAURANT CANCELS ORDER
-    RA->>K_OE: Publish OrderCancelledByRestaurantEvent
-    CA->>K_OE: Consume Event
+    RA->>K_OE: Publish ORDER_CANCELLED_BY_RESTAURANT
+    CA->>K_OE: Consume ORDER_CANCELLED_BY_RESTAURANT
     CA->>DB: Update DB (CANCELLED_BY_RESTAURANT) & Save Outbox Notification
     Outbox->>K_NE: Publish NotificationRequestEvent
     CS-->>Customer: Push Notification: Order Cancelled By Restaurant
     CA->>PGI: Initiate Refund (REST/API)
-    DEA->>K_OE: Consume Event
+    DEA->>K_OE: Consume ORDER_CANCELLED_BY_RESTAURANT
     DEA->>Redis: ZREM delayed_dispatch_queue (Abort phantom dispatch)
     
     %% Scenario 3: Delayed Delivery Dispatch (MapsIntegration & Fleet Tracking)
     Note over Customer, Executive: SCENARIO: DELAYED DELIVERY DISPATCH
     
-    DEA->>K_OE: Consume OrderAcceptedEvent (includes deliveryLat, deliveryLng)
+    DEA->>K_OE: Consume ORDER_ACCEPTED (includes deliveryLat, deliveryLng)
     DEA->>DEA: Calculate dispatchTime = (Now + PrepTime) - 15 mins
     DEA->>Redis: ZADD delayed_dispatch_queue dispatchTime orderId
     
@@ -189,15 +189,15 @@ sequenceDiagram
     CS-->>Customer: Push Notification: Food Ready
     
     Executive->>DEA: POST /api/delivery/drivers/{driverId}/orders/{orderId}/status (PICKED_UP)
-    DEA->>K_OE: Publish OrderPickedUpEvent
-    CA->>K_OE: Consume OrderPickedUpEvent
+    DEA->>K_OE: Publish ORDER_STATUS_UPDATED (PICKED_UP)
+    CA->>K_OE: Consume ORDER_STATUS_UPDATED (PICKED_UP)
     CA->>DB: Transaction: Update DB (OUT_FOR_DELIVERY) & Save Outbox
     Outbox->>K_NE: Publish NotificationRequestEvent
     CS-->>Customer: Push Notification: Order Picked Up
     
     Executive->>DEA: POST /api/delivery/drivers/{driverId}/orders/{orderId}/status (DELIVERED)
-    DEA->>K_OE: Publish OrderDeliveredEvent
-    CA->>K_OE: Consume OrderDeliveredEvent
+    DEA->>K_OE: Publish ORDER_DELIVERED
+    CA->>K_OE: Consume ORDER_DELIVERED
     CA->>DB: Transaction: Update DB (DELIVERED) & Save Outbox
     CA->>Ledger: DoubleEntryLedgerService: Split funds (Restaurant 80%, Driver Flat)
     Outbox->>K_NE: Publish NotificationRequestEvent
@@ -221,18 +221,18 @@ Finding the best driver requires matching real-world coordinates, which is handl
 
 ### 3. Kafka Topics & Events
 - `payment-events`:
-  - `PaymentCompletedEvent`: Signals successful payment from PaymentGatewayIntegration.
-  - `PaymentFailedEvent`: Signals a failed transaction (e.g., failed webhook from gateway). Refunds correctly handle API failures gracefully to avoid poison pill retries by transitioning the intent to `REFUND_FAILED`.
+  - `PAYMENT_COMPLETED`: Signals successful payment from PaymentGatewayIntegration.
+  - `PAYMENT_FAILED`: Signals a failed transaction (e.g., failed webhook from gateway). Refunds correctly handle API failures gracefully to avoid poison pill retries by transitioning the intent to `REFUND_FAILED`.
 - `order-events`:
-  - `OrderPaidEvent`: Triggers restaurant fulfillment logic and forwards `deliveryLat`/`deliveryLng`.
-  - `OrderAcceptedEvent`: Triggers the delivery dispatch timer, propagating delivery coordinates.
-  - `OrderDelayApprovalRequestedEvent` / `OrderDelayApprovedEvent` / `OrderDelayRejectedEvent`: Manages the dynamic prep time negotiation.
+  - `ORDER_PAID`: Triggers restaurant fulfillment logic and forwards `deliveryLat`/`deliveryLng`.
+  - `ORDER_ACCEPTED`: Triggers the delivery dispatch timer, propagating delivery coordinates.
+  - `ORDER_DELAY_APPROVAL_REQUESTED` / `ORDER_DELAY_APPROVED` / `ORDER_DELAY_REJECTED`: Manages the dynamic prep time negotiation.
   - `DRIVER_ASSIGNED`: Signals the order is successfully assigned.
   - `ORDER_DRIVER_REJECTED`: Signals the driver rejected the ping.
   - `DISPATCH_FAILED`: Signals no drivers are available (triggers refund).
-  - `OrderPickedUpEvent` / `OrderDeliveredEvent`: Routing terminal states.
-  - `OrderRejectedEvent` / `ORDER_CANCELLED_BY_RESTAURANT`: Published by `RestaurantApplication` if they cannot fulfill the order. Aborts pending dispatches in `DeliveryExecutiveApplication`.
-- `notification-events`:
+  - `ORDER_STATUS_UPDATED (PICKED_UP)` / `ORDER_DELIVERED`: Routing terminal states.
+  - `ORDER_REJECTED` / `ORDER_CANCELLED_BY_RESTAURANT`: Published by `RestaurantApplication` if they cannot fulfill the order. Aborts pending dispatches in `DeliveryExecutiveApplication`.
+- `platform.notifications.dispatch`:
   - `NotificationRequestEvent`: Polled from the Outbox and consumed by the `CommunicationIntegration` service to send Push/SMS/Email notifications to customers or drivers.
 - `platform.logistics.dispatch`:
   - Consumed by `MapsIntegration` to trigger the fleet assignment logic.
