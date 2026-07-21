@@ -4,8 +4,8 @@ import math
 
 base_lat = 12.990300
 base_lng = 77.670900
-customer_radius_km = 20.0
-rider_radius_km = 10.0
+customer_radius_km = 3.0
+rider_radius_km = 3.0
 
 def generate_random_point(lat, lng, radius_km):
     u = random.random()
@@ -80,7 +80,7 @@ with open("dummy_riders_customers_identity.sql", "w") as f:
 with open("dummy_riders.sql", "w") as f:
     f.write("BEGIN;\n\n")
     for r in riders:
-        f.write(f"INSERT INTO delivery_executives (id, phone_number, vehicle_number, status, full_name, email, last_known_location) VALUES ('{r['id']}', '{r['phone']}', '{r['vehicle']}', 'AVAILABLE', '{r['name']}', '{r['email']}', ST_SetSRID(ST_MakePoint({r['lng']}, {r['lat']}), 4326));\n")
+        f.write(f"INSERT INTO delivery_executives (id, phone_number, vehicle_number, status, full_name, email, last_known_location) VALUES ('{r['id']}', '{r['phone']}', '{r['vehicle']}', 'ONLINE', '{r['name']}', '{r['email']}', ST_SetSRID(ST_MakePoint({r['lng']}, {r['lat']}), 4326));\n")
     f.write("\nCOMMIT;\n")
 
 with open("dummy_customers.sql", "w") as f:

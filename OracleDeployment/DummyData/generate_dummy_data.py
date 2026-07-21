@@ -6,8 +6,8 @@ import datetime
 # Base coordinates
 base_lat = 12.990300
 base_lng = 77.670900
-radius_km = 10.0
-customer_radius_km = 20.0
+radius_km = 3.0
+customer_radius_km = 3.0
 
 def generate_random_point(lat, lng, radius_km):
     # 1 degree of lat is ~ 111 km
@@ -26,8 +26,10 @@ brands = []
 outlets = []
 categories = []
 menu_items = []
+category_timings_data = []
 brand_cat_timings = []
 outlet_cat_timings = []
+outlet_timings_data = []
 customers = []
 customer_addresses = []
 delivery_riders = []
@@ -56,6 +58,13 @@ for i, brand_name in enumerate(brand_names):
             'brand_id': brand_id,
             'name': f"{brand_name} Category {j}",
             'description': f"Delicious items for {brand_name} Category {j}"
+        })
+        
+        category_timings_data.append({
+            'id': str(uuid.uuid4()),
+            'category_id': cat_id,
+            'opening_time': '00:00:00',
+            'closing_time': '23:59:59'
         })
         
         # 5 menu items per category
@@ -97,6 +106,13 @@ for i, brand_name in enumerate(brand_names):
             'cuisine': cuisine_types[i],
             'rating': round(random.uniform(3.5, 5.0), 1),
             'reviews_count': random.randint(10, 500)
+        })
+        
+        outlet_timings_data.append({
+            'id': str(uuid.uuid4()),
+            'outlet_id': outlet_id,
+            'opening_time': '00:00:00',
+            'closing_time': '23:59:59'
         })
         
         # Randomly override category timings at outlet level
@@ -152,7 +168,7 @@ for i in range(1, 31):
         'id': rider_id,
         'phone_number': phone,
         'vehicle_number': f"KA01 {str(random.randint(1000, 9999))}",
-        'status': 'AVAILABLE',
+        'status': 'ONLINE',
         'lat': lat,
         'lng': lng,
         'email': f"rider{i}@example.com",
@@ -177,11 +193,17 @@ with open("dummy_data.sql", "w") as f:
     for m in menu_items:
         f.write(f"INSERT INTO master_menu_items (id, brand_id, category_id, name, description, base_price, default_prep_time_minutes) VALUES ('{m['id']}', '{m['brand_id']}', '{m['category_id']}', '{m['name']}', '{m['description']}', {m['base_price']}, {m['default_prep_time_minutes']});\n")
         
+    for ct in category_timings_data:
+        f.write(f"INSERT INTO category_timings (id, category_id, opening_time, closing_time) VALUES ('{ct['id']}', '{ct['category_id']}', '{ct['opening_time']}', '{ct['closing_time']}');\n")
+
     for bct in brand_cat_timings:
         f.write(f"INSERT INTO brand_category_timings (id, brand_id, category_id, opening_time, closing_time) VALUES ('{bct['id']}', '{bct['brand_id']}', '{bct['category_id']}', '{bct['opening_time']}', '{bct['closing_time']}');\n")
         
     for oct in outlet_cat_timings:
         f.write(f"INSERT INTO outlet_category_timings (id, outlet_id, category_id, opening_time, closing_time) VALUES ('{oct['id']}', '{oct['outlet_id']}', '{oct['category_id']}', '{oct['opening_time']}', '{oct['closing_time']}');\n")
+
+    for ot in outlet_timings_data:
+        f.write(f"INSERT INTO outlet_timings (id, outlet_id, opening_time, closing_time) VALUES ('{ot['id']}', '{ot['outlet_id']}', '{ot['opening_time']}', '{ot['closing_time']}');\n")
 
     f.write("\nCOMMIT;\n")
 
