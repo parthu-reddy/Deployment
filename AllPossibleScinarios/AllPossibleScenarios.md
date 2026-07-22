@@ -6,9 +6,10 @@ This document outlines all possible scenarios, state transitions, and edge cases
 
 ### 1.1 Pre-Checkout Validation (Synchronous Checks)
 Before an order is even persisted, the `CustomerOrderService` performs concurrent checks:
-1. **Restaurant Check**: Fails immediately if the restaurant is inactive or closed.
+1. **Restaurant Check**: Fails immediately (`IllegalArgumentException` mapped to 400 Bad Request) if the restaurant is inactive or closed.
 2. **Delivery Radius Check**: Fails if the distance (Haversine formula) between the restaurant and customer exceeds the maximum allowed radius.
 3. **Fleet Availability Check**: Fails immediately (`DeliveryPartnerUnavailableException`) if Maps Integration reports zero available drivers nearby, preventing unfulfillable orders.
+4. **Menu Item Availability Check**: Fails immediately (`MenuItemsUnavailableException`) if any requested menu items are unavailable or don't belong to the restaurant. The exception payload includes the unavailable item IDs so the UI can gracefully disable or remove them from the cart with a specific error message.
 
 ### 1.2 Standard End-to-End Success
 1. Customer places order (`CREATED`).

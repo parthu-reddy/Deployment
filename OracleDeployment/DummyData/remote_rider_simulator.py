@@ -1,52 +1,68 @@
 import subprocess
 import time
 import random
+import math
+import sys
 
 # Configuration
-SSH_KEY = "/Users/parthureddy/Documents/OracleSSH/ssh-key-2026-07-17.key"
-REMOTE_USER = "ubuntu"
-REMOTE_HOST = "140.245.225.221"
-COMPOSE_DIR = "Food Delivery.nosync/Deployment"
 DB_PASS = "***REMOVED***"
 
-def run_ssh_cmd(remote_cmd, input_data=None):
-    cmd = [
-        "ssh", "-o", "StrictHostKeyChecking=no", "-i", SSH_KEY,
-        f"{REMOTE_USER}@{REMOTE_HOST}",
-        remote_cmd
-    ]
-    if input_data:
-        subprocess.run(cmd, input=input_data.encode('utf-8'), check=True)
-        return ""
-    else:
-        output = subprocess.check_output(cmd).decode('utf-8')
-        return output
+# Coordinate Generation Configuration
+base_lat = 12.990300
+base_lng = 77.670900
+rider_radius_km = 3.0
+
+def generate_random_point(lat, lng, radius_km):
+    u = random.random()
+    v = random.random()
+    w = radius_km / 111.0
+    t = 2 * math.pi * v
+    x = w * math.sqrt(u) * math.cos(t)
+    y = w * math.sqrt(u) * math.sin(t)
+    new_lng = x / math.cos(math.radians(lat))
+    return lat + y, lng + new_lng
 
 def run_psql(query):
-    remote_cmd = f"cd '{COMPOSE_DIR}' && docker compose exec -T -e PGPASSWORD={DB_PASS} postgres psql -h 127.0.0.1 -U postgres -d delivery_db -t -c \"{query}\""
-    output = run_ssh_cmd(remote_cmd)
-    return [line.strip() for line in output.split('\n') if line.strip()]
+    cmd = f"docker compose exec -T -e PGPASSWORD={DB_PASS} postgres psql -h 127.0.0.1 -U postgres -d delivery_db -t -c \"{query}\""
+    try:
+        output = subprocess.check_output(cmd, shell=True).decode('utf-8')
+        return [line.strip() for line in output.split('\n') if line.strip()]
+    except subprocess.CalledProcessError as e:
+        print(f"Database query failed: {e}")
+        print("Make sure you are running this script in the directory containing docker-compose.yml")
+        sys.exit(1)
 
 def run_redis(commands):
-    remote_cmd = f"cd '{COMPOSE_DIR}' && docker compose exec -T redis redis-cli"
-    run_ssh_cmd(remote_cmd, input_data=commands)
+    cmd = "docker compose exec -T redis redis-cli"
+    try:
+        subprocess.run(cmd, input=commands.encode('utf-8'), shell=True, check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Redis command failed: {e}")
 
 def main():
-    print("Fetching all riders...")
+    print("Fetching all riders from DB...")
     rider_ids = run_psql("SELECT id FROM delivery_executives;")
-    print(f"Found {len(rider_ids)} riders. Starting simulation...")
+    if not rider_ids:
+        print("No riders found in the database. Exiting.")
+        sys.exit(0)
+        
+    print(f"Found {len(rider_ids)} riders. Generating static coordinates within {rider_radius_km}km radius...")
 
-    min_lat, max_lat = 12.85, 13.05
-    min_lng, max_lng = 77.55, 77.75
+    # Assign static coordinates to each rider
+    rider_locations = {}
+    for r_id in rider_ids:
+        lat, lng = generate_random_point(base_lat, base_lng, rider_radius_km)
+        rider_locations[r_id] = (lat, lng)
+
+    print("Starting periodic availability pings to Redis every 30 seconds. Press Ctrl+C to stop.")
 
     while True:
         timestamp_ms = int(time.time() * 1000)
         redis_cmds = []
         for r_id in rider_ids:
-            # We add a small random offset so they look like they are moving slightly
-            lat = random.uniform(min_lat, max_lat)
-            lng = random.uniform(min_lng, max_lng)
+            lat, lng = rider_locations[r_id]
             
+            # Update driver location, keep-alive ping, and available status
             redis_cmds.append(f"GEOADD drivers:geo:BLR {lng} {lat} {r_id}")
             redis_cmds.append(f"ZADD driver_last_ping {timestamp_ms} {r_id}")
             redis_cmds.append(f"SADD drivers:available:BLR {r_id}")
@@ -57,11 +73,11 @@ def main():
             # Set everyone back to ONLINE in DB just in case they went offline
             run_psql("UPDATE delivery_executives SET status = 'ONLINE' WHERE status = 'OFFLINE';")
             
-            # Send all commands to redis via SSH
+            # Send all commands to redis
             run_redis(commands_str)
-            print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Pushed locations & pings for {len(rider_ids)} riders to Redis.", flush=True)
+            print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Successfully pushed static locations & pings for {len(rider_ids)} riders to Redis.", flush=True)
         except Exception as e:
-            print(f"Error during update: {e}", flush=True)
+            print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Error during update: {e}", flush=True)
         
         time.sleep(30)
 
