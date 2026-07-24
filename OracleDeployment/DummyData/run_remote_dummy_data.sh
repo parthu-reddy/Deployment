@@ -26,19 +26,19 @@ run_sql() {
 
 echo "Starting remote dummy data insertion..."
 
-# 1. Identity DB
-run_sql "identity_db" "dummy_identity_data.sql"
+# 1. Identity DB (MUST BE FIRST)
 run_sql "identity_db" "dummy_riders_customers_identity.sql"
+run_sql "identity_db" "dummy_identity_data.sql"
 
-# 2. Restaurant DB
-run_sql "restaurant_db" "dummy_data.sql"
-
-# 3. Customer DB (Uses the food_delivery database)
+# 2. Customer DB (Uses the food_delivery database)
 run_sql "food_delivery" "dummy_customers.sql"
 run_sql "food_delivery" "dummy_customer_data.sql"
 
-# 4. Delivery DB
+# 3. Delivery DB
 run_sql "delivery_db" "dummy_riders.sql"
 run_sql "delivery_db" "dummy_delivery_data.sql"
+
+# 4. Restaurant DB
+run_sql "restaurant_db" "dummy_data.sql"
 
 echo "Dummy data successfully inserted into remote databases!"

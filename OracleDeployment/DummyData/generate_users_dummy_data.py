@@ -23,8 +23,8 @@ riders = []
 # Generate 30 riders
 for i in range(1, 31):
     rider_id = str(uuid.uuid4())
-    # Phone number 8000000001 to 8000000030
-    phone = f"800000{str(i).zfill(4)}"
+    # Phone number 5000000001 to 5000000030
+    phone = f"500000{str(i).zfill(4)}"
     lat, lng = generate_random_point(base_lat, base_lng, rider_radius_km)
     
     riders.append({
@@ -40,8 +40,8 @@ for i in range(1, 31):
 # Generate 500 customers
 for i in range(1, 501):
     customer_id = str(uuid.uuid4())
-    # Phone number 7000000001 to 7000000500
-    phone = f"700000{str(i).zfill(4)}"
+    # Phone number 6000000001 to 6000000500
+    phone = f"600000{str(i).zfill(4)}"
     
     addresses = []
     for j in range(2):
@@ -71,7 +71,7 @@ with open("dummy_riders_customers_identity.sql", "w") as f:
     f.write("BEGIN;\n\n")
     for r in riders:
         f.write(f"INSERT INTO users (id, phone_number, name, email) VALUES ('{r['id']}', '{r['phone']}', '{r['name']}', '{r['email']}');\n")
-        f.write(f"INSERT INTO user_roles (id, user_id, service_name, role_name) VALUES ('{str(uuid.uuid4())}', '{r['id']}', 'delivery-executive-service', 'DELIVERY_EXECUTIVE');\n")
+        f.write(f"INSERT INTO user_roles (id, user_id, service_name, role_name) VALUES ('{str(uuid.uuid4())}', '{r['id']}', 'delivery-service', 'DELIVERY');\n")
     for c in customers:
         f.write(f"INSERT INTO users (id, phone_number, name, email) VALUES ('{c['id']}', '{c['phone']}', '{c['name']}', '{c['email']}');\n")
         f.write(f"INSERT INTO user_roles (id, user_id, service_name, role_name) VALUES ('{str(uuid.uuid4())}', '{c['id']}', 'customer-service', 'CUSTOMER');\n")
@@ -80,7 +80,7 @@ with open("dummy_riders_customers_identity.sql", "w") as f:
 with open("dummy_riders.sql", "w") as f:
     f.write("BEGIN;\n\n")
     for r in riders:
-        f.write(f"INSERT INTO delivery_executives (id, phone_number, vehicle_number, status, full_name, email, last_known_location) VALUES ('{r['id']}', '{r['phone']}', '{r['vehicle']}', 'ONLINE', '{r['name']}', '{r['email']}', ST_SetSRID(ST_MakePoint({r['lng']}, {r['lat']}), 4326));\n")
+        f.write(f"INSERT INTO delivery_executives (id, phone_number, vehicle_number, status, full_name, email, last_known_location, photo_url) VALUES ('{r['id']}', '{r['phone']}', '{r['vehicle']}', 'ONLINE', '{r['name']}', '{r['email']}', ST_SetSRID(ST_MakePoint({r['lng']}, {r['lat']}), 4326), 'https://example.com/photo.jpg');\n")
     f.write("\nCOMMIT;\n")
 
 with open("dummy_customers.sql", "w") as f:

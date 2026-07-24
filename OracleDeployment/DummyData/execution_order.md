@@ -41,9 +41,11 @@ sleep 60
 echo "=========================================="
 echo "4. Generating fresh SQL dummy data..."
 echo "=========================================="
-# Run the python scripts to generate the SQL files
-python3 generate_dummy_data.py
+# Run the python scripts to generate the SQL files in the correct logical order
+# First, generate the core identities
 python3 generate_users_dummy_data.py
+# Then, generate the dummy data (restaurants, orders, addresses, etc.)
+python3 generate_dummy_data.py
 
 # Helper function to run a SQL file
 run_sql() {
@@ -66,19 +68,19 @@ echo "5. Inserting dummy data in strict order..."
 echo "=========================================="
 
 # 5.1 Identity DB (MUST BE FIRST)
-run_sql "identity_db" "dummy_identity_data.sql"
 run_sql "identity_db" "dummy_riders_customers_identity.sql"
+run_sql "identity_db" "dummy_identity_data.sql"
 
-# 5.2 Restaurant DB
-run_sql "restaurant_db" "dummy_data.sql"
-
-# 5.3 Customer DB (Uses the food_delivery database)
+# 5.2 Customer DB (Uses the food_delivery database)
 run_sql "food_delivery" "dummy_customers.sql"
 run_sql "food_delivery" "dummy_customer_data.sql"
 
-# 5.4 Delivery DB
+# 5.3 Delivery DB
 run_sql "delivery_db" "dummy_riders.sql"
 run_sql "delivery_db" "dummy_delivery_data.sql"
+
+# 5.4 Restaurant DB
+run_sql "restaurant_db" "dummy_data.sql"
 
 echo "=========================================="
 echo "Dummy data successfully initialized!"
@@ -91,24 +93,24 @@ echo "=========================================="
 If you are running the SQL files manually via `docker compose exec`, you **must** execute them in this exact order:
 
 1. **Identity Database (`identity_db`)**
-   The Identity Service database must be populated first so that the user IDs exist when the other databases try to reference them (as `owner_id`, `customer_id`, `user_id`, etc).
-   - `dummy_identity_data.sql`
-   - `dummy_riders_customers_identity.sql`
+   The Identity Service database must be populated first so that the user IDs exist when the other databases try to reference them.
+   - `dummy_riders_customers_identity.sql` (from identities creation)
+   - `dummy_identity_data.sql` (from dummy data creation)
 
-2. **Restaurant Database (`restaurant_db`)**
-   Populate the restaurants, outlets, and menu items. 
-   *(Requires `postgis` extension to be active).*
-   - `dummy_data.sql`
-
-3. **Customer Database (`food_delivery`)**
+2. **Customer Database (`food_delivery`)**
    Populate customer profiles and saved addresses.
-   - `dummy_customers.sql`
-   - `dummy_customer_data.sql`
+   - `dummy_customers.sql` (from identities creation)
+   - `dummy_customer_data.sql` (from dummy data creation)
 
-4. **Delivery Database (`delivery_db`)**
+3. **Delivery Database (`delivery_db`)**
    Populate delivery executive profiles and statuses.
-   - `dummy_riders.sql`
-   - `dummy_delivery_data.sql`
+   - `dummy_riders.sql` (from identities creation)
+   - `dummy_delivery_data.sql` (from dummy data creation)
+
+4. **Restaurant Database (`restaurant_db`)**
+   Populate the restaurants, outlets, and menu items.
+   *(Requires `postgis` extension to be active).*
+   - `dummy_data.sql` (from dummy data creation)
 
 5. **Redis Tracking & Status**
    Run `remote_rider_simulator.py` to continuously populate Redis with the driver locations and keep them online.

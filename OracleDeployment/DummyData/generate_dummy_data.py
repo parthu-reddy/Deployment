@@ -181,17 +181,17 @@ with open("dummy_data.sql", "w") as f:
     f.write("BEGIN;\n\n")
     
     for b in brands:
-        f.write(f"INSERT INTO brands (id, owner_id, name, created_at, updated_at) VALUES ('{b['id']}', '{b['owner_id']}', '{b['name']}', '{b['created_at']}', '{b['updated_at']}');\n")
+        f.write(f"INSERT INTO brands (id, owner_id, name, created_at, updated_at, logo_url) VALUES ('{b['id']}', '{b['owner_id']}', '{b['name']}', '{b['created_at']}', '{b['updated_at']}', 'https://example.com/logo.jpg');\n")
         
     for o in outlets:
         # Use ST_SetSRID(ST_Point(lng, lat), 4326)
-        f.write(f"INSERT INTO outlets (id, brand_id, name, location, cuisine, rating, reviews_count) VALUES ('{o['id']}', '{o['brand_id']}', '{o['name']}', ST_SetSRID(ST_Point({o['lng']}, {o['lat']}), 4326), '{o['cuisine']}', {o['rating']}, {o['reviews_count']});\n")
+        f.write(f"INSERT INTO outlets (id, brand_id, name, location, cuisine, rating, reviews_count, banner_url) VALUES ('{o['id']}', '{o['brand_id']}', '{o['name']}', ST_SetSRID(ST_Point({o['lng']}, {o['lat']}), 4326), '{o['cuisine']}', {o['rating']}, {o['reviews_count']}, 'https://example.com/banner.jpg');\n")
         
     for c in categories:
         f.write(f"INSERT INTO categories (id, brand_id, name, description) VALUES ('{c['id']}', '{c['brand_id']}', '{c['name']}', '{c['description']}');\n")
         
     for m in menu_items:
-        f.write(f"INSERT INTO master_menu_items (id, brand_id, category_id, name, description, base_price, default_prep_time_minutes) VALUES ('{m['id']}', '{m['brand_id']}', '{m['category_id']}', '{m['name']}', '{m['description']}', {m['base_price']}, {m['default_prep_time_minutes']});\n")
+        f.write(f"INSERT INTO master_menu_items (id, brand_id, category_id, name, description, base_price, default_prep_time_minutes, image_url) VALUES ('{m['id']}', '{m['brand_id']}', '{m['category_id']}', '{m['name']}', '{m['description']}', {m['base_price']}, {m['default_prep_time_minutes']}, 'https://example.com/item.jpg');\n")
         
     for ct in category_timings_data:
         f.write(f"INSERT INTO category_timings (id, category_id, opening_time, closing_time) VALUES ('{ct['id']}', '{ct['category_id']}', '{ct['opening_time']}', '{ct['closing_time']}');\n")
@@ -245,6 +245,7 @@ with open("dummy_customer_data.sql", "w") as f:
 with open("dummy_delivery_data.sql", "w") as f:
     f.write("BEGIN;\n\n")
     for r in delivery_riders:
-        f.write(f"INSERT INTO delivery_executives (id, phone_number, vehicle_number, status, last_known_location, email, full_name) VALUES ('{r['id']}', '{r['phone_number']}', '{r['vehicle_number']}', '{r['status']}', ST_SetSRID(ST_Point({r['lng']}, {r['lat']}), 4326), '{r['email']}', '{r['full_name']}');\n")
+        f.write(f"INSERT INTO delivery_executives (id, phone_number, vehicle_number, status, last_known_location, email, full_name, photo_url) VALUES ('{r['id']}', '{r['phone_number']}', '{r['vehicle_number']}', '{r['status']}', ST_SetSRID(ST_Point({r['lng']}, {r['lat']}), 4326), '{r['email']}', '{r['full_name']}', 'https://example.com/photo.jpg');\n")
     
     f.write("\nCOMMIT;\n")
+

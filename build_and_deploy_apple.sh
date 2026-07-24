@@ -122,7 +122,7 @@ fi
 
 # Bring down specific containers and bring them back up
 echo "Restarting containers: ${CONTAINERS[*]}"
-./apple-compose.sh up "${CONTAINERS[@]}"
+./apple-compose.sh up
 
 echo "======================================"
 echo " Deployment Complete!"

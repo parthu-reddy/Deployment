@@ -36,7 +36,7 @@ spring:
         - id: customer-service
           uri: lb://customer-service
           predicates:
-            - Path=/api/v1/customers/**, /api/v1/orders/**, /api/v1/places/**, /api/v1/restaurants/nearby, /api/v1/restaurants/*/delivery-availability, /api/v1/delivery/orders, /api/v1/delivery/orders/**, /api/v1/internal/admin/orders/**, /api/v1/internal/admin/customers/**
+            - Path=/api/v1/customers/**, /api/v1/orders/**, /api/v1/places/**, /api/v1/restaurants/nearby, /api/v1/restaurants/brands/*/outlets, /api/v1/restaurants/*/delivery-availability, /api/v1/delivery/orders, /api/v1/delivery/orders/**, /api/v1/internal/admin/orders/**, /api/v1/internal/admin/customers/**
         
         - id: restaurant-service
           uri: lb://restaurant-service

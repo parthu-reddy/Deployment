@@ -21,6 +21,8 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
   flyway:
     enabled: true
+    baseline-on-migrate: true
+    baseline-version: "0"
   data:
     redis:
       host: ${REDIS_HOST:localhost}
