@@ -41,7 +41,7 @@ spring:
         - id: restaurant-service
           uri: lb://restaurant-service
           predicates:
-            - Path=/api/v1/brands/**, /api/v1/restaurants/**, /api/v1/outlets/**, /api/v1/categories/**, /api/v1/internal/admin/restaurants/**
+            - Path=/api/v1/brands/**, /api/v1/restaurants/**, /api/v1/outlets/**, /api/v1/categories/**, /api/v1/internal/admin/restaurants/**, /api/v1/images/**
             
         - id: delivery-service
           uri: lb://delivery-service

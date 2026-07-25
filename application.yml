@@ -41,3 +41,10 @@ eureka:
     lease-renewal-interval-in-seconds: 15
     lease-expiration-duration-in-seconds: 30
     instance-id: ${spring.application.name}:${random.value}
+
+r2:
+  access-key: ${R2_ACCESS_KEY_ID:}
+  secret-key: ${R2_SECRET_ACCESS_KEY:}
+  endpoint: ${R2_ENDPOINT:}
+  bucket-name: ${R2_BUCKET_NAME:labouffe}
+  public-url: ${R2_PUBLIC_URL:https://80708a753745ca23eabc20b4b3dee5fa.r2.cloudflarestorage.com}
