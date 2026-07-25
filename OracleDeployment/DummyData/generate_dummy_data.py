@@ -17,8 +17,14 @@ IMAGE_URLS = [
     "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/Kurkure_Chaat_snacks_with_onions_202607250834.jpeg",
     "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/Lasagna_food_photography_bolognese_202607241754.jpeg",
     "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/Mutton_Kheema_Dosa_with_gravy_202607250833.jpeg",
-    "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/Triple_Schezwan_Veg_Rice_202607250834.jpeg"
+    "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/Triple_Schezwan_Veg_Rice_202607250834.jpeg",
+    None, None, None, None
 ]
+
+def get_image_sql_val():
+    url = random.choice(IMAGE_URLS)
+    return f"'{url}'" if url else "NULL"
+
 radius_km = 3.0
 customer_radius_km = 3.0
 
@@ -194,17 +200,17 @@ with open("dummy_data.sql", "w") as f:
     f.write("BEGIN;\n\n")
     
     for b in brands:
-        f.write(f"INSERT INTO brands (id, owner_id, name, created_at, updated_at, logo_url) VALUES ('{b['id']}', '{b['owner_id']}', '{b['name']}', '{b['created_at']}', '{b['updated_at']}', '{random.choice(IMAGE_URLS)}');\n")
+        f.write(f"INSERT INTO brands (id, owner_id, name, created_at, updated_at, logo_url) VALUES ('{b['id']}', '{b['owner_id']}', '{b['name']}', '{b['created_at']}', '{b['updated_at']}', {get_image_sql_val()});\n")
         
     for o in outlets:
         # Use ST_SetSRID(ST_Point(lng, lat), 4326)
-        f.write(f"INSERT INTO outlets (id, brand_id, name, location, cuisine, rating, reviews_count, banner_url) VALUES ('{o['id']}', '{o['brand_id']}', '{o['name']}', ST_SetSRID(ST_Point({o['lng']}, {o['lat']}), 4326), '{o['cuisine']}', {o['rating']}, {o['reviews_count']}, '{random.choice(IMAGE_URLS)}');\n")
+        f.write(f"INSERT INTO outlets (id, brand_id, name, location, cuisine, rating, reviews_count, banner_url) VALUES ('{o['id']}', '{o['brand_id']}', '{o['name']}', ST_SetSRID(ST_Point({o['lng']}, {o['lat']}), 4326), '{o['cuisine']}', {o['rating']}, {o['reviews_count']}, {get_image_sql_val()});\n")
         
     for c in categories:
         f.write(f"INSERT INTO categories (id, brand_id, name, description) VALUES ('{c['id']}', '{c['brand_id']}', '{c['name']}', '{c['description']}');\n")
         
     for m in menu_items:
-        f.write(f"INSERT INTO master_menu_items (id, brand_id, category_id, name, description, base_price, default_prep_time_minutes, image_url) VALUES ('{m['id']}', '{m['brand_id']}', '{m['category_id']}', '{m['name']}', '{m['description']}', {m['base_price']}, {m['default_prep_time_minutes']}, '{random.choice(IMAGE_URLS)}');\n")
+        f.write(f"INSERT INTO master_menu_items (id, brand_id, category_id, name, description, base_price, default_prep_time_minutes, image_url) VALUES ('{m['id']}', '{m['brand_id']}', '{m['category_id']}', '{m['name']}', '{m['description']}', {m['base_price']}, {m['default_prep_time_minutes']}, {get_image_sql_val()});\n")
         
     for ct in category_timings_data:
         f.write(f"INSERT INTO category_timings (id, category_id, opening_time, closing_time) VALUES ('{ct['id']}', '{ct['category_id']}', '{ct['opening_time']}', '{ct['closing_time']}');\n")
@@ -258,7 +264,7 @@ with open("dummy_customer_data.sql", "w") as f:
 with open("dummy_delivery_data.sql", "w") as f:
     f.write("BEGIN;\n\n")
     for r in delivery_riders:
-        f.write(f"INSERT INTO delivery_executives (id, phone_number, vehicle_number, status, last_known_location, email, full_name, photo_url) VALUES ('{r['id']}', '{r['phone_number']}', '{r['vehicle_number']}', '{r['status']}', ST_SetSRID(ST_Point({r['lng']}, {r['lat']}), 4326), '{r['email']}', '{r['full_name']}', '{random.choice(IMAGE_URLS)}');\n")
+        f.write(f"INSERT INTO delivery_executives (id, phone_number, vehicle_number, status, last_known_location, email, full_name, photo_url) VALUES ('{r['id']}', '{r['phone_number']}', '{r['vehicle_number']}', '{r['status']}', ST_SetSRID(ST_Point({r['lng']}, {r['lat']}), 4326), '{r['email']}', '{r['full_name']}', {get_image_sql_val()});\n")
     
     f.write("\nCOMMIT;\n")
 

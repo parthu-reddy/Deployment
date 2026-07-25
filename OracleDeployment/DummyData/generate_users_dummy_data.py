@@ -13,10 +13,15 @@ IMAGE_URLS = [
     "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/991da0faa53554ef91bfac714da24c29.avif",
     "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/Fried_Chicken_Bucket_spicy_202607250834.jpeg",
     "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/Kurkure_Chaat_snacks_with_onions_202607250834.jpeg",
-    "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/Lasagna_food_photography_bolognese_202607241754.jpeg",
     "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/Mutton_Kheema_Dosa_with_gravy_202607250833.jpeg",
-    "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/Triple_Schezwan_Veg_Rice_202607250834.jpeg"
+    "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/Triple_Schezwan_Veg_Rice_202607250834.jpeg",
+    None, None, None, None
 ]
+
+def get_image_sql_val():
+    url = random.choice(IMAGE_URLS)
+    return f"'{url}'" if url else "NULL"
+
 
 def generate_random_point(lat, lng, radius_km):
     u = random.random()
@@ -91,7 +96,7 @@ with open("dummy_riders_customers_identity.sql", "w") as f:
 with open("dummy_riders.sql", "w") as f:
     f.write("BEGIN;\n\n")
     for r in riders:
-        f.write(f"INSERT INTO delivery_executives (id, phone_number, vehicle_number, status, full_name, email, last_known_location, photo_url) VALUES ('{r['id']}', '{r['phone']}', '{r['vehicle']}', 'ONLINE', '{r['name']}', '{r['email']}', ST_SetSRID(ST_MakePoint({r['lng']}, {r['lat']}), 4326), '{random.choice(IMAGE_URLS)}');\n")
+        f.write(f"INSERT INTO delivery_executives (id, phone_number, vehicle_number, status, full_name, email, last_known_location, photo_url) VALUES ('{r['id']}', '{r['phone']}', '{r['vehicle']}', 'ONLINE', '{r['name']}', '{r['email']}', ST_SetSRID(ST_MakePoint({r['lng']}, {r['lat']}), 4326), {get_image_sql_val()});\n")
     f.write("\nCOMMIT;\n")
 
 with open("dummy_customers.sql", "w") as f:
