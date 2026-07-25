@@ -9,6 +9,19 @@ base_lng = 77.670900
 radius_km = 3.0
 customer_radius_km = 3.0
 
+IMAGE_URLS = [
+    "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/1eace54b-6c8b-4de4-9247-3e028bfad925_dadf2264-a4fb-4ef2-a24a-71a7d5cd526a.jpg",
+    "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/740a92bd202ffd40813bc354b86005db.avif",
+    "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/991da0faa53554ef91bfac714da24c29.avif",
+    "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/Fried_Chicken_Bucket_spicy_202607250834.jpeg",
+    "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/Kurkure_Chaat_snacks_with_onions_202607250834.jpeg",
+    "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/Lasagna_food_photography_bolognese_202607241754.jpeg",
+    "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/Mutton_Kheema_Dosa_with_gravy_202607250833.jpeg",
+    "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/Triple_Schezwan_Veg_Rice_202607250834.jpeg"
+]
+radius_km = 3.0
+customer_radius_km = 3.0
+
 def generate_random_point(lat, lng, radius_km):
     # 1 degree of lat is ~ 111 km
     # 1 degree of lng is ~ 111 km * cos(lat)
@@ -181,17 +194,17 @@ with open("dummy_data.sql", "w") as f:
     f.write("BEGIN;\n\n")
     
     for b in brands:
-        f.write(f"INSERT INTO brands (id, owner_id, name, created_at, updated_at, logo_url) VALUES ('{b['id']}', '{b['owner_id']}', '{b['name']}', '{b['created_at']}', '{b['updated_at']}', 'https://example.com/logo.jpg');\n")
+        f.write(f"INSERT INTO brands (id, owner_id, name, created_at, updated_at, logo_url) VALUES ('{b['id']}', '{b['owner_id']}', '{b['name']}', '{b['created_at']}', '{b['updated_at']}', '{random.choice(IMAGE_URLS)}');\n")
         
     for o in outlets:
         # Use ST_SetSRID(ST_Point(lng, lat), 4326)
-        f.write(f"INSERT INTO outlets (id, brand_id, name, location, cuisine, rating, reviews_count, banner_url) VALUES ('{o['id']}', '{o['brand_id']}', '{o['name']}', ST_SetSRID(ST_Point({o['lng']}, {o['lat']}), 4326), '{o['cuisine']}', {o['rating']}, {o['reviews_count']}, 'https://example.com/banner.jpg');\n")
+        f.write(f"INSERT INTO outlets (id, brand_id, name, location, cuisine, rating, reviews_count, banner_url) VALUES ('{o['id']}', '{o['brand_id']}', '{o['name']}', ST_SetSRID(ST_Point({o['lng']}, {o['lat']}), 4326), '{o['cuisine']}', {o['rating']}, {o['reviews_count']}, '{random.choice(IMAGE_URLS)}');\n")
         
     for c in categories:
         f.write(f"INSERT INTO categories (id, brand_id, name, description) VALUES ('{c['id']}', '{c['brand_id']}', '{c['name']}', '{c['description']}');\n")
         
     for m in menu_items:
-        f.write(f"INSERT INTO master_menu_items (id, brand_id, category_id, name, description, base_price, default_prep_time_minutes, image_url) VALUES ('{m['id']}', '{m['brand_id']}', '{m['category_id']}', '{m['name']}', '{m['description']}', {m['base_price']}, {m['default_prep_time_minutes']}, 'https://example.com/item.jpg');\n")
+        f.write(f"INSERT INTO master_menu_items (id, brand_id, category_id, name, description, base_price, default_prep_time_minutes, image_url) VALUES ('{m['id']}', '{m['brand_id']}', '{m['category_id']}', '{m['name']}', '{m['description']}', {m['base_price']}, {m['default_prep_time_minutes']}, '{random.choice(IMAGE_URLS)}');\n")
         
     for ct in category_timings_data:
         f.write(f"INSERT INTO category_timings (id, category_id, opening_time, closing_time) VALUES ('{ct['id']}', '{ct['category_id']}', '{ct['opening_time']}', '{ct['closing_time']}');\n")
@@ -245,7 +258,7 @@ with open("dummy_customer_data.sql", "w") as f:
 with open("dummy_delivery_data.sql", "w") as f:
     f.write("BEGIN;\n\n")
     for r in delivery_riders:
-        f.write(f"INSERT INTO delivery_executives (id, phone_number, vehicle_number, status, last_known_location, email, full_name, photo_url) VALUES ('{r['id']}', '{r['phone_number']}', '{r['vehicle_number']}', '{r['status']}', ST_SetSRID(ST_Point({r['lng']}, {r['lat']}), 4326), '{r['email']}', '{r['full_name']}', 'https://example.com/photo.jpg');\n")
+        f.write(f"INSERT INTO delivery_executives (id, phone_number, vehicle_number, status, last_known_location, email, full_name, photo_url) VALUES ('{r['id']}', '{r['phone_number']}', '{r['vehicle_number']}', '{r['status']}', ST_SetSRID(ST_Point({r['lng']}, {r['lat']}), 4326), '{r['email']}', '{r['full_name']}', '{random.choice(IMAGE_URLS)}');\n")
     
     f.write("\nCOMMIT;\n")
 

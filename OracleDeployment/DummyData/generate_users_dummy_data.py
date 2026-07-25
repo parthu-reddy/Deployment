@@ -7,6 +7,17 @@ base_lng = 77.670900
 customer_radius_km = 3.0
 rider_radius_km = 3.0
 
+IMAGE_URLS = [
+    "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/1eace54b-6c8b-4de4-9247-3e028bfad925_dadf2264-a4fb-4ef2-a24a-71a7d5cd526a.jpg",
+    "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/740a92bd202ffd40813bc354b86005db.avif",
+    "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/991da0faa53554ef91bfac714da24c29.avif",
+    "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/Fried_Chicken_Bucket_spicy_202607250834.jpeg",
+    "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/Kurkure_Chaat_snacks_with_onions_202607250834.jpeg",
+    "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/Lasagna_food_photography_bolognese_202607241754.jpeg",
+    "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/Mutton_Kheema_Dosa_with_gravy_202607250833.jpeg",
+    "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/Triple_Schezwan_Veg_Rice_202607250834.jpeg"
+]
+
 def generate_random_point(lat, lng, radius_km):
     u = random.random()
     v = random.random()
@@ -80,7 +91,7 @@ with open("dummy_riders_customers_identity.sql", "w") as f:
 with open("dummy_riders.sql", "w") as f:
     f.write("BEGIN;\n\n")
     for r in riders:
-        f.write(f"INSERT INTO delivery_executives (id, phone_number, vehicle_number, status, full_name, email, last_known_location, photo_url) VALUES ('{r['id']}', '{r['phone']}', '{r['vehicle']}', 'ONLINE', '{r['name']}', '{r['email']}', ST_SetSRID(ST_MakePoint({r['lng']}, {r['lat']}), 4326), 'https://example.com/photo.jpg');\n")
+        f.write(f"INSERT INTO delivery_executives (id, phone_number, vehicle_number, status, full_name, email, last_known_location, photo_url) VALUES ('{r['id']}', '{r['phone']}', '{r['vehicle']}', 'ONLINE', '{r['name']}', '{r['email']}', ST_SetSRID(ST_MakePoint({r['lng']}, {r['lat']}), 4326), '{random.choice(IMAGE_URLS)}');\n")
     f.write("\nCOMMIT;\n")
 
 with open("dummy_customers.sql", "w") as f:
