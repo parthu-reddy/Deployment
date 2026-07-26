@@ -75,8 +75,8 @@ for i, brand_name in enumerate(brand_names):
         categories.append({
             'id': cat_id,
             'brand_id': brand_id,
-            'name': f"{brand_name} Category {j}",
-            'description': f"Delicious items for {brand_name} Category {j}"
+            'name': "Food" if j == 1 else f"{brand_name} Category {j}",
+            'description': "General Food Items" if j == 1 else f"Delicious items for {brand_name} Category {j}"
         })
         
         category_timings_data.append({
@@ -207,7 +207,7 @@ with open("dummy_data.sql", "w") as f:
         f.write(f"INSERT INTO outlets (id, brand_id, name, location, cuisine, rating, reviews_count, banner_url) VALUES ('{o['id']}', '{o['brand_id']}', '{o['name']}', ST_SetSRID(ST_Point({o['lng']}, {o['lat']}), 4326), '{o['cuisine']}', {o['rating']}, {o['reviews_count']}, {get_image_sql_val()});\n")
         
     for c in categories:
-        f.write(f"INSERT INTO categories (id, brand_id, name, description) VALUES ('{c['id']}', '{c['brand_id']}', '{c['name']}', '{c['description']}');\n")
+        f.write(f"INSERT INTO categories (id, brand_id, name, description, active) VALUES ('{c['id']}', '{c['brand_id']}', '{c['name']}', '{c['description']}', true);\n")
         
     for m in menu_items:
         f.write(f"INSERT INTO master_menu_items (id, brand_id, category_id, name, description, base_price, default_prep_time_minutes, image_url) VALUES ('{m['id']}', '{m['brand_id']}', '{m['category_id']}', '{m['name']}', '{m['description']}', {m['base_price']}, {m['default_prep_time_minutes']}, {get_image_sql_val()});\n")
@@ -268,3 +268,13 @@ with open("dummy_delivery_data.sql", "w") as f:
     
     f.write("\nCOMMIT;\n")
 
+# Generate Brand verification status
+with open("dummy_government_id_brands.sql", "w") as f:
+    f.write("BEGIN;\n\n")
+    for b in brands:
+        f.write(f"INSERT INTO brand_documents (id, brand_id, doc_type, document_number, api_verification_status, verified_at) VALUES ('{str(uuid.uuid4())}', '{b['id']}', 'GSTIN', 'GSTIN{str(random.randint(100000000, 999999999))}', 'VERIFIED', CURRENT_TIMESTAMP);\n")
+        f.write(f"INSERT INTO brand_documents (id, brand_id, doc_type, document_number, api_verification_status, verified_at) VALUES ('{str(uuid.uuid4())}', '{b['id']}', 'PAN', 'PAN{str(random.randint(10000, 99999))}', 'VERIFIED', CURRENT_TIMESTAMP);\n")
+        f.write(f"INSERT INTO brand_documents (id, brand_id, doc_type, document_number, api_verification_status, verified_at) VALUES ('{str(uuid.uuid4())}', '{b['id']}', 'FSSAI', 'FSSAI{str(random.randint(100000, 999999))}', 'VERIFIED', CURRENT_TIMESTAMP);\n")
+    f.write("\nCOMMIT;\n")
+
+print("Files generated successfully.")

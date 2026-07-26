@@ -99,6 +99,13 @@ with open("dummy_riders.sql", "w") as f:
         f.write(f"INSERT INTO delivery_executives (id, phone_number, vehicle_number, status, full_name, email, last_known_location, photo_url) VALUES ('{r['id']}', '{r['phone']}', '{r['vehicle']}', 'ONLINE', '{r['name']}', '{r['email']}', ST_SetSRID(ST_MakePoint({r['lng']}, {r['lat']}), 4326), {get_image_sql_val()});\n")
     f.write("\nCOMMIT;\n")
 
+with open("dummy_government_id_executives.sql", "w") as f:
+    f.write("BEGIN;\n\n")
+    for r in riders:
+        f.write(f"INSERT INTO executive_documents (document_id, executive_id, doc_type, document_number, document_url, api_verification_status, created_at) VALUES ('{str(uuid.uuid4())}', '{r['id']}', 'AADHAAR', '123456789012', {get_image_sql_val()}, 'VERIFIED', CURRENT_TIMESTAMP);\n")
+        f.write(f"INSERT INTO executive_documents (document_id, executive_id, doc_type, document_number, document_url, api_verification_status, created_at) VALUES ('{str(uuid.uuid4())}', '{r['id']}', 'DRIVING_LICENSE', '{r['vehicle']}', {get_image_sql_val()}, 'VERIFIED', CURRENT_TIMESTAMP);\n")
+    f.write("\nCOMMIT;\n")
+
 with open("dummy_customers.sql", "w") as f:
     f.write("BEGIN;\n\n")
     for c in customers:

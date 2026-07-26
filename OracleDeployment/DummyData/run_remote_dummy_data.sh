@@ -41,4 +41,8 @@ run_sql "delivery_db" "dummy_delivery_data.sql"
 # 4. Restaurant DB
 run_sql "restaurant_db" "dummy_data.sql"
 
+# 5. Government ID DB
+run_sql "government_id_db" "dummy_government_id_brands.sql"
+run_sql "government_id_db" "dummy_government_id_executives.sql"
+
 echo "Dummy data successfully inserted into remote databases!"

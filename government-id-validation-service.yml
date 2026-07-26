@@ -1,0 +1,44 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://postgres:5432/government_id_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:password}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+  kafka:
+    bootstrap-servers: kafka:29092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+  cloud:
+    openfeign:
+      circuitbreaker:
+        enabled: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: 6379
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: ${EUREKA_URLS}
+
+logging:
+  level:
+    root: INFO
+    com.fooddelivery.governmentid: DEBUG
+
+cloud:
+  aws:
+    s3:
+      bucket: ${R2_BUCKET_NAME}
+      endpoint: ${R2_ENDPOINT}
+    region:
+      static: auto
+    credentials:
+      access-key: ${R2_ACCESS_KEY_ID}
+      secret-key: ${R2_SECRET_ACCESS_KEY}

@@ -1,5 +1,4 @@
 version: '3.8'
-
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
@@ -8,16 +7,15 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     ports:
-      - "2181:2181"
+    - 2181:2181
     restart: unless-stopped
-
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     container_name: shared_kafka
     depends_on:
-      - zookeeper
+    - zookeeper
     ports:
-      - "9092:9092"
+    - 9092:9092
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -27,46 +25,62 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     healthcheck:
-      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      test:
+      - CMD
+      - kafka-broker-api-versions
+      - --bootstrap-server
+      - localhost:9092
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 120s
     restart: unless-stopped
-
   postgres:
-    # PostGIS image which natively supports Apple Silicon ARM64 and includes GIS extensions (for Maps/Logistics)
     image: kartoza/postgis:16-3.4
     container_name: shared_postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASS: ${POSTGRES_PASS}
     ports:
-      - "5432:5432"
+    - 5432:5432
     volumes:
-      - shared_pgdata:/var/lib/postgresql/data
-      - ./init-multiple-dbs.sql:/docker-entrypoint-initdb.d/init-multiple-dbs.sql
+    - shared_pgdata:/var/lib/postgresql/data
+    - ./init-multiple-dbs.sql:/docker-entrypoint-initdb.d/init-multiple-dbs.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h localhost -U postgres"]
+      test:
+      - CMD-SHELL
+      - pg_isready -h localhost -U postgres
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 120s
     restart: unless-stopped
-
   redis:
     image: redis:7.2
     container_name: shared_redis
     ports:
-      - "6379:6379"
+    - 6379:6379
     volumes:
-      - shared_redis_data:/data
+    - shared_redis_data:/data
     restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1", "--loglevel", "warning"]
+    command:
+    - redis-server
+    - --appendonly
+    - 'yes'
+    - --save
+    - '60'
+    - '1'
+    - --loglevel
+    - warning
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test:
+      - CMD
+      - redis-cli
+      - ping
       interval: 5s
       timeout: 5s
-      retries: 5
-
+      retries: 10
+      start_period: 120s
   config-service:
     build:
       context: ../
@@ -74,83 +88,97 @@ services:
     container_name: config-service
     user: root
     ports:
-      - "8888:8888"
+    - 8888:8888
     volumes:
-      - ./:/config
+    - ./:/config
     environment:
-      - SPRING_PROFILES_ACTIVE=native
-      - SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=file:/config
-      - SPRING_CONFIG_IMPORT=optional:file:/config/config-service.yml
-      - CONFIG_USER=${CONFIG_USER}
-      - CONFIG_PASSWORD=${CONFIG_PASSWORD}
-      - EUREKA_CLIENT_ENABLED=false
+    - SPRING_PROFILES_ACTIVE=native
+    - SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=file:/config
+    - SPRING_CONFIG_IMPORT=optional:file:/config/config-service.yml
+    - CONFIG_USER=${CONFIG_USER}
+    - CONFIG_PASSWORD=${CONFIG_PASSWORD}
+    - EUREKA_CLIENT_ENABLED=false
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider --user=$${CONFIG_USER} --password=$${CONFIG_PASSWORD} http://localhost:8888/actuator/health || exit 1"]
+      test:
+      - CMD-SHELL
+      - wget --spider --user=$${CONFIG_USER} --password=$${CONFIG_PASSWORD} http://localhost:8888/actuator/health
+        || exit 1
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 120s
     restart: unless-stopped
-
   eureka-server-1:
     build:
       context: ../
       dockerfile: EurekaServer/Dockerfile
     container_name: eureka-server-1
     ports:
-      - "8761:8761"
+    - 8761:8761
     environment:
-      - EUREKA_USER=${EUREKA_USER:-admin}
-      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
-      - EUREKA_HOSTNAME=eureka-server-1
-      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
-      - EUREKA_CLIENT_FETCH_REGISTRY=true
-      - EUREKA_DEFAULT_ZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+    - EUREKA_USER=${EUREKA_USER:-admin}
+    - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
+    - EUREKA_HOSTNAME=eureka-server-1
+    - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
+    - EUREKA_CLIENT_FETCH_REGISTRY=true
+    - EUREKA_DEFAULT_ZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider --user=$${EUREKA_USER:-admin} --password=$${EUREKA_PASSWORD:-admin} http://localhost:8761/actuator/health || exit 1"]
+      test:
+      - CMD-SHELL
+      - wget --spider --user=$${EUREKA_USER:-admin} --password=$${EUREKA_PASSWORD:-admin}
+        http://localhost:8761/actuator/health || exit 1
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 120s
     restart: unless-stopped
-
   eureka-server-2:
     build:
       context: ../
       dockerfile: EurekaServer/Dockerfile
     container_name: eureka-server-2
     ports:
-      - "8762:8761"
+    - 8762:8761
     environment:
-      - EUREKA_USER=${EUREKA_USER:-admin}
-      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
-      - EUREKA_HOSTNAME=eureka-server-2
-      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
-      - EUREKA_CLIENT_FETCH_REGISTRY=true
-      - EUREKA_DEFAULT_ZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/
+    - EUREKA_USER=${EUREKA_USER:-admin}
+    - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
+    - EUREKA_HOSTNAME=eureka-server-2
+    - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
+    - EUREKA_CLIENT_FETCH_REGISTRY=true
+    - EUREKA_DEFAULT_ZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider --user=$${EUREKA_USER:-admin} --password=$${EUREKA_PASSWORD:-admin} http://localhost:8761/actuator/health || exit 1"]
+      test:
+      - CMD-SHELL
+      - wget --spider --user=$${EUREKA_USER:-admin} --password=$${EUREKA_PASSWORD:-admin}
+        http://localhost:8761/actuator/health || exit 1
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 120s
     restart: unless-stopped
-
   customer-service:
     build:
       context: ../
       dockerfile: CustomerApplication/Dockerfile
     container_name: customer-service
     ports:
-      - "8092:8092"
+    - 8092:8092
     environment:
-      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
-      - DB_URL=jdbc:postgresql://postgres:5432/food_delivery
-      - DB_USERNAME=${POSTGRES_USER}
-      - DB_PASSWORD=${POSTGRES_PASS}
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
-      - REDIS_HOST=redis
-      - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
-      - EUREKA_USER=${EUREKA_USER:-admin}
-      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
+    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
+    - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
+    - DB_URL=jdbc:postgresql://postgres:5432/food_delivery
+    - DB_USERNAME=${POSTGRES_USER}
+    - DB_PASSWORD=${POSTGRES_PASS}
+    - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    - REDIS_HOST=redis
+    - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+    - EUREKA_USER=${EUREKA_USER:-admin}
+    - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
+    - R2_BUCKET_NAME=${R2_BUCKET_NAME}
+    - R2_ENDPOINT=${R2_ENDPOINT}
+    - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
+    - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
+    - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     depends_on:
       config-service:
         condition: service_healthy
@@ -163,26 +191,30 @@ services:
       redis:
         condition: service_healthy
     restart: on-failure
-
   restaurant-service:
     build:
       context: ../
       dockerfile: RestaurantApplication/Dockerfile
     container_name: restaurant-service
     ports:
-      - "8094:8094"
+    - 8094:8094
     environment:
-      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
-      - DB_URL=jdbc:postgresql://postgres:5432/restaurant_db
-      - DB_USERNAME=${POSTGRES_USER}
-      - DB_PASSWORD=${POSTGRES_PASS}
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
-      - REDIS_HOST=redis
-      - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
-      - EUREKA_USER=${EUREKA_USER:-admin}
-      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
-      - KYB_FSSAI_API_URL=http://api-gateway:8080/mock/fssai
+    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
+    - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
+    - DB_URL=jdbc:postgresql://postgres:5432/restaurant_db
+    - DB_USERNAME=${POSTGRES_USER}
+    - DB_PASSWORD=${POSTGRES_PASS}
+    - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    - REDIS_HOST=redis
+    - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+    - EUREKA_USER=${EUREKA_USER:-admin}
+    - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
+    - KYB_FSSAI_API_URL=http://api-gateway:8080/mock/fssai
+    - R2_BUCKET_NAME=${R2_BUCKET_NAME}
+    - R2_ENDPOINT=${R2_ENDPOINT}
+    - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
+    - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
+    - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     depends_on:
       config-service:
         condition: service_healthy
@@ -195,25 +227,29 @@ services:
       redis:
         condition: service_healthy
     restart: on-failure
-
   delivery-service:
     build:
       context: ../
       dockerfile: DeliveryExecutiveApplication/Dockerfile
     container_name: delivery-service
     ports:
-      - "8095:8095"
+    - 8095:8095
     environment:
-      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
-      - DB_URL=jdbc:postgresql://postgres:5432/delivery_db
-      - DB_USERNAME=${POSTGRES_USER}
-      - DB_PASSWORD=${POSTGRES_PASS}
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
-      - REDIS_HOST=redis
-      - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
-      - EUREKA_USER=${EUREKA_USER:-admin}
-      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
+    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
+    - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
+    - DB_URL=jdbc:postgresql://postgres:5432/delivery_db
+    - DB_USERNAME=${POSTGRES_USER}
+    - DB_PASSWORD=${POSTGRES_PASS}
+    - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    - REDIS_HOST=redis
+    - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+    - EUREKA_USER=${EUREKA_USER:-admin}
+    - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
+    - R2_BUCKET_NAME=${R2_BUCKET_NAME}
+    - R2_ENDPOINT=${R2_ENDPOINT}
+    - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
+    - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
+    - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     depends_on:
       config-service:
         condition: service_healthy
@@ -226,26 +262,30 @@ services:
       redis:
         condition: service_healthy
     restart: on-failure
-
   payment-gateway:
     build:
       context: ../
       dockerfile: PaymentGatewayIntegration/Dockerfile
     container_name: payment-gateway
     ports:
-      - "8085:8085"
+    - 8085:8085
     environment:
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
-      - PORT=8085
-      - DB_URL=jdbc:postgresql://postgres:5432/payment_db
-      - DB_USERNAME=${POSTGRES_USER}
-      - DB_PASSWORD=${POSTGRES_PASS}
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
-      - REDIS_HOST=redis
-      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default},debug
-      - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
-      - EUREKA_USER=${EUREKA_USER:-admin}
-      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
+    - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
+    - PORT=8085
+    - DB_URL=jdbc:postgresql://postgres:5432/payment_db
+    - DB_USERNAME=${POSTGRES_USER}
+    - DB_PASSWORD=${POSTGRES_PASS}
+    - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    - REDIS_HOST=redis
+    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default},debug
+    - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+    - EUREKA_USER=${EUREKA_USER:-admin}
+    - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
+    - R2_BUCKET_NAME=${R2_BUCKET_NAME}
+    - R2_ENDPOINT=${R2_ENDPOINT}
+    - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
+    - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
+    - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     depends_on:
       config-service:
         condition: service_healthy
@@ -258,22 +298,26 @@ services:
       redis:
         condition: service_healthy
     restart: on-failure
-
   maps-integration:
     build:
       context: ../
       dockerfile: MapsIntegration/Dockerfile
     container_name: maps-integration
     ports:
-      - "8083:8083"
+    - 8083:8083
     environment:
-      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
-      - REDIS_HOST=redis
-      - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
-      - EUREKA_USER=${EUREKA_USER:-admin}
-      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
+    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
+    - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
+    - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    - REDIS_HOST=redis
+    - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+    - EUREKA_USER=${EUREKA_USER:-admin}
+    - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
+    - R2_BUCKET_NAME=${R2_BUCKET_NAME}
+    - R2_ENDPOINT=${R2_ENDPOINT}
+    - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
+    - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
+    - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     depends_on:
       config-service:
         condition: service_healthy
@@ -284,28 +328,32 @@ services:
       redis:
         condition: service_healthy
     restart: on-failure
-
   communication-integration:
     build:
       context: ../
       dockerfile: CommunicationIntegration/Dockerfile
     container_name: communication-integration
     ports:
-      - "8081:8081"
+    - 8081:8081
     environment:
-      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=notification_db
-      - DB_USER=${POSTGRES_USER}
-      - DB_PASSWORD=${POSTGRES_PASS}
-      - KAFKA_BROKERS=kafka:29092
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
-      - EUREKA_USER=${EUREKA_USER:-admin}
-      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
+    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
+    - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
+    - DB_HOST=postgres
+    - DB_PORT=5432
+    - DB_NAME=notification_db
+    - DB_USER=${POSTGRES_USER}
+    - DB_PASSWORD=${POSTGRES_PASS}
+    - KAFKA_BROKERS=kafka:29092
+    - REDIS_HOST=redis
+    - REDIS_PORT=6379
+    - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+    - EUREKA_USER=${EUREKA_USER:-admin}
+    - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
+    - R2_BUCKET_NAME=${R2_BUCKET_NAME}
+    - R2_ENDPOINT=${R2_ENDPOINT}
+    - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
+    - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
+    - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     depends_on:
       config-service:
         condition: service_healthy
@@ -318,7 +366,6 @@ services:
       redis:
         condition: service_healthy
     restart: on-failure
-
   api-gateway:
     build:
       context: ../
@@ -326,17 +373,22 @@ services:
     container_name: api-gateway
     user: root
     ports:
-      - "8080:8080"
+    - 8080:8080
     volumes:
-      - ./certs:/certs
+    - ./certs:/certs
     environment:
-      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
-      - JWT_PUBLIC_KEY_PATH=file:/certs/public.pem
-      - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
-      - EUREKA_USER=${EUREKA_USER:-admin}
-      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
-      - REDIS_HOST=redis
+    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
+    - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
+    - JWT_PUBLIC_KEY_PATH=file:/certs/public.pem
+    - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+    - EUREKA_USER=${EUREKA_USER:-admin}
+    - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
+    - R2_BUCKET_NAME=${R2_BUCKET_NAME}
+    - R2_ENDPOINT=${R2_ENDPOINT}
+    - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
+    - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
+    - REDIS_HOST=redis
+    - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     depends_on:
       config-service:
         condition: service_healthy
@@ -345,7 +397,6 @@ services:
       redis:
         condition: service_healthy
     restart: on-failure
-
   identity-service:
     build:
       context: ../
@@ -353,21 +404,26 @@ services:
     container_name: identity-service
     user: root
     ports:
-      - "8086:8086"
+    - 8086:8086
     volumes:
-      - ./certs:/certs
+    - ./certs:/certs
     environment:
-      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
-      - JWT_PRIVATE_KEY_PATH=file:/certs/private.pem
-      - DB_URL=jdbc:postgresql://postgres:5432/identity_db
-      - DB_USERNAME=${POSTGRES_USER}
-      - DB_PASSWORD=${POSTGRES_PASS}
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
-      - REDIS_HOST=redis
-      - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
-      - EUREKA_USER=${EUREKA_USER:-admin}
-      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
+    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
+    - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
+    - JWT_PRIVATE_KEY_PATH=file:/certs/private.pem
+    - DB_URL=jdbc:postgresql://postgres:5432/identity_db
+    - DB_USERNAME=${POSTGRES_USER}
+    - DB_PASSWORD=${POSTGRES_PASS}
+    - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    - REDIS_HOST=redis
+    - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+    - EUREKA_USER=${EUREKA_USER:-admin}
+    - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
+    - R2_BUCKET_NAME=${R2_BUCKET_NAME}
+    - R2_ENDPOINT=${R2_ENDPOINT}
+    - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
+    - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
+    - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     depends_on:
       config-service:
         condition: service_healthy
@@ -380,18 +436,49 @@ services:
       redis:
         condition: service_healthy
     restart: on-failure
-
+  government-id-service:
+    build:
+      context: ../
+      dockerfile: GovernmentIDValidationService/Dockerfile
+    container_name: government-id-service
+    ports:
+    - 8087:8087
+    environment:
+    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
+    - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
+    - DB_URL=jdbc:postgresql://postgres:5432/government_id_db
+    - DB_USERNAME=${POSTGRES_USER}
+    - DB_PASSWORD=${POSTGRES_PASS}
+    - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    - REDIS_HOST=redis
+    - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+    - EUREKA_USER=${EUREKA_USER:-admin}
+    - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
+    - R2_BUCKET_NAME=${R2_BUCKET_NAME}
+    - R2_ENDPOINT=${R2_ENDPOINT}
+    - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
+    - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
+    - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
+    depends_on:
+      config-service:
+        condition: service_healthy
+      eureka-server-1:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    restart: on-failure
   food-delivery-app-ui:
     build:
       context: ../FoodDeliveryAppUI
       dockerfile: Dockerfile
     container_name: food-delivery-app-ui
     ports:
-      - "80:80"
+    - 80:80
     depends_on:
-      - api-gateway
+    - api-gateway
     restart: on-failure
-
 volumes:
-  shared_pgdata:
-  shared_redis_data:
+  shared_pgdata: null
+  shared_redis_data: null
