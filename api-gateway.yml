@@ -72,6 +72,11 @@ spring:
           uri: lb://notification-service
           predicates:
             - Path=/webhooks/providers/**, /api/v1/notifications/**
+            
+        - id: government-id-service
+          uri: lb://government-id-validation-service
+          predicates:
+            - Path=/api/v1/verification/**
 
 eureka:
   client:
@@ -94,6 +99,7 @@ rbac:
     authenticated:
       - /api/v1/users
       - /api/v1/internal/auth/sessions
+      - /api/v1/verification
     customer:
       - /api/v1/customers
       - /api/v1/orders
