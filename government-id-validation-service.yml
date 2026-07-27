@@ -24,8 +24,12 @@ spring:
 
 eureka:
   client:
+    register-with-eureka: true
+    fetch-registry: true
     serviceUrl:
       defaultZone: ${EUREKA_URLS}
+  instance:
+    prefer-ip-address: true
 
 logging:
   level:
