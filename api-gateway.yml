@@ -99,6 +99,7 @@ rbac:
     authenticated:
       - /api/v1/users
       - /api/v1/internal/auth/sessions
+      - /api/v1/internal/auth/logout
       - /api/v1/verification
     customer:
       - /api/v1/customers
