@@ -261,10 +261,12 @@ with open("dummy_customer_data.sql", "w") as f:
     f.write("\nCOMMIT;\n")
 
 # Write SQL for Delivery DB
+VEHICLE_TYPES_B2 = ['MCWG', 'EV_TWO_WHEELER', 'LMV', 'BICYCLE']
 with open("dummy_delivery_data.sql", "w") as f:
     f.write("BEGIN;\n\n")
-    for r in delivery_riders:
-        f.write(f"INSERT INTO delivery_executives (id, phone_number, vehicle_number, status, last_known_location, email, full_name, photo_url) VALUES ('{r['id']}', '{r['phone_number']}', '{r['vehicle_number']}', '{r['status']}', ST_SetSRID(ST_Point({r['lng']}, {r['lat']}), 4326), '{r['email']}', '{r['full_name']}', {get_image_sql_val()});\n")
+    for i, r in enumerate(delivery_riders):
+        vtype = VEHICLE_TYPES_B2[i % len(VEHICLE_TYPES_B2)]
+        f.write(f"INSERT INTO delivery_executives (id, phone_number, vehicle_number, status, last_known_location, email, full_name, photo_url, verification_status, vehicle_type, is_active, last_biometric_verification_at) VALUES ('{r['id']}', '{r['phone_number']}', '{r['vehicle_number']}', '{r['status']}', ST_SetSRID(ST_Point({r['lng']}, {r['lat']}), 4326), '{r['email']}', '{r['full_name']}', {get_image_sql_val()}, 'APPROVED', '{vtype}', TRUE, CURRENT_TIMESTAMP);\n")
     
     f.write("\nCOMMIT;\n")
 
