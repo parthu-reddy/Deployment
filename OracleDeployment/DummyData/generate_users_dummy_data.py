@@ -109,11 +109,11 @@ with open("dummy_government_id_executives.sql", "w") as f:
         vtype = VEHICLE_TYPES[i % len(VEHICLE_TYPES)]
         dl_class = 'MCWG' if vtype in ('MCWG', 'EV_TWO_WHEELER') else ('LMV' if vtype == 'LMV' else 'MCWG')
         # Aadhaar
-        f.write(f"INSERT INTO executive_documents (document_id, executive_id, doc_type, document_number, document_url, api_verification_status, created_at) VALUES ('{str(uuid.uuid4())}', '{r['id']}', 'AADHAAR', '123456789012', {get_image_sql_val()}, 'VERIFIED', CURRENT_TIMESTAMP);\n")
+        f.write(f"INSERT INTO executive_documents (document_id, executive_id, doc_type, document_number, document_url, api_verification_status, created_at) VALUES ('{str(uuid.uuid4())}', '{r['id']}', 'AADHAAR', '123456789012', {get_image_sql_val()}, 'APPROVED', CURRENT_TIMESTAMP);\n")
         # Driving License with correct vehicle class stored in api_raw_response
-        f.write(f"INSERT INTO executive_documents (document_id, executive_id, doc_type, document_number, document_url, api_verification_status, api_raw_response, created_at) VALUES ('{str(uuid.uuid4())}', '{r['id']}', 'DRIVING_LICENSE', 'DL-{r['phone'][-4:]}', {get_image_sql_val()}, 'VERIFIED', '{{\"vehicleClass\": \"{dl_class}\"}}', CURRENT_TIMESTAMP);\n")
+        f.write(f"INSERT INTO executive_documents (document_id, executive_id, doc_type, document_number, document_url, api_verification_status, api_raw_response, created_at) VALUES ('{str(uuid.uuid4())}', '{r['id']}', 'DRIVING_LICENSE', 'DL-{r['phone'][-4:]}', {get_image_sql_val()}, 'APPROVED', '{{\"vehicleClass\": \"{dl_class}\"}}', CURRENT_TIMESTAMP);\n")
         # Vehicle RC
-        f.write(f"INSERT INTO executive_documents (document_id, executive_id, doc_type, document_number, document_url, api_verification_status, created_at) VALUES ('{str(uuid.uuid4())}', '{r['id']}', 'RC', '{r['vehicle']}', {get_image_sql_val()}, 'VERIFIED', CURRENT_TIMESTAMP);\n")
+        f.write(f"INSERT INTO executive_documents (document_id, executive_id, doc_type, document_number, document_url, api_verification_status, created_at) VALUES ('{str(uuid.uuid4())}', '{r['id']}', 'RC', '{r['vehicle']}', {get_image_sql_val()}, 'APPROVED', CURRENT_TIMESTAMP);\n")
         # Bank Details
         acct_num = f"1234567890{str(i+1).zfill(2)}"
         ifsc = IFSC_CODES[i % len(IFSC_CODES)]

@@ -150,8 +150,8 @@ for i, brand_name in enumerate(brand_names):
 # Generate 500 Customers
 for i in range(1, 501):
     customer_id = str(uuid.uuid4())
-    # Phone numbers 8000000001 ...
-    phone = f"8000{str(i).zfill(6)}"
+    # Phone numbers 6000000001 ...
+    phone = f"6000{str(i).zfill(6)}"
     customers.append({
         'id': customer_id,
         'phone_number': phone,
@@ -180,8 +180,8 @@ for i in range(1, 501):
 # Generate 30 Delivery Riders
 for i in range(1, 31):
     rider_id = str(uuid.uuid4())
-    # Phone numbers 7000000001 ...
-    phone = f"7000{str(i).zfill(6)}"
+    # Phone numbers 5000000001 ...
+    phone = f"5000{str(i).zfill(6)}"
     lat, lng = generate_random_point(base_lat, base_lng, radius_km)
     delivery_riders.append({
         'id': rider_id,
