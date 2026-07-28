@@ -163,3 +163,24 @@ Make it executable: `chmod +x deploy_{ServiceName}.sh`.
 
 ## Step 7: Complete Re-deployment
 If you are deploying this for the very first time on a fresh VM, you can run the master script `OracleDeployment/03_deploy_dev.sh` which tears down and reconstructs everything.
+
+---
+
+## Troubleshooting & Common Mistakes
+
+During deployment, you might encounter some common pitfalls. Always check this list before panicking:
+
+1. **Duplicate Docker Compose Entries:**
+   - **Error:** `yaml: construct errors: mapping key "<service-name>" already defined`
+   - **Cause:** You accidentally added the service to `docker-compose.yml` when it was already defined somewhere else in the file (often at the very bottom).
+   - **Fix:** Search the entire `docker-compose.yml` for your service name and ensure it only exists once. 
+
+2. **Docker Daemon Not Running:**
+   - **Error:** `failed to connect to the docker API at unix:///.../docker.sock`
+   - **Cause:** The Docker daemon is not active on the host machine, or you are trying to run the deployment scripts locally instead of on the actual Oracle Cloud VM.
+   - **Fix:** Ensure Docker is started (`sudo systemctl start docker` on Linux, or opening Docker Desktop on Mac). If deploying to Oracle, ensure you have successfully SSH'd into the remote VM before running `03_deploy_dev.sh`.
+
+3. **Port Collisions:**
+   - **Error:** `Bind for 0.0.0.0:<port> failed: port is already allocated.`
+   - **Cause:** Another service is already using the port you assigned.
+   - **Fix:** Double check the `EXPOSE` port in the `Dockerfile`, the `server.port` in your `{service-name}.yml`, and the `ports` mapping in `docker-compose.yml` to ensure they are unique across the architecture.
