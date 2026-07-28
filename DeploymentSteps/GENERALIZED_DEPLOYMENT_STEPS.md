@@ -194,3 +194,13 @@ During deployment, you might encounter some common pitfalls. Always check this l
    - **Error:** When syncing files to a remote VM, a service folder goes missing, or it creates a weird folder structure (e.g. creating `Food/` instead of `Food Delivery.nosync/`).
    - **Cause:** The destination path had spaces and wasn't properly quoted for the remote shell.
    - **Fix:** Make sure to quote the destination properly if it has spaces. For example: `rsync -avz ... user@host:"'Food Delivery.nosync/'"` (single quotes inside double quotes).
+
+6. **Database Migration Failures (e.g., Relation Does Not Exist):**
+   - **Error:** When running manual SQL migration scripts (like data transfer), you get `relation "some_table" does not exist`.
+   - **Cause:** Either the script is connecting to the wrong database (e.g., `\c wrong_db`), or the application (via Flyway) hasn't started and initialized the schema yet.
+   - **Fix:** Make sure the services have fully started and Flyway migrations have completed. Double check that `docker compose logs {service-name}` shows `Successfully applied X migrations`. Check you are connecting to the correct DB name defined in `{service-name}.yml`.
+
+7. **Application Fails to Start (UnsatisfiedDependencyException):**
+   - **Error:** `Parameter 0 of constructor in ... required a bean of type ... that could not be found.`
+   - **Cause:** Often caused when using shared components from a common library (`com.fooddelivery.common`) and your service's `@SpringBootApplication` doesn't scan that package.
+   - **Fix:** Update your main application class to include: `@SpringBootApplication(scanBasePackages = {"com.fooddelivery.your_service", "com.fooddelivery.common"})`.
