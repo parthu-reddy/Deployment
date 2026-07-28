@@ -147,52 +147,6 @@ for i, brand_name in enumerate(brand_names):
                     'closing_time': f"{end_hour:02d}:00:00"
                 })
 
-# Generate 500 Customers
-for i in range(1, 501):
-    customer_id = str(uuid.uuid4())
-    # Phone numbers 6000000001 ...
-    phone = f"6000{str(i).zfill(6)}"
-    customers.append({
-        'id': customer_id,
-        'phone_number': phone,
-        'name': f"Customer {i}",
-        'email': f"customer{i}@example.com"
-    })
-    
-    # 2 addresses per customer
-    for j in range(1, 3):
-        addr_id = str(uuid.uuid4())
-        lat, lng = generate_random_point(base_lat, base_lng, customer_radius_km)
-        customer_addresses.append({
-            'id': addr_id,
-            'customer_id': customer_id,
-            'label': 'Home' if j == 1 else 'Work',
-            'address_line1': f"Address Line 1 - {j}",
-            'address_line2': f"Address Line 2 - {j}",
-            'city': "Bangalore",
-            'state': "Karnataka",
-            'zip_code': "560001",
-            'latitude': lat,
-            'longitude': lng,
-            'is_default': 'TRUE' if j == 1 else 'FALSE'
-        })
-
-# Generate 30 Delivery Riders
-for i in range(1, 31):
-    rider_id = str(uuid.uuid4())
-    # Phone numbers 5000000001 ...
-    phone = f"5000{str(i).zfill(6)}"
-    lat, lng = generate_random_point(base_lat, base_lng, radius_km)
-    delivery_riders.append({
-        'id': rider_id,
-        'phone_number': phone,
-        'vehicle_number': f"KA01 {str(random.randint(1000, 9999))}",
-        'status': 'ONLINE',
-        'lat': lat,
-        'lng': lng,
-        'email': f"rider{i}@example.com",
-        'full_name': f"Rider {i}"
-    })
 
 
 # Write SQL for Restaurant DB
@@ -239,24 +193,14 @@ with open("dummy_identity_data.sql", "w") as f:
         f.write(f"INSERT INTO users (id, phone_number, name, email) VALUES ('{b['owner_id']}', '{phone}', '{owner_name}', '{owner_email}');\n")
         f.write(f"INSERT INTO user_roles (id, user_id, service_name, role_name) VALUES ('{str(uuid.uuid4())}', '{b['owner_id']}', 'restaurant-service', 'RESTAURANT');\n")
 
-    for c in customers:
-        f.write(f"INSERT INTO users (id, phone_number, name, email) VALUES ('{c['id']}', '{c['phone_number']}', '{c['name']}', '{c['email']}');\n")
-        f.write(f"INSERT INTO user_roles (id, user_id, service_name, role_name) VALUES ('{str(uuid.uuid4())}', '{c['id']}', 'customer-service', 'CUSTOMER');\n")
 
-    for r in delivery_riders:
-        f.write(f"INSERT INTO users (id, phone_number, name, email) VALUES ('{r['id']}', '{r['phone_number']}', '{r['full_name']}', '{r['email']}');\n")
-        f.write(f"INSERT INTO user_roles (id, user_id, service_name, role_name) VALUES ('{str(uuid.uuid4())}', '{r['id']}', 'delivery-service', 'DELIVERY');\n")
 
     f.write("\nCOMMIT;\n")
 
 # Write SQL for Customer DB
 with open("dummy_customer_data.sql", "w") as f:
     f.write("BEGIN;\n\n")
-    for c in customers:
-        f.write(f"INSERT INTO customers (id, phone_number) VALUES ('{c['id']}', '{c['phone_number']}');\n")
-    
-    for a in customer_addresses:
-        f.write(f"INSERT INTO customer_addresses (id, customer_id, label, address_line1, address_line2, city, state, zip_code, latitude, longitude, is_default) VALUES ('{a['id']}', '{a['customer_id']}', '{a['label']}', '{a['address_line1']}', '{a['address_line2']}', '{a['city']}', '{a['state']}', '{a['zip_code']}', {a['latitude']}, {a['longitude']}, {a['is_default']});\n")
+
     
     f.write("\nCOMMIT;\n")
 
@@ -264,9 +208,7 @@ with open("dummy_customer_data.sql", "w") as f:
 VEHICLE_TYPES_B2 = ['MCWG', 'EV_TWO_WHEELER', 'LMV', 'BICYCLE']
 with open("dummy_delivery_data.sql", "w") as f:
     f.write("BEGIN;\n\n")
-    for i, r in enumerate(delivery_riders):
-        vtype = VEHICLE_TYPES_B2[i % len(VEHICLE_TYPES_B2)]
-        f.write(f"INSERT INTO delivery_executives (id, phone_number, vehicle_number, status, last_known_location, email, full_name, photo_url, verification_status, vehicle_type, is_active, last_biometric_verification_at) VALUES ('{r['id']}', '{r['phone_number']}', '{r['vehicle_number']}', '{r['status']}', ST_SetSRID(ST_Point({r['lng']}, {r['lat']}), 4326), '{r['email']}', '{r['full_name']}', {get_image_sql_val()}, 'APPROVED', '{vtype}', TRUE, CURRENT_TIMESTAMP);\n")
+
     
     f.write("\nCOMMIT;\n")
 

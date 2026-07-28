@@ -39,8 +39,8 @@ riders = []
 # Generate 30 riders
 for i in range(1, 31):
     rider_id = str(uuid.uuid4())
-    # Phone number 5000000001 to 5000000030
-    phone = f"500000{str(i).zfill(4)}"
+    # Phone number 7000000001 to 7000000030
+    phone = f"700000{str(i).zfill(4)}"
     lat, lng = generate_random_point(base_lat, base_lng, rider_radius_km)
     
     riders.append({
@@ -56,8 +56,8 @@ for i in range(1, 31):
 # Generate 500 customers
 for i in range(1, 501):
     customer_id = str(uuid.uuid4())
-    # Phone number 6000000001 to 6000000500
-    phone = f"600000{str(i).zfill(4)}"
+    # Phone number 8000000001 to 8000000500
+    phone = f"800000{str(i).zfill(4)}"
     
     addresses = []
     for j in range(2):
@@ -119,7 +119,7 @@ with open("dummy_government_id_executives.sql", "w") as f:
         ifsc = IFSC_CODES[i % len(IFSC_CODES)]
         f.write(f"INSERT INTO executive_bank_details (bank_id, executive_id, account_number, ifsc_code, bank_registered_name, penny_drop_status, name_match_score, verified_at) VALUES ('{str(uuid.uuid4())}', '{r['id']}', '{acct_num}', '{ifsc}', '{r['name']}', 'APPROVED', 0.950, CURRENT_TIMESTAMP);\n")
         # Biometric verification record
-        f.write(f"INSERT INTO biometric_verifications (verification_id, executive_id, selfie_url, confidence_score, is_live, verification_time) VALUES ('{str(uuid.uuid4())}', '{r['id']}', {get_image_sql_val()}, 0.950, TRUE, CURRENT_TIMESTAMP);\n")
+        f.write(f"INSERT INTO biometric_verifications (verification_id, executive_id, selfie_url, confidence_score, is_live, verification_time) VALUES ('{str(uuid.uuid4())}', '{r['id']}', '{random.choice([u for u in IMAGE_URLS if u])}', 0.950, TRUE, CURRENT_TIMESTAMP);\n")
     f.write("\nCOMMIT;\n")
 
 with open("dummy_customers.sql", "w") as f:
