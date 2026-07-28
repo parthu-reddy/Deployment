@@ -77,6 +77,11 @@ spring:
           uri: lb://government-id-validation-service
           predicates:
             - Path=/api/v1/verification/**
+            
+        - id: ledger-service
+          uri: lb://ledger-service
+          predicates:
+            - Path=/api/v1/ledger/**
 
 eureka:
   client:
@@ -109,6 +114,7 @@ rbac:
       - /api/places
       - /api/maps
       - /api/config
+      - /api/v1/ledger
     restaurant:
       - /api/v1/restaurants
       - /api/v1/brands
@@ -119,6 +125,7 @@ rbac:
       - /api/places
       - /api/maps
       - /api/config
+      - /api/v1/ledger
     delivery:
       - /api/v1/images
       - /api/v1/logistics
@@ -129,3 +136,4 @@ rbac:
       - /api/places
       - /api/maps
       - /api/config
+      - /api/v1/ledger

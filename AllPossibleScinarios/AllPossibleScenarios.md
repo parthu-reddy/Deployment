@@ -81,6 +81,12 @@ Before an order is even persisted, the `CustomerOrderService` performs concurren
 4. The system delegates handling to `TerminalState` since the order is `CANCELLED`.
 5. `TerminalState` issues an automatic immediate refund to correct the discrepancy, UNLESS the cancellation was intentionally initiated by the customer (in which case the refund is suppressed as a cancellation penalty).
 
+### 2.9 Partial Refunds (Item Unavailable)
+1. Order is paid. Restaurant cannot fulfill a specific item but can fulfill the rest.
+2. Restaurant initiates a partial refund for the specific item via an API.
+3. The system calculates the proportion of the food cost and tax to refund. It MUST NOT refund the delivery fee or fixed platform fee if the delivery still occurs.
+4. The system updates the order total, emits a `PARTIAL_REFUND` event triggering the payment gateway, and generates inverse `OrderCharge` ledger entries for the exact partial amount using `ChargeCategory.REFUND`.
+
 ---
 
 ## 3. Restaurant Rejection & Cancellation Scenarios

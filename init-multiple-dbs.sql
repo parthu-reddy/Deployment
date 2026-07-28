@@ -6,3 +6,4 @@ CREATE DATABASE restaurant_db;
 CREATE DATABASE delivery_db;
 CREATE DATABASE identity_db;
 CREATE DATABASE government_id_db;
+CREATE DATABASE ledger_db;

@@ -105,7 +105,7 @@ spring:
 ### Step 4: Map Java `@Entity` Classes Correctly
 Ensure your JPA `@Entity` classes match the Flyway database schema exactly to pass Hibernate startup validation:
 
-1. **Table & Column Naming**: Explicitly specify names using `@Table(name = "exact_table_name")` and `@Column(name = "exact_column_name")` (in snake_case).
+1. **Table & Column Naming**: Explicitly specify names using `@Table(name = "exact_table_name")` and `@Column(name = "exact_column_name")` (in snake_case). **EVERY single field mapped to a database column MUST have an explicit `@Column(name = "...")` annotation without exception.**
 2. **PostgreSQL Custom Enum Mapping**: To map Java enums to PostgreSQL custom `ENUM` columns without Hibernate throwing validation exceptions, combine `@Enumerated(EnumType.STRING)` with `@JdbcType(PostgreSQLEnumJdbcType.class)` and explicitly declare the `columnDefinition`:
    ```java
    import org.hibernate.annotations.JdbcType;
