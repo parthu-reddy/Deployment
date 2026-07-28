@@ -184,3 +184,13 @@ During deployment, you might encounter some common pitfalls. Always check this l
    - **Error:** `Bind for 0.0.0.0:<port> failed: port is already allocated.`
    - **Cause:** Another service is already using the port you assigned.
    - **Fix:** Double check the `EXPOSE` port in the `Dockerfile`, the `server.port` in your `{service-name}.yml`, and the `ports` mapping in `docker-compose.yml` to ensure they are unique across the architecture.
+
+4. **Service Missing from Build (Not Compiling):**
+   - **Error:** `Child module ... does not exist` during Maven build, or the Docker image fails to build because the JAR is missing.
+   - **Cause:** You forgot to add the new microservice to the `<modules>` list in the root `pom.xml`.
+   - **Fix:** Open the root `pom.xml` and ensure `<module>{ServiceName}</module>` is added.
+
+5. **Rsync / File Transfer Issues with Spaces in Paths:**
+   - **Error:** When syncing files to a remote VM, a service folder goes missing, or it creates a weird folder structure (e.g. creating `Food/` instead of `Food Delivery.nosync/`).
+   - **Cause:** The destination path had spaces and wasn't properly quoted for the remote shell.
+   - **Fix:** Make sure to quote the destination properly if it has spaces. For example: `rsync -avz ... user@host:"'Food Delivery.nosync/'"` (single quotes inside double quotes).
