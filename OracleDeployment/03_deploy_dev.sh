@@ -41,9 +41,12 @@ SPRING_PROFILES_ACTIVE=dev docker compose up -d zookeeper kafka postgres redis
 echo "Waiting for 30 seconds to allow infrastructure to initialize..."
 sleep 30
 
+echo "Installing postgis extension on restaurant_db..."
+docker compose exec -T -e PGPASSWORD=***REMOVED*** postgres psql -h 127.0.0.1 -U postgres -d restaurant_db -c 'CREATE EXTENSION IF NOT EXISTS postgis;'
+
 echo "3. Building Java Microservices Natively (DEV Profile)..."
 cd ..
-mvn clean package -Pdev -DskipTests
+mvn clean package -Pdev -Dmaven.test.skip=true
 
 # Check if UI is available and install dependencies if package.json exists
 if [ -d "FoodDeliveryAppUI" ]; then

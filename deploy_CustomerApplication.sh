@@ -27,7 +27,7 @@ echo "======================================"
 if [ "$SKIP_BUILD" = false ]; then
     echo "Building $SERVICE_DIR..."
     cd "$PROJECT_ROOT"
-    mvn clean package -pl "$SERVICE_DIR" -am -DskipTests
+    mvn clean package -pl "$SERVICE_DIR" -am -Dmaven.test.skip=true
 
     echo "Building image for $SERVICE_DIR..."
     cd "$DEPLOYMENT_DIR"

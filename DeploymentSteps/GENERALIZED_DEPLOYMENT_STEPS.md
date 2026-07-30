@@ -162,7 +162,8 @@ echo "{ServiceName} deployed successfully."
 Make it executable: `chmod +x deploy_{ServiceName}.sh`.
 
 ## Step 7: Complete Re-deployment
-If you are deploying this for the very first time on a fresh VM, you can run the master script `OracleDeployment/03_deploy_dev.sh` which tears down and reconstructs everything.
+If you are deploying this for the very first time on a fresh VM, you can run the master script `Deployment/OracleDeployment/03_deploy_dev.sh` which tears down and reconstructs everything. 
+*(Note: You must run this script from the root of the repository, not from inside the `Deployment` folder, because it relies on relative paths like `cd ..`)*
 
 ---
 
@@ -204,3 +205,74 @@ During deployment, you might encounter some common pitfalls. Always check this l
    - **Error:** `Parameter 0 of constructor in ... required a bean of type ... that could not be found.`
    - **Cause:** Often caused when using shared components from a common library (`com.fooddelivery.common`) and your service's `@SpringBootApplication` doesn't scan that package.
    - **Fix:** Update your main application class to include: `@SpringBootApplication(scanBasePackages = {"com.fooddelivery.your_service", "com.fooddelivery.common"})`.
+
+8. **Application Fails to Start (Missing Bean from CommonLibrary on Remote VM):**
+   - **Error:** `Parameter 0 of constructor in ... required a bean of type ... that could not be found.` (even when you verify the bean exists locally and your `@SpringBootApplication` has `scanBasePackages` set correctly).
+   - **Cause:** If you modified `CommonLibrary` locally to add the missing bean, but only `rsync`ed your new microservice folder to the remote VM, building the microservice on the VM will pull the *stale, cached* version of `CommonLibrary` from the VM's local `~/.m2` repository.
+   - **Fix:** Always sync the entire workspace (including `CommonLibrary`) to the remote VM. Then, SSH into the VM, navigate to `CommonLibrary`, and run `mvn clean install -DskipTests` to update the VM's local Maven cache *before* rebuilding your microservice container.
+
+9. **Security Context or Web Security Failing to Load in New Service:**
+   - **Error:** Security configurations are ignored or missing bean errors related to security filters.
+   - **Cause:** Relying purely on `@SpringBootApplication(scanBasePackages = ...)` sometimes doesn't properly trigger the `@EnableWebSecurity` initialization from the common library due to bean load ordering.
+   - **Fix:** Always create a `SecurityConfig.java` in your new microservice's config package that explicitly imports the common security configuration:
+     ```java
+     package com.fooddelivery.{service_name}.config;
+     import com.fooddelivery.common.security.CommonSecurityConfig;
+     import org.springframework.context.annotation.Configuration;
+     import org.springframework.context.annotation.Import;
+     
+     @Configuration
+     @Import(CommonSecurityConfig.class)
+     public class SecurityConfig {
+     }
+     ```
+
+10. **Ledger/Outbox Services Silently Failing or Missing Beans:**
+    - **Error:** The application starts but outbox events are never processed, or it fails because it can't find beans related to `OutboxProcessor`.
+    - **Cause:** If your microservice leverages the transactional outbox pattern from `CommonLibrary`, you must explicitly enable the background scheduled tasks and the outbox configuration.
+    - **Fix:** Add `@EnableOutbox` and `@EnableScheduling` to your main `@SpringBootApplication` class:
+      ```java
+      @SpringBootApplication(scanBasePackages = {"com.fooddelivery.your_service", "com.fooddelivery.common"})
+      @EnableOutbox
+      @EnableScheduling
+      public class YourServiceApplication { ... }
+      ```
+
+11. **Application Fails to Start (UnsatisfiedDependencyException for Common Beans due to Early Initialization):**
+    - **Error:** `Parameter 0 of constructor in CommonSecurityConfig required a bean of type SecurityContextFilter that could not be found.` (even when both classes are in `CommonLibrary` and the package is scanned).
+    - **Cause:** Some Spring features (like `@EnableOutbox` which sets up scheduled tasks) can trigger eager initialization of configuration classes. If `CommonSecurityConfig` is evaluated before the component scanner has discovered its dependencies (like `@Component` annotated filters), it will crash.
+    - **Fix:** In your shared configuration classes (e.g., `CommonSecurityConfig`), do not rely purely on the consuming microservice's component scan to provide internal dependencies. Instead, use `@Import` explicitly for required beans. For example:
+      ```java
+      @Configuration
+      @EnableWebSecurity
+      @Import(SecurityContextFilter.class) // Explicitly load this bean instead of waiting for component scan
+      public class CommonSecurityConfig {
+          // constructor using SecurityContextFilter
+      }
+      ```
+
+12. **Kafka Consumer Failing to Create Retry/DLQ Topics:**
+    - **Error:** Spring Kafka application starts but silently fails to route errors to DLQ, or crashes when a message fails because the retry topics (`<topic>-retry-0`, `<topic>-dlt`) do not exist.
+    - **Cause:** When using `@RetryableTopic` on a `@KafkaListener`, if `autoCreateTopics` is set to `"false"`, Spring will not automatically create the necessary DLQ and Retry topics. While the main topic might be auto-created by the Kafka broker itself, the broker's auto-creation doesn't understand Spring's complex retry topic naming conventions.
+    - **Fix:** Ensure that `@RetryableTopic` either omits the `autoCreateTopics` flag (it defaults to `true`) or explicitly sets `autoCreateTopics = "true"` so that Spring Boot can properly configure and provision the retry topic topology on startup.
+
+13. **Application Crashes due to Missing Properties for Common Beans (e.g. NullPointerException or BeanCreationException):**
+    - **Error:** `java.lang.NullPointerException: The URI scheme of endpointOverride must not be null.` or exceptions related to missing properties when trying to instantiate beans from `com.fooddelivery.common.config` (like `CloudflareR2Config` or `AwsSesConfig`).
+    - **Cause:** When you add `@SpringBootApplication(scanBasePackages = {"com.fooddelivery.your_service", "com.fooddelivery.common"})`, Spring Boot scans and eagerly initializes **all** `@Configuration` classes inside the common library. If your specific microservice doesn't configure the required properties for those global components in its `.yml` file (for instance, a microservice that doesn't need file uploads won't have `r2.endpoint`), the application crashes on boot.
+    - **Fix (App Side):** If you only added `scanBasePackages = "com.fooddelivery.common"` to get access to JPA entities or repositories (like the outbox pattern), remove it! Instead, use precise scanning: `@EnableJpaRepositories(basePackages = {"com.fooddelivery.your_service", "com.fooddelivery.common"})` and `@EntityScan(basePackages = {"com.fooddelivery.your_service", "com.fooddelivery.common"})`.
+    - **Fix (Common Library Side):** Ensure that configurations in the common library that depend on environment properties use conditionals. For example, add `@ConditionalOnExpression("!'${your.property:}'.isEmpty()")` on the `@Configuration` class so it only initializes when the consuming microservice actually provides the configuration.
+
+14. **Compilation Failure in Unrelated Shared Module (e.g. CommonLibrary) During Deployment:**
+    - **Error:** When running `mvn clean package -pl {ServiceName} -am -DskipTests`, the build fails in `CommonLibrary` because `testCompile` encounters missing symbols or deprecated warnings.
+    - **Cause:** Maven's `-DskipTests` only skips *executing* the tests, but it still compiles them (meaning the `testCompile` phase runs). If a shared library like `CommonLibrary` has broken tests, it will halt the build of your microservice.
+    - **Fix:** Update your deployment scripts to use `-Dmaven.test.skip=true` instead of `-DskipTests`. This instructs Maven to skip both the compilation and execution of tests, speeding up deployment and avoiding issues caused by broken tests in dependencies.
+
+15. **Permission Denied When Executing Remote Deployment Scripts:**
+    - **Error:** `bash: line 1: ./Deployment/OracleDeployment/03_deploy_dev.sh: Permission denied`
+    - **Cause:** When syncing deployment scripts (e.g. via `rsync`) from a local machine to a remote server like Oracle Cloud, the shell scripts may lose or not have the proper executable (`+x`) permissions on the remote filesystem.
+    - **Fix:** Before executing the deployment script on the remote server, ensure you add execute permissions. For example, run `chmod +x Deployment/OracleDeployment/*.sh` over SSH before invoking the script.
+
+16. **Transient Connection Errors on Fresh Start:**
+    - **Error:** `java.net.ConnectException: Connection refused` or `SocketTimeoutException` in Eureka/Kafka during the first 30-60 seconds.
+    - **Cause:** Microservices booting concurrently in Docker Compose. Eureka clients attempt to register before Eureka servers are fully initialized, and Kafka clients attempt to connect before Zookeeper/Kafka broker election completes.
+    - **Fix:** This is completely normal behavior in distributed systems. The services will retry automatically and resolve themselves once the infrastructure is fully up (usually within a minute). If the logs eventually say `Healthy` and `Started`, no action is required.

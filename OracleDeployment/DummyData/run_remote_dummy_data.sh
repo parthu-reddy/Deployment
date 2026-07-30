@@ -4,7 +4,7 @@
 SSH_KEY="/Users/parthureddy/Documents/OracleSSH/ssh-key-2026-07-17.key"
 REMOTE_USER="ubuntu"
 REMOTE_HOST="140.245.225.221"
-DB_PASS="password"
+DB_PASS="***REMOVED***"
 COMPOSE_DIR="Food Delivery.nosync/Deployment"
 
 # Helper function to run a SQL file against a specific remote database
@@ -14,7 +14,7 @@ run_sql() {
     
     echo "Running $sql_file on remote database $db_name..."
     ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" "$REMOTE_USER@$REMOTE_HOST" \
-        "cd '$COMPOSE_DIR' && docker compose exec -T -u postgres postgres psql -d $db_name" < "$sql_file"
+        "cd '$COMPOSE_DIR' && docker compose exec -T -e PGPASSWORD=$DB_PASS postgres psql -h 127.0.0.1 -U postgres -d $db_name" < "$sql_file"
         
     if [ $? -eq 0 ]; then
         echo "Successfully executed $sql_file on $db_name"
