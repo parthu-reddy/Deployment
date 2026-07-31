@@ -377,6 +377,7 @@ services:
     volumes:
     - ./certs:/certs
     environment:
+    - ALLOWED_ORIGINS=http://140.245.225.221:3000,http://localhost:3000
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - JWT_PUBLIC_KEY_PATH=file:/certs/public.pem

@@ -13,19 +13,20 @@ Before an order is even persisted, the `CustomerOrderService` performs concurren
 
 ### 1.2 Standard End-to-End Success
 1. Customer places order (`CREATED`).
-2. Payment succeeds (`PAYMENT_SUCCESS` -> `PAID`).
-3. Restaurant auto-accepts or manually accepts (`ACCEPTED`).
-4. Restaurant starts cooking (`PREPARING`).
-5. Restaurant finishes cooking (`READY_FOR_PICKUP`).
-6. Dispatcher finds a driver (`DRIVER_ASSIGNED`).
-7. Driver picks up the food (`DISPATCHED` / `OUT_FOR_DELIVERY`).
-8. Driver delivers the food to the customer (`DELIVERED`).
+2. Payment succeeds (`PAYMENT_SUCCESS` -> `OrderStatus.PAID`).
+3. Restaurant auto-accepts or manually accepts (`OrderStatus.ACCEPTED`).
+4. Restaurant starts cooking (`OrderStatus.PREPARING`).
+5. Delivery service searches for driver (`DeliveryStatus.SEARCHING_FOR_DRIVER`).
+6. Dispatcher finds a driver (`DeliveryStatus.ASSIGNED`).
+7. Restaurant finishes cooking (`OrderStatus.READY_FOR_PICKUP`).
+8. Driver picks up the food (`OrderStatus.HANDED_OVER`, `DeliveryStatus.OUT_FOR_DELIVERY`).
+9. Driver delivers the food to the customer (`DeliveryStatus.DELIVERED`).
 
-### 1.2 Success with Restaurant Delay (Approved)
+### 1.3 Success with Restaurant Delay (Approved)
 1. Customer places order -> Payment succeeds.
-2. Restaurant needs more time and requests a delay (`ON_HOLD` / `AWAITING_DELAY_APPROVAL`).
+2. Restaurant needs more time and requests a delay (`OrderStatus.AWAITING_DELAY_APPROVAL`).
 3. Customer receives notification and **approves** the delay.
-4. Order resumes normal flow (`ACCEPTED` -> `PREPARING` -> `READY` -> `DELIVERED`).
+4. Order resumes normal flow (`ACCEPTED` -> `PREPARING` -> `READY_FOR_PICKUP` -> `HANDED_OVER`).
 
 ---
 
@@ -63,29 +64,25 @@ Before an order is even persisted, the `CustomerOrderService` performs concurren
 1. A customer or admin initiates a partial or full refund on the payment gateway dashboard.
 2. The Gateway fires a webhook; `PaymentGatewayIntegration` processes it and marks its local intent as `PARTIALLY_REFUNDED` or `REFUNDED`.
 3. It emits a `PAYMENT_REFUNDED` event to the outbox/Kafka `payment-events` topic.
-4. **Bug**: `OrderSagaOrchestrator.handlePaymentEvents` in `CustomerApplication` consumes the event but *fails to check* the `eventType`. Because the payload contains `orderId` and `gatewayOrderId` but lacks a `failureReason`, the orchestrator mistakenly assumes it is a late `PAYMENT_SUCCESS` event.
-5. `TerminalState` triggers `handlePaymentSuccess`, which erroneously overwrites the customer DB's intent status back to `SUCCESS` and issues a duplicate ledger refund transaction!
+4. **Bug Resolved**: `OrderSagaOrchestrator.handlePaymentEvents` in `CustomerApplication` historically consumed the event but failed to check the `eventType`. This has been fixed to strictly validate the payload type.
 
 ### 2.7 Saga Event Loss due to Exhausted Retries (Resilience Edge Case)
-1. `OrderSagaOrchestrator` consumes a valid event from Kafka (e.g. `ORDER_ACCEPTED`).
+1. `OrderSagaOrchestrator` consumes a valid event from Kafka.
 2. Concurrent database updates cause an `ObjectOptimisticLockingFailureException`.
 3. The orchestrator catches this and retries up to `MAX_OPTIMISTIC_LOCK_RETRIES` (default 3 times).
-4. If the database remains locked or highly contended and all 3 retries are exhausted, the exception bubbles up.
-5. Spring Kafka's default ErrorHandler logs the error but **ACKs the message**, committing the offset. 
-6. The Saga event is permanently lost and the Order hangs in a zombie state indefinitely (e.g. stuck in `PAID` forever).
+4. If retries are exhausted, the event is routed to a `.DLQ` (Dead Letter Queue) topic instead of being dropped, preventing zombie states.
 
 ### 2.8 Late Payment Success on Cancelled Order
 1. Order is placed but payment gets delayed.
-2. The `StaleOrderSweeper` or Customer cancels the order due to timeout. The order moves to `CANCELLED`.
-3. The payment gateway successfully processes the payment late and fires a `PAYMENT_SUCCESS` webhook.
-4. The system delegates handling to `TerminalState` since the order is `CANCELLED`.
-5. `TerminalState` issues an automatic immediate refund to correct the discrepancy, UNLESS the cancellation was intentionally initiated by the customer (in which case the refund is suppressed as a cancellation penalty).
+2. System cancels the order due to timeout (`CANCELLED`).
+3. Payment gateway successfully processes the payment late and fires `PAYMENT_SUCCESS`.
+4. `TerminalState` issues an automatic immediate refund, unless cancellation was a customer penalty.
 
 ### 2.9 Partial Refunds (Item Unavailable)
 1. Order is paid. Restaurant cannot fulfill a specific item but can fulfill the rest.
 2. Restaurant initiates a partial refund for the specific item via an API.
-3. The system calculates the proportion of the food cost and tax to refund. It MUST NOT refund the delivery fee or fixed platform fee if the delivery still occurs.
-4. The system updates the order total, emits a `PARTIAL_REFUND` event triggering the payment gateway, and generates inverse `OrderCharge` ledger entries for the exact partial amount using `ChargeCategory.REFUND`.
+3. System refunds food cost/tax proportionally, leaving delivery/platform fee untouched.
+4. Order total is updated, `PARTIAL_REFUND` event is emitted.
 
 ---
 
@@ -93,22 +90,20 @@ Before an order is even persisted, the `CustomerOrderService` performs concurren
 
 ### 3.1 Upfront Rejection
 1. Payment succeeds (`PAID`).
-2. Restaurant sees the order and manually rejects it (e.g., out of stock).
-3. Status changes to `REJECTED` / `CANCELLED_BY_RESTAURANT`.
+2. Restaurant manually rejects the order (e.g., out of stock).
+3. Status changes to `CANCELLED_BY_RESTAURANT`.
 4. Saga triggers a full refund (`CANCELLED_AND_REFUNDED`).
 
 ### 3.2 Mid-Preparation Cancellation
 1. Restaurant accepts and starts preparing (`PREPARING`).
-2. An unexpected issue occurs (e.g., equipment failure) and the Restaurant cancels.
+2. An unexpected issue occurs (e.g., equipment failure) and Restaurant cancels.
 3. Status changes to `CANCELLED_BY_RESTAURANT`.
-4. Saga triggers a full refund. 
-5. Delivery Service (if already searching for a driver) is notified to abort dispatch.
+4. Saga triggers full refund. Delivery Service is notified to abort dispatch.
 
 ### 3.3 Restaurant Timeout (Auto-Cancel)
 1. Payment succeeds (`PAID`).
-2. Restaurant fails to accept or reject within the SLA (e.g., 5-10 minutes).
-3. System automatically cancels the order (`CANCELLED`).
-4. Saga triggers a full refund.
+2. Restaurant fails to accept/reject within SLA (e.g., 5-10 minutes).
+3. System automatically cancels (`CANCELLED`). Full refund triggered.
 
 ---
 
@@ -116,149 +111,113 @@ Before an order is even persisted, the `CustomerOrderService` performs concurren
 
 ### 4.1 Delay Rejected by Customer
 1. Restaurant requests extra prep time (`AWAITING_DELAY_APPROVAL`).
-2. Customer is unhappy with the delay and **rejects** it.
-3. Order is immediately `CANCELLED_BY_RESTAURANT` (since the delay was restaurant-initiated and unacceptable).
-4. Saga triggers a full refund (`CANCELLED_AND_REFUNDED`).
+2. Customer is unhappy and **rejects** it.
+3. Order is immediately `CANCELLED_BY_RESTAURANT`.
+4. Full refund triggered.
 
 ### 4.2 Delay Timeout (Customer Unresponsive)
 1. Restaurant requests extra prep time.
-2. Customer does not respond within the time limit (e.g., 10 minutes).
-3. System assumes rejection/timeout and automatically changes to `CANCELLED_BY_RESTAURANT`.
-4. Saga triggers a full refund (`CANCELLED_AND_REFUNDED`).
+2. Customer does not respond within the time limit.
+3. System automatically changes to `CANCELLED_BY_RESTAURANT`. Full refund triggered.
 
 ### 4.3 Customer Initiated Cancellation (Pre-Acceptance)
-1. Customer places an order and pays (`CREATED` or `PAID` state).
-2. Customer changes their mind and cancels the order *before* the restaurant accepts it.
-3. Order is immediately `CANCELLED`.
-4. Saga triggers a full refund.
+1. Customer places order and pays.
+2. Customer cancels order *before* the restaurant accepts it.
+3. Order is `CANCELLED`. Full refund triggered.
 
 ---
 
-## 5. Dispatch & Delivery Scenarios
+## 5. Dispatch, Delivery & Manual Intervention Scenarios
 
 ### 5.1 Maps Dispatch Candidate Search (Micro-Interaction)
 1. Delivery Service starts searching for a driver.
 2. Maps Integration identifies a candidate and emits `DISPATCH_CANDIDATE_FOUND`.
-3. The specific driver receives a ping.
-4. If the driver rejects or ignores the ping, Delivery Service emits `ORDER_DRIVER_REJECTED`.
-5. Delivery Service re-enters the dispatch loop to find another candidate.
+3. Specific driver receives a ping.
+4. If driver rejects/ignores ping, Delivery Service emits `ORDER_DRIVER_REJECTED` and re-enters the loop.
 
-### 5.2 Complete Dispatch Failure (No Drivers Available)
+### 5.2 Complete Dispatch Failure (Admin Intervention Workflow)
+**Crucial Architectural Update**: Dispatch failures no longer overwrite `OrderStatus`, preserving restaurant state.
 1. Restaurant accepts or starts preparing.
-2. Delivery Service repeatedly fails to find a driver in the vicinity (Maps Integration finds zero candidates).
+2. Delivery Service repeatedly fails to find a driver (e.g., zero candidates).
 3. Delivery Service emits `DISPATCH_FAILED`.
-4. Customer Service marks order as `DELIVERY_FAILED`.
-5. Orchestrator forces Restaurant Service to `DELIVERY_FAILED` via `ORDER_STATUS_SYNC`.
-6. Customer is fully refunded. Food is discarded or consumed by staff.
+4. Customer Service marks the order's `DeliveryStatus` as `FAILED`. **`OrderStatus` remains completely untouched** (e.g., `PREPARING` or `READY_FOR_PICKUP`).
+5. Order enters the Admin Intervention Queue on the Admin Portal.
+6. The Restaurant UI continues to show the order's actual food preparation state, completely unaffected by the delivery delay.
 
-### 5.3 Driver Re-assignment (Driver Aborts)
-1. Driver is assigned (`DRIVER_ASSIGNED`).
-2. Driver cancels the assignment (flat tire, emergency) before picking up.
-3. Delivery Service puts the order back into the queue.
-4. New driver is found and assigned.
-5. Flow resumes normally. (No Saga interruption unless dispatch ultimately fails).
+### 5.3 Admin Manual Resolution
+Following a Dispatch Failure (`DeliveryStatus.FAILED`), the admin has two choices:
+1. **Manual Driver Assignment:** Admin assigns a specific driver. `DeliveryStatus` moves to `ASSIGNED`. A `DRIVER_ASSIGNED` event is fired. The driver proceeds to the restaurant.
+2. **Manual Cancellation:** Admin decides it cannot be delivered. Admin issues an `ORDER_CANCELLED_BY_ADMIN` event. The order fully aborts, customer is refunded, and restaurant is notified.
 
-### 5.4 Delivery Failure (Customer Unreachable)
-1. Driver picks up food (`OUT_FOR_DELIVERY`).
+### 5.4 Driver Re-assignment (Driver Aborts)
+1. Driver is assigned (`DeliveryStatus.ASSIGNED`).
+2. Driver cancels the assignment (flat tire, emergency) via `/api/delivery/drivers/{driverId}/orders/{orderId}/abort`.
+3. System releases lock and emits `ORDER_DRIVER_REJECTED`. New driver is found.
+
+### 5.5 Delivery Failure (Customer Unreachable)
+1. Driver picks up food (`DeliveryStatus.OUT_FOR_DELIVERY`).
 2. Driver reaches location but cannot contact the customer.
-3. Driver marks delivery as failed.
-4. Status changes to `DELIVERY_FAILED`.
-5. Typically, **no refund** or a **partial refund** is issued depending on business policy.
+3. Driver marks delivery as failed. Status changes to `DELIVERY_FAILED`.
+4. No refund or partial refund issued depending on business policy.
 
-### 5.5 Driver Abandons Delivery (Timeout)
-1. Driver picks up food (`OUT_FOR_DELIVERY`) or is en route (`DISPATCHED`).
-2. No updates are received from the driver for over 2 hours.
-3. The `AbandonedDeliverySweeper` cron job detects the stale order.
-4. Order is marked as `DELIVERY_FAILED`.
-5. Event `ORDER_DELIVERY_FAILED` is published. Order syncs to Restaurant and refund/support flow is initiated.
+### 5.6 Driver Abandons Delivery (Timeout)
+1. Driver picks up food. No updates received for over 2 hours.
+2. `AbandonedDeliverySweeper` cron job detects stale order.
+3. Order is marked as `DELIVERY_FAILED`. Refund/support flow initiated.
 
-### 5.6 Driver Enters Wrong Pickup OTP
-1. Driver arrives at the restaurant and requests the food.
-2. Driver enters an incorrect OTP into the application to mark the order as `DISPATCHED`.
-3. The system validates the OTP against the `pickupOtp` generated during Saga instantiation.
-4. Validation fails, throwing `IllegalStateTransitionException`. The request is rejected (HTTP 400).
-5. Driver must enter the correct OTP to proceed.
+### 5.7 OTP Validation Failures
+- **Wrong Pickup OTP**: Driver enters wrong OTP at restaurant. Throws `IllegalStateTransitionException`. Cannot proceed to `OUT_FOR_DELIVERY`.
+- **Wrong Delivery OTP**: Driver enters wrong OTP at customer location. Cannot proceed to `DELIVERED`.
 
-### 5.7 Driver Enters Wrong Delivery OTP
-1. Driver arrives at the customer's location.
-2. Driver enters an incorrect OTP into the application to mark the order as `DELIVERED`.
-3. The system validates the OTP against the `deliveryOtp` (or `otp`).
-4. Validation fails, throwing `IllegalStateTransitionException`. The request is rejected (HTTP 400).
-5. Driver must enter the correct OTP to finalize the delivery.
-
-### 5.8 Driver Accepts Order Early (While Preparing)
-1. Delivery Service starts searching for a driver while the restaurant is still in `ACCEPTED` or `PREPARING` state.
-2. A driver receives the dispatch ping and accepts it.
-3. The order is assigned to the driver (`DRIVER_ASSIGNED`) and their status becomes `BUSY`.
-4. The system correctly identifies the order as active for this driver (rather than history) because the query includes `ACCEPTED` and `PREPARING` in the active orders filter.
-5. The driver travels to the restaurant and waits until the state reaches `READY_FOR_PICKUP`.
+### 5.8 Driver Accepts Order Early
+1. Delivery searches for driver while restaurant is `ACCEPTED` or `PREPARING`.
+2. Driver accepts. `DeliveryStatus` -> `ASSIGNED`.
+3. Driver waits at restaurant until `OrderStatus` becomes `READY_FOR_PICKUP`.
 
 ---
 
 ## 6. Edge Cases & Race Conditions (Saga Sync)
 
 ### 6.1 Cancellation Race Condition during Dispatch (Delivery Lock)
-*Scenario:* The Restaurant cancels the order midway (`ORDER_CANCELLED_BY_RESTAURANT`), but a driver is simultaneously accepting the dispatch ping.
+*Scenario:* Restaurant cancels order midway, but a driver is simultaneously accepting the dispatch ping.
 *Resolution:*
-- `DeliveryExecutiveApplication` receives the terminal cancellation event.
-- It intercepts the dispatch flow and sets the Redis lock (`order:driver:lock:{id}`) to `CANCELLED`.
-- It forcefully resets the driver's status back to `ONLINE` if they were already locked.
-- If the driver attempts to accept exactly when the lock turns to `CANCELLED`, the system throws `IllegalStateException("Order was cancelled during acceptance.")` and halts the assignment.
+- `DeliveryExecutiveApplication` receives terminal cancellation event.
+- Intercepts dispatch flow, sets Redis lock (`order:driver:lock:{id}`) to `CANCELLED`.
+- If driver attempts to accept exactly when lock turns to `CANCELLED`, throws `IllegalStateException`.
 
 ### 6.2 Concurrent Updates (Optimistic Locking)
-*Scenario:* Dispatch fails at the exact millisecond the Restaurant clicks "Start Cooking".
-*Resolution:* 
-- Customer Service processes `DISPATCH_FAILED` and transitions to `DELIVERY_FAILED`.
-- Restaurant Service attempts to save `PREPARING` but hits an `ObjectOptimisticLockingFailureException`.
-- The new retry mechanism intercepts this, waits, and re-reads the DB.
-- Meanwhile, Customer Service emits `ORDER_STATUS_SYNC(DELIVERY_FAILED)`.
-- Restaurant Service processes the sync, moving to `DELIVERY_FAILED`.
-- The "Start Cooking" action is ultimately aborted or overridden by the terminal state.
-
-### 6.2 Out-of-Order Events (Fast Participant, Slow Orchestrator)
-*Scenario:* Restaurant rapidly accepts and starts preparing (`ORDER_ACCEPTED` followed immediately by `ORDER_PREPARING`). Customer Service processes `ORDER_PREPARING` before `ORDER_ACCEPTED`.
+*Scenario:* Admin manually assigns a driver (`DeliveryStatus` update) at the exact millisecond Restaurant clicks "Start Cooking" (`OrderStatus` update).
 *Resolution:*
-- Customer Service throws `IllegalStateTransitionException` because `PAID` state cannot jump directly to `PREPARING` without `ACCEPTED`.
+- Because `OrderStatus` and `DeliveryStatus` updates are largely isolated to different fields, conflicts are minimized.
+- If an `ObjectOptimisticLockingFailureException` occurs on the entity, the retry mechanism re-reads the DB and applies the state.
+
+### 6.3 Out-of-Order Events (Fast Participant, Slow Orchestrator)
+*Scenario:* Restaurant rapidly accepts and starts preparing. Customer Service processes `ORDER_PREPARING` before `ORDER_ACCEPTED`.
+*Resolution:*
+- Customer Service throws `IllegalStateTransitionException` because `PAID` cannot jump directly to `PREPARING`.
 - Orchestrator catches this and emits `ORDER_STATUS_SYNC(PAID)`.
-- Restaurant Service receives `PAID`, compares sequence integers (`PAID` < `PREPARING`), and **gracefully ignores** the backward transition.
-- Customer Service eventually processes the delayed `ORDER_ACCEPTED` and catches up.
+- Restaurant Service receives `PAID`, compares sequence integers, and ignores the backward transition. Customer Service eventually catches up.
 
-### 6.3 Missing Events (Kafka Drop/Desync)
-*Scenario:* Customer Service completely misses an event (e.g., `ORDER_READY`), leaving the system in a perpetual `PREPARING` state while Restaurant is in `READY`.
+### 6.4 Missing Events (Kafka Drop/Desync)
+*Scenario:* Customer Service completely misses an event (e.g., `ORDER_READY`), leaving system in `PREPARING` while Restaurant is `READY_FOR_PICKUP`.
 *Resolution:*
-- Since state sequence checks prevent backward movement, the Restaurant remains in `READY`.
-- **Manual Admin Intervention (Implemented)**: An admin can invoke the `/api/v1/internal/admin/orders/{orderId}/reconcile` endpoint in `CustomerApplication`. 
-- The `AdminOrderController` polls the true state from the `RestaurantApplication` via its internal API (`/api/v1/internal/restaurants/orders/{orderId}/status`).
-- If the restaurant's state sequence is higher than the customer app's state, it fast-forwards the state in `CustomerApplication` to match, restoring sync without any side effects.
-
-### 6.4 Refund System Downtime
-*Scenario:* Order is cancelled, but Payment Gateway is returning HTTP 500s.
-*Resolution:*
-- Saga uses the Outbox Pattern or explicit Kafka dead-letter queues (DLQ) with retries. 
-- The refund event remains pending and is retried until the Payment Gateway comes back online.
+- Admin invokes `/api/v1/internal/admin/orders/{orderId}/reconcile` in `CustomerApplication`.
+- `AdminOrderController` polls true state from `RestaurantApplication`.
+- Fast-forwards state in `CustomerApplication` to match.
 
 ### 6.5 Backward State Transition Prevention
-*Scenario:* Due to a network replay or a manual admin trigger, an old `ORDER_ACCEPTED` event is re-processed on an order that is already `DELIVERED`.
+*Scenario:* An old `ORDER_ACCEPTED` event is re-processed on an order that is already `DELIVERED`.
 *Resolution:*
-- Both `CustomerApplication` and `RestaurantApplication` possess strict sequence state validation (`newStatus.getSequence() < currentStatus.getSequence()`).
-- Attempting to go backward triggers an `IllegalStateException` and the transition is rejected, ensuring the terminal state remains intact.
+- Both applications possess strict sequence state validation.
+- Attempting to go backward triggers an `IllegalStateException` and the transition is rejected.
 
 ### 6.6 State Fast-Forwarding (Missed Restaurant Steps)
-*Scenario:* A restaurant forgets to click "Ready" (`READY_FOR_PICKUP`) on the tablet. The driver arrives, receives the food, obtains the pickup OTP from the restaurant, and enters it successfully in the app.
+*Scenario:* Restaurant forgets to click "Ready". Driver arrives, gets food, obtains pickup OTP from restaurant, enters it successfully.
 *Resolution:*
-- The system attempts to update the state from `PREPARING` directly to `DISPATCHED`.
-- Since the state sequence is monotonic (`PREPARING` 50 -> `DISPATCHED` 70), the sequence check `70 > 50` passes.
-- The state seamlessly fast-forwards to `DISPATCHED`, preventing the order from being stuck due to a missed tablet interaction.
+- System attempts to update state from `PREPARING` directly to `HANDED_OVER`.
+- Monotonic sequence check allows the jump. State seamlessly fast-forwards.
 
 ### 6.7 Enum Discrepancy Mapping During Sync
-*Scenario:* `CustomerApplication` and `RestaurantApplication` bounded contexts use slightly different `OrderStatus` enums reflecting their local domain (e.g., `OUT_FOR_DELIVERY` vs `DISPATCHED`, `AWAITING_DELAY_APPROVAL` vs `ON_HOLD`). `CustomerApplication` sends an `ORDER_STATUS_SYNC` event with an out-of-context enum.
+*Scenario:* Bounded contexts use different terminologies for similar events.
 *Resolution:*
-- `RestaurantOrderState` intercepts the sync string.
-- Before calling `OrderStatus.valueOf()`, it explicitly translates these differing terminologies into its local equivalent.
-- This mapping prevents an `IllegalArgumentException` from crashing the sync handler, keeping cross-service states eventually consistent.
-
-### Implemented Fixes for Missing Scenarios
-- **2.7 Saga Event Loss due to Exhausted Retries (Resilience Edge Case):** Configured Spring Kafka `DeadLetterPublishingRecoverer` to route exhausted retries to a `.DLQ` topic instead of dropping messages, preventing zombie state orders.
-- **5.3 Driver Re-assignment (Driver Aborts):** Added a `/api/delivery/drivers/{driverId}/orders/{orderId}/abort` endpoint for assigned drivers to abort an order, which releases their assignment lock and emits an `ORDER_DRIVER_REJECTED` event to re-trigger candidate search.
-- **6.6 State Fast-Forwarding:** Implemented `handleStatusUpdate` logic in `CustomerApplication`'s `OrderState` to correctly fast-forward the state if the new status sequence is monotonically increasing, thus preventing missed sequences (e.g. tablet click misses).
-- **6.7 Enum Discrepancy Mapping During Sync:** Replaced hardcoded string evaluations with Enum usage using CommonLibrary Enums wherever possible. `RestaurantOrderState` explicitly intercepts and properly maps cross-boundary terminologies (e.g. `OUT_FOR_DELIVERY` vs `DISPATCHED`).
+- `RestaurantOrderState` intercepts the sync string and translates terminologies into its local equivalent before calling `.valueOf()`.

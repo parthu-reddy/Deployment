@@ -276,3 +276,18 @@ During deployment, you might encounter some common pitfalls. Always check this l
     - **Error:** `java.net.ConnectException: Connection refused` or `SocketTimeoutException` in Eureka/Kafka during the first 30-60 seconds.
     - **Cause:** Microservices booting concurrently in Docker Compose. Eureka clients attempt to register before Eureka servers are fully initialized, and Kafka clients attempt to connect before Zookeeper/Kafka broker election completes.
     - **Fix:** This is completely normal behavior in distributed systems. The services will retry automatically and resolve themselves once the infrastructure is fully up (usually within a minute). If the logs eventually say `Healthy` and `Started`, no action is required.
+
+17. **Sed Command Fails with "No such file or directory" during deployment on OCI:**
+    - **Error:** `sed: can't read s/...: No such file or directory` when running deployment shell scripts on the Oracle Linux/Ubuntu VM.
+    - **Cause:** macOS uses BSD `sed` while Ubuntu/OCI uses GNU `sed`. On macOS, `sed -i '' "s/...` is required for inline replacement without creating a backup file, but on GNU Linux, `sed -i "s/...` must be used. Using `sed -i ''` on Linux makes it interpret `''` as the file name, which causes it to fail.
+    - **Fix:** Ensure all shell scripts running on the remote Oracle VM use GNU `sed` syntax (`sed -i`). If you edited the deployment script locally on a Mac and tested it, remember to revert it to the Linux syntax before syncing it to OCI.
+
+18. **Deployment Directory Not Found Error:**
+    - **Error:** `Error: 'Deployment' directory not found. Make sure you run this script from the root of the cloned repository.`
+    - **Cause:** You ran the `03_deploy_dev.sh` script while currently inside the `Deployment/OracleDeployment/` directory. The script expects to be executed from the root of the repository (`Food Delivery.nosync/`).
+    - **Fix:** Ensure that the shell command running the script uses the correct relative path from the root. For example: `cd 'Food Delivery.nosync' && bash Deployment/OracleDeployment/03_deploy_dev.sh` instead of `cd 'Food Delivery.nosync/Deployment/OracleDeployment' && bash 03_deploy_dev.sh`.
+
+19. **Complete Tear-down for Fresh Deployments:**
+    - **Error:** Stale database data or old cached Docker layers interfere with a newly deployed service.
+    - **Cause:** `docker compose up --build` does not remove existing named volumes (like the Postgres data volume). If you change schema or need dummy data re-inserted, the old volume will persist.
+    - **Fix:** When doing a complete clean deploy, navigate to the `Deployment` folder on the remote VM and run `docker compose down -v && docker system prune -a --volumes -f` *before* running the `03_deploy_dev.sh` script. This completely wipes the slate clean.
