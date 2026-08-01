@@ -83,6 +83,16 @@ spring:
           predicates:
             - Path=/api/v1/ledger/**
 
+        - id: chat-service
+          uri: lb://chat-service
+          predicates:
+            - Path=/api/v1/chat/**
+
+        - id: chat-service-ws
+          uri: lb:ws://chat-service
+          predicates:
+            - Path=/ws/chat/**
+
 eureka:
   client:
     service-url:
@@ -115,6 +125,8 @@ rbac:
       - /api/maps
       - /api/config
       - /api/v1/ledger
+      - /api/v1/chat
+      - /ws/chat
     restaurant:
       - /api/v1/restaurants
       - /api/v1/brands
@@ -126,6 +138,8 @@ rbac:
       - /api/maps
       - /api/config
       - /api/v1/ledger
+      - /api/v1/chat
+      - /ws/chat
     delivery:
       - /api/v1/images
       - /api/v1/logistics
@@ -137,3 +151,5 @@ rbac:
       - /api/maps
       - /api/config
       - /api/v1/ledger
+      - /api/v1/chat
+      - /ws/chat
