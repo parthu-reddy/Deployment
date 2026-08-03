@@ -294,3 +294,8 @@ During deployment, you might encounter some common pitfalls. Always check this l
     - **Error:** `It seems to be a socket read timeout exception... you should set property 'eureka.server.peer-node-read-timeout-ms' to a bigger value` in the Eureka Server logs.
     - **Cause:** When deploying on ARM architecture or lower-tier VMs, initial startup and peer replication between Eureka nodes takes longer than the default 200ms read timeout.
     - **Fix:** Increase the `peer-node-read-timeout-ms` in the Eureka Server's `application.yml` (e.g., to `8000`).
+
+21. **Spring Milestone Dependencies Fails to Resolve (e.g. Spring AI):**
+    - **Error:** `package org.springframework.ai.tool.annotation does not exist` or `cannot find symbol class Tool` during a remote build, despite compiling successfully locally.
+    - **Cause:** Milestone dependencies (e.g., `1.0.0-M6`) require explicitly defining the Spring Milestones repository in `pom.xml`. Even if defined, sometimes transitive resolution (like `spring-ai-core`) can be skipped or mis-cached on a remote VM, especially if you deploy using custom scripts that inject dependencies without updating the lockfiles/caches.
+    - **Fix:** Ensure `<repositories>` are explicitly defined in the `pom.xml` where the dependency is used. For extreme cases where the remote cache is broken, explicitly add the missing transitive dependency (e.g. `spring-ai-core`), or manually sync your local `~/.m2/repository` for that specific package (e.g., `rsync -avz ~/.m2/repository/org/springframework/ai ubuntu@host:/home/ubuntu/.m2/repository/org/springframework/ai`) to forcefully mirror the functional local cache.
