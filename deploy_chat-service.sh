@@ -1,15 +1,55 @@
 #!/bin/bash
 set -e
 
-echo "Deploying CommunicationService..."
-cd ..
+# Parse args
+ENGINE="docker"
+SKIP_BUILD=false
+for arg in "$@"; do
+    if [ "$arg" == "--apple" ] || [ "$arg" == "--container" ]; then
+        ENGINE="apple"
+    elif [ "$arg" == "--docker" ]; then
+        ENGINE="docker"
+    elif [ "$arg" == "--skip-build" ]; then
+        SKIP_BUILD=true
+    fi
+done
 
-# Build Jar
-mvn clean package -pl CommunicationService -am -Pdev -Dmaven.test.skip=true
+PROJECT_ROOT="/Users/parthureddy/Documents/Food Delivery.nosync"
+DEPLOYMENT_DIR="$PROJECT_ROOT/Deployment"
 
-# Deploy Container
-cd Deployment
-export SPRING_PROFILES_ACTIVE=dev
-docker compose up --build -d chat-service
+SERVICE_DIR="CommunicationService"
+CONTAINER_NAME="chat-service"
 
-echo "CommunicationService deployed successfully."
+echo "======================================"
+echo " Deploying $SERVICE_DIR..."
+echo "======================================"
+
+if [ "$SKIP_BUILD" = false ]; then
+    echo "Building $SERVICE_DIR..."
+    cd "$PROJECT_ROOT"
+    mvn clean package -pl "$SERVICE_DIR" -am -Dmaven.test.skip=true
+
+    echo "Building image for $SERVICE_DIR..."
+    cd "$DEPLOYMENT_DIR"
+    if [ "$ENGINE" == "docker" ]; then
+        docker-compose build "$CONTAINER_NAME"
+    else
+        if [ -f "$PROJECT_ROOT/$SERVICE_DIR/build_image.sh" ]; then
+            (cd "$PROJECT_ROOT/$SERVICE_DIR" && ./build_image.sh --apple)
+        else
+            echo "Skipping apple image build because build_image.sh is missing in $SERVICE_DIR"
+        fi
+    fi
+fi
+
+echo "Starting $SERVICE_DIR..."
+cd "$DEPLOYMENT_DIR"
+if [ "$ENGINE" == "apple" ]; then
+    ./apple-compose.sh up "$CONTAINER_NAME"
+else
+    docker-compose up -d "$CONTAINER_NAME"
+fi
+
+echo "======================================"
+echo " $SERVICE_DIR Deployment Complete!"
+echo "======================================"

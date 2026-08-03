@@ -290,4 +290,7 @@ During deployment, you might encounter some common pitfalls. Always check this l
 19. **Complete Tear-down for Fresh Deployments:**
     - **Error:** Stale database data or old cached Docker layers interfere with a newly deployed service.
     - **Cause:** `docker compose up --build` does not remove existing named volumes (like the Postgres data volume). If you change schema or need dummy data re-inserted, the old volume will persist.
-    - **Fix:** When doing a complete clean deploy, navigate to the `Deployment` folder on the remote VM and run `docker compose down -v && docker system prune -a --volumes -f` *before* running the `03_deploy_dev.sh` script. This completely wipes the slate clean.
+20. **Eureka Peer Node Socket Read Timeout (ARM / Low Resource VMs):**
+    - **Error:** `It seems to be a socket read timeout exception... you should set property 'eureka.server.peer-node-read-timeout-ms' to a bigger value` in the Eureka Server logs.
+    - **Cause:** When deploying on ARM architecture or lower-tier VMs, initial startup and peer replication between Eureka nodes takes longer than the default 200ms read timeout.
+    - **Fix:** Increase the `peer-node-read-timeout-ms` in the Eureka Server's `application.yml` (e.g., to `8000`).

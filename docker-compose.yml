@@ -536,6 +536,10 @@ services:
     - EUREKA_USER=${EUREKA_USER:-admin}
     - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
+    - R2_BUCKET_NAME=${R2_BUCKET_NAME}
+    - R2_ENDPOINT=${R2_ENDPOINT}
+    - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
+    - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
     depends_on:
       config-service:
         condition: service_healthy
