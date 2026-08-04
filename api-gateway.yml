@@ -1,6 +1,5 @@
 server:
   port: 8080
-
 spring:
   application:
     name: api-gateway
@@ -11,88 +10,87 @@ spring:
   cloud:
     gateway:
       default-filters:
-        - name: RequestRateLimiter
-          args:
-            redis-rate-limiter.replenishRate: 20
-            redis-rate-limiter.burstCapacity: 40
-            key-resolver: "#{@ipKeyResolver}"
-        - name: Retry
-          args:
-            retries: 3
-            statuses: BAD_GATEWAY, GATEWAY_TIMEOUT, SERVICE_UNAVAILABLE
-            methods: GET
-            backoff:
-              firstBackoff: 50ms
-              maxBackoff: 500ms
-              factor: 2
-              basedOnPreviousValue: false
+      - name: RequestRateLimiter
+        args:
+          redis-rate-limiter.replenishRate: 20
+          redis-rate-limiter.burstCapacity: 40
+          key-resolver: '#{@ipKeyResolver}'
+      - name: Retry
+        args:
+          retries: 3
+          statuses: BAD_GATEWAY, GATEWAY_TIMEOUT, SERVICE_UNAVAILABLE
+          methods: GET
+          backoff:
+            firstBackoff: 50ms
+            maxBackoff: 500ms
+            factor: 2
+            basedOnPreviousValue: false
       globalcors:
         cors-configurations:
           '[/**]':
-            allowedOrigins: "${ALLOWED_ORIGINS:http://localhost:3000}"
+            allowedOrigins: ${ALLOWED_ORIGINS:http://localhost:3000}
             allowedMethods:
-              - GET
-              - POST
-              - PUT
-              - DELETE
-              - OPTIONS
-            allowedHeaders: "*"
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - OPTIONS
+            allowedHeaders: '*'
       routes:
-        - id: customer-service
-          uri: lb://customer-service
-          predicates:
-            - Path=/api/v1/customers/**, /api/v1/orders/**, /api/v1/places/**, /api/v1/restaurants/nearby, /api/v1/restaurants/brands/*/outlets, /api/v1/restaurants/*/delivery-availability, /api/v1/internal/admin/orders/**, /api/v1/internal/admin/customers/**
-        
-        - id: restaurant-service
-          uri: lb://restaurant-service
-          predicates:
-            - Path=/api/v1/brands/**, /api/v1/restaurants/**, /api/v1/outlets/**, /api/v1/categories/**, /api/v1/internal/admin/restaurants/**, /api/v1/images/**
-            
-        - id: delivery-service
-          uri: lb://delivery-service
-          predicates:
-            - Path=/api/delivery/**, /api/v1/delivery/**, /api/v1/logistics/**, /api/v1/internal/admin/delivery/**
-            
-        - id: identity-service
-          uri: lb://identity-service
-          predicates:
-            - Path=/api/v1/internal/auth/**, /api/v1/internal/users/**, /api/v1/users/**
-            
-        - id: payment-service
-          uri: lb://payment-service
-          predicates:
-            - Path=/api/v1/webhooks/**, /api/v1/payments/**
-            
-        - id: maps-service
-          uri: lb://mapsintegration
-          predicates:
-            - Path=/api/places/**, /api/fleet/**, /api/config/maps-key, /api/logistics/**, /api/maps/tracking
-            
-        - id: notification-service
-          uri: lb://notification-service
-          predicates:
-            - Path=/webhooks/providers/**, /api/v1/notifications/**
-            
-        - id: government-id-service
-          uri: lb://government-id-validation-service
-          predicates:
-            - Path=/api/v1/verification/**
-            
-        - id: ledger-service
-          uri: lb://ledger-service
-          predicates:
-            - Path=/api/v1/ledger/**
-
-        - id: chat-service
-          uri: lb://chat-service
-          predicates:
-            - Path=/api/v1/chat/**
-
-        - id: chat-service-ws
-          uri: lb:ws://chat-service
-          predicates:
-            - Path=/ws/chat/**
-
+      - id: customer-service
+        uri: lb://customer-service
+        predicates:
+        - Path=/api/v1/customers/**, /api/v1/orders/**, /api/v1/places/**, /api/v1/restaurants/nearby,
+          /api/v1/restaurants/brands/*/outlets, /api/v1/restaurants/*/delivery-availability,
+          /api/v1/internal/admin/orders/**, /api/v1/internal/admin/customers/**
+      - id: restaurant-service
+        uri: lb://restaurant-service
+        predicates:
+        - Path=/api/v1/brands/**, /api/v1/restaurants/**, /api/v1/outlets/**, /api/v1/categories/**,
+          /api/v1/internal/admin/restaurants/**, /api/v1/images/**
+      - id: delivery-service
+        uri: lb://delivery-service
+        predicates:
+        - Path=/api/delivery/**, /api/v1/delivery/**, /api/v1/logistics/**, /api/v1/internal/admin/delivery/**
+      - id: identity-service
+        uri: lb://identity-service
+        predicates:
+        - Path=/api/v1/internal/auth/**, /api/v1/internal/users/**, /api/v1/users/**
+      - id: payment-service
+        uri: lb://payment-service
+        predicates:
+        - Path=/api/v1/webhooks/**, /api/v1/payments/**
+      - id: maps-service
+        uri: lb://mapsintegration
+        predicates:
+        - Path=/api/places/**, /api/fleet/**, /api/config/maps-key, /api/logistics/**,
+          /api/maps/tracking
+      - id: notification-service
+        uri: lb://notification-service
+        predicates:
+        - Path=/webhooks/providers/**, /api/v1/notifications/**
+      - id: government-id-service
+        uri: lb://government-id-validation-service
+        predicates:
+        - Path=/api/v1/verification/**
+      - id: ledger-service
+        uri: lb://ledger-service
+        predicates:
+        - Path=/api/v1/ledger/**
+      - id: chat-service
+        uri: lb://chat-service
+        predicates:
+        - Path=/api/v1/chat/**
+      - id: chat-service-ws
+        uri: lb:ws://chat-service
+        predicates:
+        - Path=/ws/chat/**
+      - id: ondc-integration-service
+        uri: lb://ondc-integration-service
+        predicates:
+        - Path=/ondc/**, /search, /select, /init, /confirm, /cancel, /status, /track,
+          /update, /rating, /on_search, /on_select, /on_init, /on_confirm, /on_cancel,
+          /on_status, /on_track
 eureka:
   client:
     service-url:
@@ -102,54 +100,52 @@ eureka:
     prefer-ip-address: true
     lease-renewal-interval-in-seconds: 15
     lease-expiration-duration-in-seconds: 30
-
 management:
   endpoints:
     web:
       exposure:
         include: health,info,gateway,env
-
 rbac:
   rules:
     authenticated:
-      - /api/v1/users
-      - /api/v1/internal/auth/sessions
-      - /api/v1/internal/auth/logout
-      - /api/v1/verification
+    - /api/v1/users
+    - /api/v1/internal/auth/sessions
+    - /api/v1/internal/auth/logout
+    - /api/v1/verification
     customer:
-      - /api/v1/customers
-      - /api/v1/orders
-      - /api/v1/places
-      - /api/v1/payments
-      - /api/places
-      - /api/maps
-      - /api/config
-      - /api/v1/ledger
-      - /api/v1/chat
-      - /ws/chat
+    - /api/v1/customers
+    - /api/v1/orders
+    - /api/v1/places
+    - /api/v1/payments
+    - /api/places
+    - /api/maps
+    - /api/config
+    - /api/v1/ledger
+    - /api/v1/chat
+    - /ws/chat
     restaurant:
-      - /api/v1/restaurants
-      - /api/v1/brands
-      - /api/v1/outlets
-      - /api/v1/categories
-      - /api/v1/logistics
-      - /api/v1/images
-      - /api/places
-      - /api/maps
-      - /api/config
-      - /api/v1/ledger
-      - /api/v1/chat
-      - /ws/chat
+    - /api/v1/restaurants
+    - /api/v1/brands
+    - /api/v1/outlets
+    - /api/v1/categories
+    - /api/v1/logistics
+    - /api/v1/images
+    - /api/places
+    - /api/maps
+    - /api/config
+    - /api/v1/ledger
+    - /api/v1/chat
+    - /ws/chat
     delivery:
-      - /api/v1/images
-      - /api/v1/logistics
-      - /api/v1/delivery
-      - /api/delivery
-      - /api/logistics
-      - /api/fleet
-      - /api/places
-      - /api/maps
-      - /api/config
-      - /api/v1/ledger
-      - /api/v1/chat
-      - /ws/chat
+    - /api/v1/images
+    - /api/v1/logistics
+    - /api/v1/delivery
+    - /api/delivery
+    - /api/logistics
+    - /api/fleet
+    - /api/places
+    - /api/maps
+    - /api/config
+    - /api/v1/ledger
+    - /api/v1/chat
+    - /ws/chat
