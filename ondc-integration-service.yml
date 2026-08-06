@@ -1,11 +1,11 @@
 spring:
   datasource:
-    url: jdbc:postgresql://postgres-db:5432/ondc_db
+    url: jdbc:postgresql://postgres:5432/ondc_db
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
 
   kafka:
-    bootstrap-servers: kafka:9092
+    bootstrap-servers: kafka:29092
 
   data:
     redis:
@@ -15,7 +15,7 @@ spring:
 eureka:
   client:
     service-url:
-      defaultZone: http://eureka-server:8761/eureka
+      defaultZone: http://eureka-server-1:8761/eureka
     fetch-registry: true
     register-with-eureka: true
   instance:

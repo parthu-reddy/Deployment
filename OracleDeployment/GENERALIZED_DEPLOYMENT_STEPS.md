@@ -19,3 +19,16 @@ Remote VMs (like the Oracle instance) might run out of space due to accumulating
   docker compose down -v
   docker system prune -af --volumes
   ```
+
+### Handling Spring Boot `jarmode=tools` Docker Extraction
+When building layered Docker images with Spring Boot, the extract command varies between versions:
+- In Spring Boot 3.3.x and newer: `RUN java -Djarmode=tools -jar app.jar extract --layers --launcher --destination extracted` works seamlessly.
+- In Spring Boot 3.1.x and earlier: The `jarmode=tools` capability is NOT natively present in the same way, and running the `extract` command will yield: `Unsupported jarmode 'tools'`.
+- **Fix Procedure:** Upgrade the `spring-boot-starter-parent` POM to a compatible version (e.g., `3.3.0`+) and the corresponding `spring-cloud-dependencies` (e.g., `2023.0.2`+) to enable the `jarmode=tools` builder inside Docker.
+
+### Multi-Module Maven Docker Builds
+When a microservice needs dependencies from other modules within the same repository (e.g., `CommonLibrary`), running the Docker build solely in the microservice directory will fail if it cannot locate the local `CommonLibrary.jar` artifact in its local `.m2`.
+- **Fix Procedure:**
+  1. Build the parent project using `mvn clean package -DskipTests` to generate the `.jar` files in all the respective `target` directories.
+  2. Configure `docker-compose.yml` to use the parent directory as the build context (`context: ../`) and explicitly specify the dockerfile location (`dockerfile: <MicroserviceName>/Dockerfile`).
+  3. The `Dockerfile` can then copy the pre-built `target/*.jar` from the build context instead of trying to run `mvn package` during the Docker build stage.

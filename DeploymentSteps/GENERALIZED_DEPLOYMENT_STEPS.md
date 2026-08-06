@@ -196,6 +196,11 @@ During deployment, you might encounter some common pitfalls. Always check this l
    - **Cause:** The destination path had spaces and wasn't properly quoted for the remote shell.
    - **Fix:** Make sure to quote the destination properly if it has spaces. For example: `rsync -avz ... user@host:"'Food Delivery.nosync/'"` (single quotes inside double quotes).
 
+6. **Hardcoded `FoodDelivery` vs `Food Delivery.nosync` directory on Remote VMs:**
+   - **Error:** Scripts fail because they try to `cd FoodDelivery/Deployment`, or creating rogue folders named `FoodDelivery` that don't match the live deployment.
+   - **Cause:** When working remotely, AI agents or developers might mistakenly hardcode `FoodDelivery` because it's easier to type than dealing with spaces in `Food Delivery.nosync`. The live deployment is exclusively housed in `Food Delivery.nosync`.
+   - **Fix:** **Never** use or create a directory named `FoodDelivery` on the remote Oracle environment. Always explicitly reference `'Food Delivery.nosync'` in all deployment scripts (e.g. `COMPOSE_DIR="Food Delivery.nosync/Deployment"`).
+
 6. **Database Migration Failures (e.g., Relation Does Not Exist):**
    - **Error:** When running manual SQL migration scripts (like data transfer), you get `relation "some_table" does not exist`.
    - **Cause:** Either the script is connecting to the wrong database (e.g., `\c wrong_db`), or the application (via Flyway) hasn't started and initialized the schema yet.
@@ -299,3 +304,8 @@ During deployment, you might encounter some common pitfalls. Always check this l
     - **Error:** `package org.springframework.ai.tool.annotation does not exist` or `cannot find symbol class Tool` during a remote build, despite compiling successfully locally.
     - **Cause:** Milestone dependencies (e.g., `1.0.0-M6`) require explicitly defining the Spring Milestones repository in `pom.xml`. Even if defined, sometimes transitive resolution (like `spring-ai-core`) can be skipped or mis-cached on a remote VM, especially if you deploy using custom scripts that inject dependencies without updating the lockfiles/caches.
     - **Fix:** Ensure `<repositories>` are explicitly defined in the `pom.xml` where the dependency is used. For extreme cases where the remote cache is broken, explicitly add the missing transitive dependency (e.g. `spring-ai-core`), or manually sync your local `~/.m2/repository` for that specific package (e.g., `rsync -avz ~/.m2/repository/org/springframework/ai ubuntu@host:/home/ubuntu/.m2/repository/org/springframework/ai`) to forcefully mirror the functional local cache.
+
+22. **Flyway Migration Failure due to Oracle-Specific Syntax in PostgreSQL Database:**
+    - **Error:** `org.postgresql.util.PSQLException: ERROR: type "raw" does not exist` or `type "varchar2" does not exist` during application startup when Flyway attempts migration.
+    - **Cause:** The migration SQL file `V1__init_*.sql` was written using Oracle-specific datatypes (`RAW`, `VARCHAR2`, `NUMBER`) instead of PostgreSQL-compatible datatypes. Since the infrastructure uses PostgreSQL, Flyway fails to execute the migration.
+    - **Fix:** Rewrite the SQL migration script to use PostgreSQL standard types: replace `RAW(16)` with `UUID`, `VARCHAR2` with `VARCHAR`, and `NUMBER` with `INTEGER`/`NUMERIC`. Because Flyway records failed migrations, you must also SSH into the deployment, connect to PostgreSQL (`docker exec -i shared_postgres psql -U postgres -d <db_name>`), and run `DROP TABLE IF EXISTS flyway_schema_history;` before rebuilding and restarting the container.

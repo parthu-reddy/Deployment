@@ -72,8 +72,9 @@ SPRING_PROFILES_ACTIVE=dev docker compose up --build -d config-service eureka-se
 echo "Waiting 20 seconds for config/eureka to boot up..."
 sleep 20
 
-# Start everything else
+# Start everything else in the main Deployment
 SPRING_PROFILES_ACTIVE=dev docker compose up --build -d
+
 
 echo "=========================================================="
 echo " DEV Deployment Complete! "

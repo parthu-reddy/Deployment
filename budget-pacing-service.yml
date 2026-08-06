@@ -1,0 +1,6 @@
+server:
+  port: ${SERVER_PORT:8103}
+spring:
+  redis:
+    host: ${REDIS_HOST:redis}
+    port: ${REDIS_PORT:6379}

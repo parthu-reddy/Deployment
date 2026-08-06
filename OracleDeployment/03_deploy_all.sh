@@ -67,6 +67,7 @@ sleep 20
 # Start everything else
 docker compose up --build -d
 
+
 echo "=========================================================="
 echo " Deployment Complete! "
 echo " Your UI should be available at: http://$PUBLIC_IP"
