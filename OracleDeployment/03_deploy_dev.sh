@@ -38,11 +38,21 @@ echo "2. Starting Infrastructure Services (Postgres, Redis, Kafka, Zookeeper)...
 cd Deployment
 SPRING_PROFILES_ACTIVE=dev docker compose up -d zookeeper kafka postgres redis
 
-echo "Waiting for 30 seconds to allow infrastructure to initialize..."
-sleep 30
+echo "Waiting for infrastructure to initialize..."
+# Wait for postgres to be fully ready
+for i in {1..12}; do
+  if docker compose exec -T -e PGPASSWORD=password postgres pg_isready -h 127.0.0.1 -U postgres; then
+    echo "Postgres is ready."
+    break
+  fi
+  echo "Waiting for Postgres..."
+  sleep 10
+done
 
+# Ensure it stays up and create extension
+sleep 10
 echo "Installing postgis extension on restaurant_db..."
-docker compose exec -T -e PGPASSWORD=***REMOVED*** postgres psql -h 127.0.0.1 -U postgres -d restaurant_db -c 'CREATE EXTENSION IF NOT EXISTS postgis;'
+docker compose exec -T -e PGPASSWORD=password postgres psql -h 127.0.0.1 -U postgres -d restaurant_db -c 'CREATE EXTENSION IF NOT EXISTS postgis;'
 
 echo "3. Building Java Microservices Natively (DEV Profile)..."
 cd ..
