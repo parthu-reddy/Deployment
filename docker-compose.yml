@@ -55,6 +55,10 @@ services:
       retries: 10
       start_period: 120s
     restart: unless-stopped
+    command:
+    - postgres
+    - -c
+    - max_connections=500
   redis:
     image: redis:7.2
     container_name: shared_redis
