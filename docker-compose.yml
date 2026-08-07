@@ -55,10 +55,6 @@ services:
       retries: 10
       start_period: 120s
     restart: unless-stopped
-    command:
-    - postgres
-    - -c
-    - max_connections=500
   redis:
     image: redis:7.2
     container_name: shared_redis
@@ -698,6 +694,7 @@ services:
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     - REDIS_HOST=redis
+    - SPRING_AUTOCONFIGURE_EXCLUDE=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration,org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration
     depends_on:
       config-service:
         condition: service_healthy
@@ -726,6 +723,7 @@ services:
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     - REDIS_HOST=redis
+    - SPRING_AUTOCONFIGURE_EXCLUDE=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration,org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration
     depends_on:
       config-service:
         condition: service_healthy
@@ -757,6 +755,7 @@ services:
     - CLICKHOUSE_PASSWORD=
     - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     - REDIS_HOST=redis
+    - SPRING_AUTOCONFIGURE_EXCLUDE=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration,org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration
     depends_on:
       config-service:
         condition: service_healthy

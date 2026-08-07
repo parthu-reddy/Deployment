@@ -317,7 +317,8 @@ During deployment, you might encounter some common pitfalls. Always check this l
     - **Fix:** Update `docker-compose.yml` to increase the Postgres connection limit:
       ```yaml
       postgres:
-        command: ["postgres", "-c", "max_connections=500"]
+        environment:
+        - EXTRA_CONF=max_connections=500
       ```
 
 24. **Services Not Appearing in Eureka Dashboard:**
@@ -327,3 +328,18 @@ During deployment, you might encounter some common pitfalls. Always check this l
       - Missing or incorrect basic auth credentials (`EUREKA_USER`, `EUREKA_PASSWORD`).
       - Service crashed shortly after startup.
     - **Fix:** Verify `eureka.client.serviceUrl.defaultZone` matches the exact URL (including basic auth if used) of the Eureka server. Check the container logs `docker compose logs -f <service-name>` for any startup crashes or connection refused errors to Eureka.
+
+25. **Application Fails to Start (Missing DataSource for Non-Database Services):**
+    - **Error:** `Failed to configure a DataSource: 'url' attribute is not specified and no embedded datasource could be configured.`
+    - **Cause:** Excluding `DataSourceAutoConfiguration` and `HibernateJpaAutoConfiguration` is not enough. Spring Boot will still try to configure JPA repositories and demand an `entityManagerFactory`.
+    - **Fix:** Add `org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration` to your `SPRING_AUTOCONFIGURE_EXCLUDE` environment variable in `docker-compose.yml`.
+
+26. **Docker Compose YAML Syntax Errors for depends_on:**
+    - **Error:** `yaml: line XX: did not find expected key` or similar YAML parsing errors when using `docker compose`.
+    - **Cause:** Incorrect indentation of the `condition: service_healthy` key under the service name in the `depends_on` block.
+    - **Fix:** Ensure the dictionary is properly indented. E.g.:
+      ```yaml
+      depends_on:
+        config-service:
+          condition: service_healthy
+      ```
