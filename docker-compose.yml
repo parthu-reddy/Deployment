@@ -597,24 +597,32 @@ services:
     build:
       context: ../
       dockerfile: WalletService/Dockerfile
-    container_name: wallet_service
+    container_name: wallet-service
     ports:
     - 8120:8120
     environment:
+    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
+    - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - DB_HOST=postgres
     - DB_PORT=5432
     - DB_NAME=wallet_db
     - DB_USER=${POSTGRES_USER}
     - DB_PASS=${POSTGRES_PASS}
-    - KAFKA_BROKERS=shared_kafka:29092
-    - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka_server:8761/eureka/
-    - SPRING_PROFILES_ACTIVE=docker
+    - KAFKA_BROKERS=kafka:29092
+    - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+    - EUREKA_USER=${EUREKA_USER:-admin}
+    - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
+    - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     depends_on:
-    - postgres
-    - kafka
-    restart: unless-stopped
-    networks:
-    - default
+      config-service:
+        condition: service_healthy
+      eureka-server-1:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    restart: on-failure
   clickhouse:
     image: clickhouse/clickhouse-server:latest
     container_name: shared_clickhouse
@@ -656,11 +664,15 @@ services:
     - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     depends_on:
+      config-service:
+        condition: service_healthy
       postgres:
         condition: service_healthy
       kafka:
         condition: service_healthy
       eureka-server-1:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     restart: on-failure
   bidding-engine:
@@ -681,6 +693,8 @@ services:
     - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     depends_on:
+      config-service:
+        condition: service_healthy
       redis:
         condition: service_healthy
       kafka:
@@ -706,6 +720,8 @@ services:
     - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     depends_on:
+      config-service:
+        condition: service_healthy
       redis:
         condition: service_healthy
       kafka:
@@ -734,6 +750,8 @@ services:
     - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     depends_on:
+      config-service:
+        condition: service_healthy
       clickhouse:
         condition: service_healthy
       kafka:
