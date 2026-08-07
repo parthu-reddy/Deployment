@@ -1,5 +1,14 @@
 server:
   port: ${SERVER_PORT:8104}
 spring:
+  application:
+    name: event-tracking-service
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URLS:http://eureka-server-1:8761/eureka/,http://eureka-server-2:8761/eureka/}
+  instance:
+    prefer-ip-address: true

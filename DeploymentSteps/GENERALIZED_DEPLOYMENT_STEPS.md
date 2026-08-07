@@ -4,6 +4,7 @@ This guide provides a comprehensive checklist and instructions for taking a newl
 
 ## Prerequisites
 - Your service should be built on Spring Boot.
+- The service must include the `spring-cloud-starter-netflix-eureka-client` dependency in its `pom.xml`.
 - The service should be added to the parent `pom.xml` under `<modules>` if it's a Maven multi-module project.
 - You must always deploy using the `dev` profile (`SPRING_PROFILES_ACTIVE=dev`) as per our deployment policy.
 

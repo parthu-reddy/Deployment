@@ -100,3 +100,10 @@ server:
   port: 8092
 
 spring.jpa.open-in-view: false
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URLS:http://eureka-server-1:8761/eureka/,http://eureka-server-2:8761/eureka/}
+  instance:
+    prefer-ip-address: true

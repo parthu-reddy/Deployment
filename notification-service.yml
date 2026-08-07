@@ -72,3 +72,10 @@ platform:
   webhook:
     base-url: ${WEBHOOK_BASE_URL:http://localhost:8081}
     secret: ${WEBHOOK_SECRET:super_secret_webhook_token}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URLS:http://eureka-server-1:8761/eureka/,http://eureka-server-2:8761/eureka/}
+  instance:
+    prefer-ip-address: true
