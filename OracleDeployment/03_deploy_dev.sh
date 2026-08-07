@@ -49,10 +49,6 @@ for i in {1..12}; do
   sleep 10
 done
 
-# Ensure it stays up and create extension
-sleep 10
-echo "Installing postgis extension on restaurant_db..."
-docker compose exec -T -e PGPASSWORD=password postgres psql -h 127.0.0.1 -U postgres -d restaurant_db -c 'CREATE EXTENSION IF NOT EXISTS postgis;'
 
 echo "3. Building Java Microservices Natively (DEV Profile)..."
 cd ..
