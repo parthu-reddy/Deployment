@@ -273,6 +273,8 @@ services:
     ports:
     - 8085:8085
     environment:
+    - DB_USERNAME=${POSTGRES_USER}
+    - DB_PASSWORD=${POSTGRES_PASS}
     - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
     - EUREKA_USER=${EUREKA_USER:-admin}
     - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
@@ -280,8 +282,6 @@ services:
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - PORT=8085
     - DB_URL=jdbc:postgresql://postgres:5432/payment_db
-    - DB_USERNAME=${POSTGRES_USER}
-    - DB_PASSWORD=${POSTGRES_PASS}
     - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     - REDIS_HOST=redis
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default},debug
@@ -570,6 +570,8 @@ services:
     ports:
     - 8098:8098
     environment:
+    - DB_USERNAME=${POSTGRES_USER}
+    - DB_PASSWORD=${POSTGRES_PASS}
     - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
     - EUREKA_USER=${EUREKA_USER:-admin}
     - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
@@ -577,8 +579,6 @@ services:
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - DB_URL=jdbc:postgresql://postgres:5432/ondc_db
-    - DB_USERNAME=${POSTGRES_USER}
-    - DB_PASSWORD=${POSTGRES_PASS}
     - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     - REDIS_HOST=redis
     depends_on:
@@ -601,6 +601,8 @@ services:
     ports:
     - 8120:8120
     environment:
+    - DB_USERNAME=${POSTGRES_USER}
+    - DB_PASSWORD=${POSTGRES_PASS}
     - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
     - EUREKA_USER=${EUREKA_USER:-admin}
     - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
@@ -651,6 +653,8 @@ services:
     ports:
     - 8088:8088
     environment:
+    - DB_USERNAME=${POSTGRES_USER}
+    - DB_PASSWORD=${POSTGRES_PASS}
     - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
     - EUREKA_USER=${EUREKA_USER:-admin}
     - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
@@ -658,8 +662,6 @@ services:
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - DB_URL=jdbc:postgresql://postgres:5432/campaign_db
-    - DB_USERNAME=${POSTGRES_USER}
-    - DB_PASSWORD=${POSTGRES_PASS}
     - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     - REDIS_HOST=redis
     depends_on:
@@ -682,6 +684,8 @@ services:
     ports:
     - 8102:8102
     environment:
+    - DB_USERNAME=${POSTGRES_USER}
+    - DB_PASSWORD=${POSTGRES_PASS}
     - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
     - EUREKA_USER=${EUREKA_USER:-admin}
     - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
@@ -708,6 +712,8 @@ services:
     ports:
     - 8103:8103
     environment:
+    - DB_USERNAME=${POSTGRES_USER}
+    - DB_PASSWORD=${POSTGRES_PASS}
     - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
     - EUREKA_USER=${EUREKA_USER:-admin}
     - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
@@ -734,6 +740,8 @@ services:
     ports:
     - 8104:8104
     environment:
+    - DB_USERNAME=${POSTGRES_USER}
+    - DB_PASSWORD=${POSTGRES_PASS}
     - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
     - EUREKA_USER=${EUREKA_USER:-admin}
     - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
