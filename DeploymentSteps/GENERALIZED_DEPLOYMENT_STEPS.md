@@ -310,3 +310,20 @@ During deployment, you might encounter some common pitfalls. Always check this l
     - **Error:** `org.postgresql.util.PSQLException: ERROR: type "raw" does not exist` or `type "varchar2" does not exist` during application startup when Flyway attempts migration.
     - **Cause:** The migration SQL file `V1__init_*.sql` was written using Oracle-specific datatypes (`RAW`, `VARCHAR2`, `NUMBER`) instead of PostgreSQL-compatible datatypes. Since the infrastructure uses PostgreSQL, Flyway fails to execute the migration.
     - **Fix:** Rewrite the SQL migration script to use PostgreSQL standard types: replace `RAW(16)` with `UUID`, `VARCHAR2` with `VARCHAR`, and `NUMBER` with `INTEGER`/`NUMERIC`. Because Flyway records failed migrations, you must also SSH into the deployment, connect to PostgreSQL (`docker exec -i shared_postgres psql -U postgres -d <db_name>`), and run `DROP TABLE IF EXISTS flyway_schema_history;` before rebuilding and restarting the container.
+
+23. **Database Connection Limit Reached (too many clients already):**
+    - **Error:** Services fail to start or connect to the database with `FATAL: sorry, too many clients already`.
+    - **Cause:** When you have many microservices (e.g. 15+) connecting to a single Postgres instance, each service's Hikari connection pool opens multiple connections (default 10-30), quickly exhausting the Postgres default `max_connections` limit (100).
+    - **Fix:** Update `docker-compose.yml` to increase the Postgres connection limit:
+      ```yaml
+      postgres:
+        command: ["postgres", "-c", "max_connections=500"]
+      ```
+
+24. **Services Not Appearing in Eureka Dashboard:**
+    - **Error:** The service starts correctly locally or in Docker, but it doesn't appear in the Eureka UI at `http://<ip>:8761`.
+    - **Cause:** Several possible issues:
+      - Incorrect Eureka URL in the `deployment/{service-name}.yml`.
+      - Missing or incorrect basic auth credentials (`EUREKA_USER`, `EUREKA_PASSWORD`).
+      - Service crashed shortly after startup.
+    - **Fix:** Verify `eureka.client.serviceUrl.defaultZone` matches the exact URL (including basic auth if used) of the Eureka server. Check the container logs `docker compose logs -f <service-name>` for any startup crashes or connection refused errors to Eureka.
