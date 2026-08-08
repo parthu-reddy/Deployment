@@ -31,6 +31,8 @@ fi
 sed -i "s|KYB_FSSAI_API_URL=http://localhost:8080/mock/fssai|KYB_FSSAI_API_URL=http://api-gateway:8080/mock/fssai|g" Deployment/docker-compose.yml
 
 echo "2. Starting Infrastructure Services (Postgres, Redis, Kafka, Zookeeper)..."
+# Forcefully remove stray testcontainers (like test_pg) from failed integration tests
+docker rm -f test_pg 2>/dev/null || true
 cd Deployment
 docker compose up -d zookeeper kafka postgres redis
 

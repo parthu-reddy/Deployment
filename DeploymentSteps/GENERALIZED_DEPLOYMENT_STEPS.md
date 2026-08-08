@@ -182,6 +182,11 @@ During deployment, you might encounter some common pitfalls. Always check this l
    - **Cause:** The Docker daemon is not active on the host machine, or you are trying to run the deployment scripts locally instead of on the actual Oracle Cloud VM.
    - **Fix:** Ensure Docker is started (`sudo systemctl start docker` on Linux, or opening Docker Desktop on Mac). If deploying to Oracle, ensure you have successfully SSH'd into the remote VM before running `03_deploy_dev.sh`.
 
+2. **Stray Testcontainers (`test_pg`) Surviving Docker Prune:**
+   - **Error:** Finding a `test_pg` or other random PostGIS container running even after executing `docker system prune -af`.
+   - **Cause:** When Java integration tests run, Testcontainers may dynamically spin up a PostGIS container (e.g., `kartoza/postgis:16-3.4` mapped internally to `5432/tcp`). If a test run is aborted or fails abruptly, the container is left running. Because `docker system prune` only removes *stopped* containers, these actively running orphans survive teardowns and consume VM memory.
+   - **Fix:** We added `docker rm -f test_pg 2>/dev/null || true` to our deployment scripts before they spin up infrastructure. However, you can also run `docker ps` to identify any rogue running containers, and stop/rm them manually before running a clean deploy.
+
 3. **Port Collisions:**
    - **Error:** `Bind for 0.0.0.0:<port> failed: port is already allocated.`
    - **Cause:** Another service is already using the port you assigned.
@@ -343,3 +348,8 @@ During deployment, you might encounter some common pitfalls. Always check this l
         config-service:
           condition: service_healthy
       ```
+
+27. **Schema and Entity Field Synchronization Failures:**
+    - **Error:** Hibernate schema validation fails at boot time with `wrong column type encountered` or `missing column` in `outbox_events` (or similar shared tables).
+    - **Cause:** When creating a Flyway migration (`V1__init_schema.sql`), column names or types slightly differ from the JPA Entity definitions. For example, naming the column `event_type` when the entity has `@Column(name = "type")`, or using `TEXT` when the entity expects `JSONB` via `@JdbcTypeCode(SqlTypes.JSON)`.
+    - **Fix:** Always strictly verify that the SQL table definitions exactly match the `@Column` names and types in the JPA entity classes, especially when copying schemas from other services or manually creating outbox tables.

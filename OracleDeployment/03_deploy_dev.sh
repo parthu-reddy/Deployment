@@ -35,6 +35,8 @@ export SPRING_PROFILES_ACTIVE=dev
 echo "Activated Spring Profile: $SPRING_PROFILES_ACTIVE"
 
 echo "2. Starting Infrastructure Services (Postgres, Redis, Kafka, Zookeeper)..."
+# Forcefully remove stray testcontainers (like test_pg) from failed integration tests
+docker rm -f test_pg 2>/dev/null || true
 cd Deployment
 SPRING_PROFILES_ACTIVE=dev docker compose up -d zookeeper kafka postgres redis
 
@@ -52,7 +54,7 @@ done
 
 echo "3. Building Java Microservices Natively (DEV Profile)..."
 cd ..
-mvn clean package -Pdev -Dmaven.test.skip=true
+mvn clean package -Pdev -DskipTests
 
 # Check if UI is available and install dependencies if package.json exists
 if [ -d "FoodDeliveryAppUI" ]; then

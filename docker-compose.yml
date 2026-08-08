@@ -41,6 +41,7 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASS: ${POSTGRES_PASS}
+      POSTGRES_EXTRA_OPTS: "-c max_connections=500"
     ports:
     - 5432:5432
     volumes:
