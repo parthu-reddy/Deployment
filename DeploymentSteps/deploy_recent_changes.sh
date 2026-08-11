@@ -30,6 +30,11 @@ rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no -i $SSH_KEY" \
   /Users/parthureddy/Documents/Food\ Delivery.nosync/FoodDeliveryAppUI/ \
   ubuntu@$ORACLE_IP:"~/Food\ Delivery.nosync/FoodDeliveryAppUI/"
 
+rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no -i $SSH_KEY" \
+  --exclude 'target' --exclude 'node_modules' --exclude '.git' \
+  /Users/parthureddy/Documents/Food\ Delivery.nosync/Deployment/ \
+  ubuntu@$ORACLE_IP:"~/Food\ Delivery.nosync/Deployment/"
+
 echo "Building and restarting changed services on remote..."
 ssh -o StrictHostKeyChecking=no -i $SSH_KEY ubuntu@$ORACLE_IP << 'EOF'
 cd "Food Delivery.nosync"

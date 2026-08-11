@@ -13,7 +13,7 @@ spring:
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 5
-      minimum-idle: 10
+      minimum-idle: 5
       idle-timeout: 300000
       connection-timeout: 20000
       max-lifetime: 1200000
@@ -47,13 +47,14 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:password}
 
 server:
   port: 8095
 
 eureka:
   client:
-    service-url:
+    serviceUrl:
       defaultZone: ${EUREKA_URLS:http://eureka-server-1:8761/eureka/,http://eureka-server-2:8761/eureka/}
   instance:
     prefer-ip-address: true

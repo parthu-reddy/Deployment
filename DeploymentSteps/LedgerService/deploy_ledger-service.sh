@@ -10,13 +10,13 @@ cd "$(dirname "$0")"
 echo "Syncing CommonLibrary..."
 rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no -i $SSH_KEY" \
   --exclude 'target' --exclude 'node_modules' --exclude '.git' \
-  ../../../../CommonLibrary/ \
+  ../../../CommonLibrary/ \
   ubuntu@$ORACLE_IP:"~/Food\ Delivery.nosync/CommonLibrary/"
 
 echo "Syncing LedgerService..."
 rsync -avz -e "ssh -o StrictHostKeyChecking=no -i $SSH_KEY" \
   --exclude 'target' --exclude 'node_modules' --exclude '.git' \
-  ../../../../LedgerService/ \
+  ../../../LedgerService/ \
   ubuntu@$ORACLE_IP:"~/Food\ Delivery.nosync/LedgerService/"
 
 echo "Building and restarting ledger-service on remote..."

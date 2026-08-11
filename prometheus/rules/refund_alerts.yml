@@ -1,0 +1,38 @@
+groups:
+  - name: RefundAlerts
+    rules:
+      - alert: HighRefundFailureRate
+        expr: rate(order_saga_refund_process_failure_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High refund failure rate detected"
+          description: "More than 5% of refund processing attempts are failing over the last 5 minutes."
+
+      - alert: HighPartialRefundFailureRate
+        expr: rate(order_saga_refund_partial_failure_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High partial refund failure rate detected"
+          description: "More than 5% of partial refund processing attempts are failing over the last 5 minutes."
+
+      - alert: WalletEventDLQAccumulation
+        expr: rate(wallet_event_dlq_total[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Wallet DLQ events detected"
+          description: "Messages are accumulating in the Wallet Service Dead Letter Queue."
+
+      - alert: HighLedgerFailureRate
+        expr: rate(ledger_transaction_failures_total[5m]) > 0.01
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High ledger transaction failure rate"
+          description: "Ledger transaction failures are elevated, possibly indicating missing ChargeCategory or deserialization issues."

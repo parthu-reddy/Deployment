@@ -16,6 +16,11 @@ for db in identity_db restaurant_db food_delivery delivery_db government_id_db p
         "cd '$COMPOSE_DIR' && docker compose exec -T -e PGPASSWORD=$DB_PASS postgres psql -h 127.0.0.1 -U postgres -d $db -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'"
 done
 
+echo "Wiping Redis cache..."
+ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" "$REMOTE_USER@$REMOTE_HOST" \
+    "cd '$COMPOSE_DIR' && docker compose exec -T redis redis-cli FLUSHALL"
+
+
 echo "Creating postgis extension in restaurant_db..."
 ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" "$REMOTE_USER@$REMOTE_HOST" \
     "cd '$COMPOSE_DIR' && docker compose exec -T -e PGPASSWORD=$DB_PASS postgres psql -h 127.0.0.1 -U postgres -d restaurant_db -c 'CREATE EXTENSION IF NOT EXISTS postgis;'"

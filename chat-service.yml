@@ -15,7 +15,7 @@ spring:
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 5
-      minimum-idle: 10
+      minimum-idle: 5
       connection-timeout: 30000
       idle-timeout: 300000
       max-lifetime: 1200000
@@ -39,7 +39,7 @@ r2:
 
 eureka:
   client:
-    service-url:
+    serviceUrl:
       defaultZone: ${EUREKA_URLS:http://eureka-server-1:8761/eureka/,http://eureka-server-2:8761/eureka/}
   instance:
     prefer-ip-address: true

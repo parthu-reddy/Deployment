@@ -137,6 +137,9 @@ Modify `Deployment/api-gateway.yml` to add your route rules:
 > [!NOTE]
 > The `uri: lb://{service-name}` uses Eureka service discovery. The service name must exactly match `spring.application.name` in your `{service-name}.yml`.
 
+> [!WARNING]
+> Remember that the `Deployment/` folder maps directly into the ConfigService. If you add or modify `{service-name}.yml` or `api-gateway.yml`, you **must** sync the `Deployment` folder to the remote Oracle server (e.g., using `rsync` in `deploy_recent_changes.sh`), and you must restart the affected services for the changes to take effect.
+
 ## Step 6: Create an Individual Deploy Script
 To deploy *just* your service without restarting the entire architecture, create an individual deployment shell script.
 
