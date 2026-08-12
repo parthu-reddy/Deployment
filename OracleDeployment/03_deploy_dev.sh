@@ -54,7 +54,7 @@ done
 
 echo "3. Building Java Microservices Natively (DEV Profile)..."
 cd ..
-mvn clean package -Pdev -DskipTests
+mvn clean package -Pdev -Dmaven.test.skip=true
 
 # Check if UI is available and install dependencies if package.json exists
 if [ -d "FoodDeliveryAppUI" ]; then

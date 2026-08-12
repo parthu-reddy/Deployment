@@ -23,7 +23,7 @@ server:
 olamaps:
   api:
     base-url: https://api.olamaps.io
-    key: ${OLA_MAPS_API_KEY:default_test_key}
+    key: ***REMOVED***
 
 resilience4j:
   circuitbreaker:
@@ -46,3 +46,9 @@ eureka:
       defaultZone: ${EUREKA_URLS:http://eureka-server-1:8761/eureka/,http://eureka-server-2:8761/eureka/}
   instance:
     prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "refresh,health,info"

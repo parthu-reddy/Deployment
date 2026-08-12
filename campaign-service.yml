@@ -31,7 +31,7 @@ spring:
       group-id: campaign-service-group
       auto-offset-reset: earliest
 server:
-  port: ${SERVER_PORT:8101}
+  port: ${SERVER_PORT:8088}
 
 eureka:
   client:

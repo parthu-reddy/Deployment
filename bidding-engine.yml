@@ -3,6 +3,8 @@ server:
 spring:
   application:
     name: bidding-engine
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:29092}
   redis:
     host: ${REDIS_HOST:redis}
     port: ${REDIS_PORT:6379}

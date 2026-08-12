@@ -356,3 +356,33 @@ During deployment, you might encounter some common pitfalls. Always check this l
     - **Error:** Hibernate schema validation fails at boot time with `wrong column type encountered` or `missing column` in `outbox_events` (or similar shared tables).
     - **Cause:** When creating a Flyway migration (`V1__init_schema.sql`), column names or types slightly differ from the JPA Entity definitions. For example, naming the column `event_type` when the entity has `@Column(name = "type")`, or using `TEXT` when the entity expects `JSONB` via `@JdbcTypeCode(SqlTypes.JSON)`.
     - **Fix:** Always strictly verify that the SQL table definitions exactly match the `@Column` names and types in the JPA entity classes, especially when copying schemas from other services or manually creating outbox tables.
+
+28. **KafkaHeader Compilation Errors (RECEIVED_PARTITION_ID):**
+    - **Error:** `cannot find symbol ... KafkaHeaders.RECEIVED_PARTITION_ID`
+    - **Cause:** In newer versions of Spring Kafka (3.x+), `RECEIVED_PARTITION_ID` is deprecated and removed.
+    - **Fix:** Use `KafkaHeaders.RECEIVED_PARTITION` instead.
+
+29. **Application Crash Due to Missing `idempotency_keys` Table:**
+    - **Error:** Application crashes on startup with `SchemaManagementException: Schema-validation: missing table [idempotency_keys]`.
+    - **Cause:** If your microservice uses `CommonLibrary` entities, it will automatically scan and try to manage the `IdempotencyKey` entity. If your service doesn't have a Flyway migration script to create this table, Hibernate's schema validation (`validate`) will fail.
+    - **Fix:** Ensure that every microservice depending on `CommonLibrary` and using JPA includes a Flyway migration (e.g. `V4__create_idempotency_keys.sql`) with `CREATE TABLE IF NOT EXISTS idempotency_keys ( key VARCHAR(255) PRIMARY KEY, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP );`.
+
+30. **HikariCP "Apparent connection leak detected" During Boot:**
+    - **Error:** `java.lang.Exception: Apparent connection leak detected` in service logs during startup.
+    - **Cause:** This is often a **false positive** warning during initial boot. If Flyway migrations or large JPA context initializations take longer than Hikari's `leakDetectionThreshold`, Hikari assumes the connection is leaked.
+    - **Fix:** As long as the service proceeds to print `Started <ApplicationName>` directly afterward, this can be safely ignored. The connection is returned to the pool once the long-running startup task completes.
+
+31. **Kafka Timeout Exception (Timed out waiting for a node assignment):**
+    - **Error:** `org.apache.kafka.common.errors.TimeoutException: Timed out waiting for a node assignment` or `NetworkClient: Connection to node -1 (localhost/127.0.0.1:9092) could not be established.`
+    - **Cause:** The microservice is trying to connect to a default `localhost:9092` broker instead of the internal Docker Kafka broker. This happens if `spring.kafka.bootstrap-servers` is missing from the `{service-name}.yml`.
+    - **Fix:** Ensure your service's YAML in `Deployment/` has `spring.kafka.bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:29092}` configured under `spring:`.
+
+32. **OpenTelemetry Connection Refused (api-gateway connecting to localhost:4318):**
+    - **Error:** `Failed to connect to localhost/[0:0:0:0:0:0:0:1]:4318`
+    - **Cause:** Micrometer tracing or OpenTelemetry agents are enabled by default in the microservice, but the `MANAGEMENT_OTLP_TRACING_ENDPOINT` defaults to `localhost`.
+    - **Fix:** If no Otel collector is deployed in `docker-compose.yml`, this is benign, but to disable the warning, explicitly configure or disable tracing endpoints.
+
+33. **GCP Default Credentials Not Found:**
+    - **Error:** `Your default credentials were not found. To set up Application Default Credentials for your environment, see...`
+    - **Cause:** A microservice (e.g., `communication-integration`) initializing Google Cloud SDKs inside a Docker container doesn't have access to your local machine's `gcloud` credentials.
+    - **Fix:** Either mock the beans using a `@Profile("dev")` configuration, or inject a service account key into the container via volume mounts and `GOOGLE_APPLICATION_CREDENTIALS`.

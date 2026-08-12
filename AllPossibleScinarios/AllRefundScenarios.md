@@ -481,15 +481,15 @@ Admin can cancel orders at **any** non-terminal state. Every state handler's `ha
 
 ## 11. Wallet Refund Scenarios
 
-### 11.1 Standard Wallet Refund Credit (REFUND_GENERATED Event)
+### 11.1 Standard Wallet Refund Credit
 
-**Trigger:** `processRefund()` emits `REFUND_GENERATED` outbox event alongside `PAYMENT_REFUND_REQUESTED`.
+**Trigger:** `processRefund()` accepts a `RefundDestination` (WALLET vs GATEWAY) parameter. For WALLET refunds, it emits a `PAYMENT_REFUND_REQUESTED` event with `refundDestination=WALLET`.
 
 | Attribute | Value |
 |---|---|
-| **Consumer** | `GenericWalletEventConsumer` |
-| **Action** | `walletService.credit(entityId, CUSTOMER, amount, referenceId, description)` |
-| **Wallet Status Check** | Must be `ACTIVE`; throws `WalletInactiveException` if frozen/closed |
+| **Gateway Routing** | `PaymentGatewayIntegration` processes the mock/webhook refund and emits `PAYMENT_REFUNDED` with `refundDestination=WALLET`. |
+| **Outbox Relay** | `CustomerApplication` consumes `PAYMENT_REFUNDED`, sees WALLET destination, and emits a `REFUND_GENERATED` outbox event. |
+| **Consumer** | `GenericWalletEventConsumer` in WalletService credits the wallet. |
 | **Idempotency** | `referenceId` = `"REFUND_" + orderId` → tracked in `ProcessedEvent` table |
 
 ### 11.2 Wallet Refund for Ledger-Rejected Transaction
@@ -749,7 +749,7 @@ Order delivered successfully → all charges stand. Refund only if post-delivery
 ### Wallet Credit Amount
 - For full refund: `order.getTotalAmount()` credited to customer wallet
 - For partial: specific `amount` from event payload
-- Wallet credit happens **in parallel** with payment gateway refund (dual-path)
+- Refund paths are **mutually exclusive** (RefundDestination is either WALLET or GATEWAY, never both).
 
 ### Ledger Recording
 - Full refund: `Platform → Customer`, `ChargeCategory.REFUND`, `totalAmount`

@@ -30,9 +30,9 @@ services:
       - kafka-broker-api-versions
       - --bootstrap-server
       - localhost:9092
-      interval: 10s
-      timeout: 5s
-      retries: 10
+      interval: 15s
+      timeout: 20s
+      retries: 15
       start_period: 120s
     restart: unless-stopped
   postgres:
@@ -192,6 +192,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8092/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
     restart: on-failure
   restaurant-service:
     build:
@@ -229,6 +235,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8094/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
     restart: on-failure
   delivery-service:
     build:
@@ -265,6 +277,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8095/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
     restart: on-failure
   payment-gateway:
     build:
@@ -302,6 +320,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8085/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
     restart: on-failure
   maps-integration:
     build:
@@ -333,6 +357,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8083/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
     restart: on-failure
   communication-integration:
     build:
@@ -372,6 +402,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8081/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
     restart: on-failure
   api-gateway:
     build:
@@ -406,6 +442,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
     restart: on-failure
   identity-service:
     build:
@@ -446,6 +488,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8086/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
     restart: on-failure
   government-id-service:
     build:
@@ -485,6 +533,12 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8087/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
     restart: on-failure
   food-delivery-app-ui:
     build:
@@ -495,6 +549,12 @@ services:
     - 80:80
     depends_on:
     - api-gateway
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     restart: on-failure
   ledger-service:
     build:
@@ -526,6 +586,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8089/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
     restart: on-failure
   chat-service:
     build:
@@ -562,6 +628,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8096/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
     restart: on-failure
   ondc-integration-service:
     build:
@@ -593,6 +665,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8098/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
     restart: on-failure
   wallet-service:
     build:
@@ -625,6 +703,12 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8120/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
     restart: on-failure
   clickhouse:
     image: clickhouse/clickhouse-server:latest
@@ -676,6 +760,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8088/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
     restart: on-failure
   bidding-engine:
     build:
@@ -687,6 +777,7 @@ services:
     environment:
     - DB_USERNAME=${POSTGRES_USER}
     - DB_PASSWORD=${POSTGRES_PASS}
+    - REDIS_HOST=redis
     - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
     - EUREKA_USER=${EUREKA_USER:-admin}
     - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
@@ -705,6 +796,12 @@ services:
         condition: service_healthy
       eureka-server-1:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8102/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
     restart: on-failure
   budget-pacing-service:
     build:
@@ -734,6 +831,12 @@ services:
         condition: service_healthy
       eureka-server-1:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8103/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
     restart: on-failure
   event-tracking-service:
     build:
@@ -766,6 +869,12 @@ services:
         condition: service_healthy
       eureka-server-1:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8104/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
     restart: on-failure
 volumes:
   shared_pgdata: null

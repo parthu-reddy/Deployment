@@ -57,6 +57,12 @@ spring:
         uri: lb://identity-service
         predicates:
         - Path=/api/v1/internal/auth/**, /api/v1/internal/users/**, /api/v1/users/**
+        filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter.replenishRate: 20
+            redis-rate-limiter.burstCapacity: 100
+            key-resolver: '#{@ipKeyResolver}'
       - id: payment-service
         uri: lb://payment-service
         predicates:

@@ -26,7 +26,7 @@ spring:
     baseline-on-migrate: true
     baseline-version: "0"
 server:
-  port: ${SERVER_PORT:8105}
+  port: ${SERVER_PORT:8120}
 
 eureka:
   client:

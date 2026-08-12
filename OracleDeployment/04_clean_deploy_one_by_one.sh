@@ -97,7 +97,7 @@ SERVICES=(
 for SERVICE in "${SERVICES[@]}"; do
     echo "----------------------------------------"
     echo " Starting $SERVICE..."
-    SPRING_PROFILES_ACTIVE=dev docker compose up --build -d "$SERVICE"
+    SPRING_PROFILES_ACTIVE=dev docker compose up --build -d --no-deps "$SERVICE"
     echo "Waiting 20 seconds for $SERVICE to initialize..."
     sleep 20
     
