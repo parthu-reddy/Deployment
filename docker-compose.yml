@@ -41,7 +41,7 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASS: ${POSTGRES_PASS}
-      POSTGRES_EXTRA_OPTS: "-c max_connections=500"
+      POSTGRES_EXTRA_OPTS: -c max_connections=500
     ports:
     - 5432:5432
     volumes:
@@ -181,6 +181,7 @@ services:
     - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
     - R2_PUBLIC_URL=${R2_PUBLIC_URL}
     - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
+    - SPRING_DATA_REDIS_HOST=redis
     depends_on:
       config-service:
         condition: service_healthy
@@ -193,7 +194,9 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://localhost:8092/actuator/health || exit 1"]
+      test:
+      - CMD-SHELL
+      - wget --spider -q http://localhost:8092/actuator/health || exit 1
       interval: 10s
       timeout: 5s
       retries: 10
@@ -224,6 +227,7 @@ services:
     - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
     - R2_PUBLIC_URL=${R2_PUBLIC_URL}
     - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
+    - SPRING_DATA_REDIS_HOST=redis
     depends_on:
       config-service:
         condition: service_healthy
@@ -236,7 +240,9 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://localhost:8094/actuator/health || exit 1"]
+      test:
+      - CMD-SHELL
+      - wget --spider -q http://localhost:8094/actuator/health || exit 1
       interval: 10s
       timeout: 5s
       retries: 10
@@ -266,6 +272,7 @@ services:
     - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
     - R2_PUBLIC_URL=${R2_PUBLIC_URL}
     - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
+    - SPRING_DATA_REDIS_HOST=redis
     depends_on:
       config-service:
         condition: service_healthy
@@ -278,7 +285,9 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://localhost:8095/actuator/health || exit 1"]
+      test:
+      - CMD-SHELL
+      - wget --spider -q http://localhost:8095/actuator/health || exit 1
       interval: 10s
       timeout: 5s
       retries: 10
@@ -309,6 +318,7 @@ services:
     - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
     - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
     - R2_PUBLIC_URL=${R2_PUBLIC_URL}
+    - SPRING_DATA_REDIS_HOST=redis
     depends_on:
       config-service:
         condition: service_healthy
@@ -321,7 +331,9 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://localhost:8085/actuator/health || exit 1"]
+      test:
+      - CMD-SHELL
+      - wget --spider -q http://localhost:8085/actuator/health || exit 1
       interval: 10s
       timeout: 5s
       retries: 10
@@ -348,6 +360,7 @@ services:
     - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
     - R2_PUBLIC_URL=${R2_PUBLIC_URL}
     - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
+    - SPRING_DATA_REDIS_HOST=redis
     depends_on:
       config-service:
         condition: service_healthy
@@ -358,7 +371,9 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://localhost:8083/actuator/health || exit 1"]
+      test:
+      - CMD-SHELL
+      - wget --spider -q http://localhost:8083/actuator/health || exit 1
       interval: 10s
       timeout: 5s
       retries: 10
@@ -391,6 +406,7 @@ services:
     - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
     - R2_PUBLIC_URL=${R2_PUBLIC_URL}
     - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
+    - SPRING_DATA_REDIS_HOST=redis
     depends_on:
       config-service:
         condition: service_healthy
@@ -403,7 +419,9 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://localhost:8081/actuator/health || exit 1"]
+      test:
+      - CMD-SHELL
+      - wget --spider -q http://localhost:8081/actuator/health || exit 1
       interval: 10s
       timeout: 5s
       retries: 10
@@ -435,6 +453,7 @@ services:
     - R2_PUBLIC_URL=${R2_PUBLIC_URL}
     - REDIS_HOST=redis
     - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
+    - SPRING_DATA_REDIS_HOST=redis
     depends_on:
       config-service:
         condition: service_healthy
@@ -443,7 +462,9 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://localhost:8080/actuator/health || exit 1"]
+      test:
+      - CMD-SHELL
+      - wget --spider -q http://localhost:8080/actuator/health || exit 1
       interval: 10s
       timeout: 5s
       retries: 10
@@ -477,6 +498,7 @@ services:
     - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
     - R2_PUBLIC_URL=${R2_PUBLIC_URL}
     - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
+    - SPRING_DATA_REDIS_HOST=redis
     depends_on:
       config-service:
         condition: service_healthy
@@ -489,7 +511,9 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://localhost:8086/actuator/health || exit 1"]
+      test:
+      - CMD-SHELL
+      - wget --spider -q http://localhost:8086/actuator/health || exit 1
       interval: 10s
       timeout: 5s
       retries: 10
@@ -524,6 +548,7 @@ services:
     - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
     - R2_PUBLIC_URL=${R2_PUBLIC_URL}
     - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
+    - SPRING_DATA_REDIS_HOST=redis
     depends_on:
       config-service:
         condition: service_healthy
@@ -534,7 +559,9 @@ services:
       kafka:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://localhost:8087/actuator/health || exit 1"]
+      test:
+      - CMD-SHELL
+      - wget --spider -q http://localhost:8087/actuator/health || exit 1
       interval: 10s
       timeout: 5s
       retries: 10
@@ -550,7 +577,9 @@ services:
     depends_on:
     - api-gateway
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1/ || exit 1"]
+      test:
+      - CMD-SHELL
+      - wget --spider -q http://127.0.0.1/ || exit 1
       interval: 10s
       timeout: 5s
       retries: 5
@@ -575,6 +604,7 @@ services:
     - EUREKA_USER=${EUREKA_USER:-admin}
     - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
+    - SPRING_DATA_REDIS_HOST=redis
     depends_on:
       config-service:
         condition: service_healthy
@@ -587,7 +617,9 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://localhost:8089/actuator/health || exit 1"]
+      test:
+      - CMD-SHELL
+      - wget --spider -q http://localhost:8089/actuator/health || exit 1
       interval: 10s
       timeout: 5s
       retries: 10
@@ -617,6 +649,7 @@ services:
     - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
     - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
     - R2_PUBLIC_URL=${R2_PUBLIC_URL}
+    - SPRING_DATA_REDIS_HOST=redis
     depends_on:
       config-service:
         condition: service_healthy
@@ -629,7 +662,9 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://localhost:8096/actuator/health || exit 1"]
+      test:
+      - CMD-SHELL
+      - wget --spider -q http://localhost:8096/actuator/health || exit 1
       interval: 10s
       timeout: 5s
       retries: 10
@@ -654,6 +689,7 @@ services:
     - DB_URL=jdbc:postgresql://postgres:5432/ondc_db
     - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     - REDIS_HOST=redis
+    - SPRING_DATA_REDIS_HOST=redis
     depends_on:
       config-service:
         condition: service_healthy
@@ -666,7 +702,9 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://localhost:8098/actuator/health || exit 1"]
+      test:
+      - CMD-SHELL
+      - wget --spider -q http://localhost:8098/ondc/actuator/health || exit 1
       interval: 10s
       timeout: 5s
       retries: 10
@@ -704,7 +742,9 @@ services:
       kafka:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://localhost:8120/actuator/health || exit 1"]
+      test:
+      - CMD-SHELL
+      - wget --spider -q http://localhost:8120/actuator/health || exit 1
       interval: 10s
       timeout: 5s
       retries: 10
@@ -749,6 +789,7 @@ services:
     - DB_URL=jdbc:postgresql://postgres:5432/campaign_db
     - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     - REDIS_HOST=redis
+    - SPRING_DATA_REDIS_HOST=redis
     depends_on:
       config-service:
         condition: service_healthy
@@ -761,7 +802,9 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://localhost:8088/actuator/health || exit 1"]
+      test:
+      - CMD-SHELL
+      - wget --spider -q http://localhost:8088/actuator/health || exit 1
       interval: 10s
       timeout: 5s
       retries: 10
@@ -787,6 +830,7 @@ services:
     - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     - REDIS_HOST=redis
     - SPRING_AUTOCONFIGURE_EXCLUDE=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration,org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration
+    - SPRING_DATA_REDIS_HOST=redis
     depends_on:
       config-service:
         condition: service_healthy
@@ -797,7 +841,9 @@ services:
       eureka-server-1:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://localhost:8102/actuator/health || exit 1"]
+      test:
+      - CMD-SHELL
+      - wget --spider -q http://localhost:8102/actuator/health || exit 1
       interval: 10s
       timeout: 5s
       retries: 10
@@ -822,6 +868,7 @@ services:
     - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     - REDIS_HOST=redis
     - SPRING_AUTOCONFIGURE_EXCLUDE=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration,org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration
+    - SPRING_DATA_REDIS_HOST=redis
     depends_on:
       config-service:
         condition: service_healthy
@@ -832,7 +879,9 @@ services:
       eureka-server-1:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://localhost:8103/actuator/health || exit 1"]
+      test:
+      - CMD-SHELL
+      - wget --spider -q http://localhost:8103/actuator/health || exit 1
       interval: 10s
       timeout: 5s
       retries: 10
@@ -860,6 +909,7 @@ services:
     - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     - REDIS_HOST=redis
     - SPRING_AUTOCONFIGURE_EXCLUDE=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration,org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration
+    - SPRING_DATA_REDIS_HOST=redis
     depends_on:
       config-service:
         condition: service_healthy
@@ -870,7 +920,9 @@ services:
       eureka-server-1:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://localhost:8104/actuator/health || exit 1"]
+      test:
+      - CMD-SHELL
+      - wget --spider -q http://localhost:8104/actuator/health || exit 1
       interval: 10s
       timeout: 5s
       retries: 10
