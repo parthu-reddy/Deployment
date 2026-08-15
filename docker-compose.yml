@@ -35,6 +35,21 @@ services:
       retries: 15
       start_period: 120s
     restart: unless-stopped
+  kafka-connect:
+    image: quay.io/debezium/connect:2.4
+    container_name: kafka-connect
+    ports:
+      - 8084:8083
+    environment:
+      - BOOTSTRAP_SERVERS=kafka:29092
+      - GROUP_ID=1
+      - CONFIG_STORAGE_TOPIC=my_connect_configs
+      - OFFSET_STORAGE_TOPIC=my_connect_offsets
+      - STATUS_STORAGE_TOPIC=my_connect_statuses
+    depends_on:
+      - kafka
+      - postgres
+    restart: unless-stopped
   postgres:
     image: kartoza/postgis:16-3.4
     container_name: shared_postgres
@@ -42,6 +57,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASS: ${POSTGRES_PASS}
       POSTGRES_EXTRA_OPTS: -c max_connections=500
+      EXTRA_CONF: "wal_level=logical"
     ports:
     - 5432:5432
     volumes:
@@ -928,6 +944,14 @@ services:
       retries: 10
       start_period: 120s
     restart: on-failure
+  api-docs:
+    image: nginx:alpine
+    container_name: api-docs
+    ports:
+      - "8090:80"
+    volumes:
+      - ../public-docs:/usr/share/nginx/html:ro
+    restart: unless-stopped
 volumes:
   shared_pgdata: null
   shared_redis_data: null
