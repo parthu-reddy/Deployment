@@ -386,3 +386,13 @@ During deployment, you might encounter some common pitfalls. Always check this l
     - **Error:** `Your default credentials were not found. To set up Application Default Credentials for your environment, see...`
     - **Cause:** A microservice (e.g., `communication-integration`) initializing Google Cloud SDKs inside a Docker container doesn't have access to your local machine's `gcloud` credentials.
     - **Fix:** Either mock the beans using a `@Profile("dev")` configuration, or inject a service account key into the container via volume mounts and `GOOGLE_APPLICATION_CREDENTIALS`.
+
+34. **Maven Build Node/NPM Version Mismatch Warnings (EBADENGINE):**
+    - **Error:** `EBADENGINE Unsupported engine` warnings during the `food-delivery-app-ui` build using `frontend-maven-plugin`.
+    - **Cause:** The Node.js version installed by the plugin doesn't perfectly match the version engines declared in some dependencies.
+    - **Fix:** This is a benign warning and does not prevent the UI from building successfully (`BUILD SUCCESS`). No action is required.
+
+35. **Docker Compose "version is obsolete" Warning:**
+    - **Error:** `WARN[0000] /home/ubuntu/.../docker-compose.yml: the attribute version is obsolete, it will be ignored`
+    - **Cause:** Newer versions of Docker Compose ignore the top-level `version:` field in `docker-compose.yml`.
+    - **Fix:** This is a benign warning. You can safely ignore it or remove the `version: '3.8'` (or similar) line from the `docker-compose.yml` files.
