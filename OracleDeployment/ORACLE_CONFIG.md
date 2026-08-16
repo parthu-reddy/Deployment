@@ -1,4 +1,4 @@
 # Oracle Cloud Configuration
 
-- **Public IP**: 140.245.225.221
-- **SSH Private Key Path**: /Users/parthureddy/Documents/OracleSSH/ssh-key-2026-07-17.key
+- **Public IP**: 140.245.234.137
+- **SSH Private Key Path**: /Users/parthureddy/Documents/OracleSSH/ssh-key-2026-08-16.key

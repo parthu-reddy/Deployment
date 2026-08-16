@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Configuration
-SSH_KEY="/Users/parthureddy/Documents/OracleSSH/ssh-key-2026-07-17.key"
+SSH_KEY="/Users/parthureddy/Documents/OracleSSH/ssh-key-2026-08-16.key"
 REMOTE_USER="ubuntu"
-REMOTE_HOST="140.245.225.221"
+REMOTE_HOST="140.245.234.137"
 DB_PASS="***REMOVED***"
 COMPOSE_DIR="Food Delivery.nosync/Deployment"
 

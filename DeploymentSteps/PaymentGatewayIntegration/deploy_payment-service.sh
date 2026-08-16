@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-ORACLE_IP="140.245.225.221"
-SSH_KEY="/Users/parthureddy/Documents/OracleSSH/ssh-key-2026-07-17.key"
+ORACLE_IP="140.245.234.137"
+SSH_KEY="/Users/parthureddy/Documents/OracleSSH/ssh-key-2026-08-16.key"
 
 # Ensure script is run from the DeploymentSteps/PaymentGatewayIntegration directory or a valid relative path
 cd "$(dirname "$0")"
