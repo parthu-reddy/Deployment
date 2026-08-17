@@ -4,8 +4,8 @@ import math
 
 base_lat = 12.990300
 base_lng = 77.670900
-customer_radius_km = 3.0
-rider_radius_km = 3.0
+customer_radius_km = 1.0
+rider_radius_km = 1.0
 
 IMAGE_URLS = [
     "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/1eace54b-6c8b-4de4-9247-3e028bfad925_dadf2264-a4fb-4ef2-a24a-71a7d5cd526a.jpg",
@@ -61,7 +61,13 @@ for i in range(1, 501):
     
     addresses = []
     for j in range(2):
-        lat, lng = generate_random_point(base_lat, base_lng, customer_radius_km)
+        if j == 0:
+            # Home near base coordinates
+            lat, lng = generate_random_point(base_lat, base_lng, customer_radius_km)
+        else:
+            # Work roughly ~9km away to ensure clear distance deltas in UI testing
+            lat, lng = generate_random_point(base_lat + 0.08, base_lng + 0.08, customer_radius_km)
+            
         addresses.append({
             'id': str(uuid.uuid4()),
             'label': 'Home' if j == 0 else 'Work',

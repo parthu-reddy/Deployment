@@ -6,8 +6,8 @@ import datetime
 # Base coordinates
 base_lat = 12.990300
 base_lng = 77.670900
-radius_km = 3.0
-customer_radius_km = 3.0
+radius_km = 1.0
+customer_radius_km = 1.0
 
 IMAGE_URLS = [
     "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/1eace54b-6c8b-4de4-9247-3e028bfad925_dadf2264-a4fb-4ef2-a24a-71a7d5cd526a.jpg",
@@ -25,8 +25,8 @@ def get_image_sql_val():
     url = random.choice(IMAGE_URLS)
     return f"'{url}'" if url else "NULL"
 
-radius_km = 3.0
-customer_radius_km = 3.0
+radius_km = 1.0
+customer_radius_km = 1.0
 
 def generate_random_point(lat, lng, radius_km):
     # 1 degree of lat is ~ 111 km
