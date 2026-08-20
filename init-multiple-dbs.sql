@@ -13,5 +13,6 @@ CREATE DATABASE wallet_db;
 CREATE DATABASE campaign_db;
 CREATE DATABASE budget_db;
 CREATE DATABASE advertisement_db;
+CREATE DATABASE reviews_db;
 CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE EXTENSION IF NOT EXISTS postgis_topology;

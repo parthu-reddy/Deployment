@@ -67,3 +67,10 @@ r2:
   endpoint: ${R2_ENDPOINT:}
   bucket-name: ${R2_BUCKET_NAME:labouffe}
   public-url: ${R2_PUBLIC_URL:https://80708a753745ca23eabc20b4b3dee5fa.r2.cloudflarestorage.com}
+
+# Auction price signing (BiddingEngine issues, UserTrackingService verifies).
+# The two MUST share the same value or every tracking pixel is rejected.
+# Override with AUCTION_TOKEN_SECRET in every non-dev environment.
+platform:
+  auction:
+    token-secret: ${AUCTION_TOKEN_SECRET:dev-only-insecure-auction-secret-override-in-production}

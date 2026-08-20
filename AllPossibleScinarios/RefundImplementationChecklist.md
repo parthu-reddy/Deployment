@@ -182,7 +182,7 @@ Each state handler that sets `requiresRefund = true` is verified.
 | 7.4 | Kafka retry on consumer failure | Same consumer | ❌ DEPRECATED | — |
 | 7.5 | DLT handler for terminal wallet failures | Same consumer | ❌ DEPRECATED | — |
 | 7.6 | Wallet inactive handling | `WalletService.credit()` | ✅ IMPLEMENTED | Throws `WalletInactiveException` if wallet not `ACTIVE` |
-| 7.7 | `reverseDebit()` for ledger-rejected reversals | `WalletService.reverseDebit()` | ✅ IMPLEMENTED | Uses `refundRefId = originalReferenceId + "_REFUND"` |
+| 7.7 | Compensation for ledger-rejected debits | `WalletService.LedgerFailureConsumer` (`ledger-events-dlq`) | ✅ IMPLEMENTED | Replaces the `reverseDebit()`/`LEDGER_TRANSACTION_REPLY` route, which had no producer and was removed |
 | 7.8 | Wallet credit for **partial** refunds | processPartialRefund() | ✅ IMPLEMENTED | Correct: No wallet credit. |
 
 ---
@@ -209,7 +209,7 @@ Each state handler that sets `requiresRefund = true` is verified.
 | 9.2 | PaymentIntent status gate prevents double full refund | `processRefund()` | ✅ IMPLEMENTED | After first call sets `REFUND_PENDING`, second call is blocked |
 | 9.3 | Deterministic transfer IDs for ledger idempotency | Saga refund handlers | ✅ IMPLEMENTED | UUID5 from `REFUND_` + orderId |
 | 9.4 | Wallet `ProcessedEvent` tracking | `WalletService.credit()` | ✅ IMPLEMENTED | Checks `processedEventRepository` before processing |
-| 9.5 | `reverseDebit` uses `_REFUND` suffix for idempotency | `WalletService.reverseDebit()` | ✅ IMPLEMENTED | `refundRefId = originalReferenceId + "_REFUND"` |
+| 9.5 | Ledger-rejection compensation is idempotent | `WalletService.LedgerFailureConsumer` | ✅ IMPLEMENTED | Keyed on the original `referenceId` in the DLQ payload |
 | 9.6 | Concurrent cancel events protection | PaymentIntent status gate | ✅ IMPLEMENTED | Second event finds `REFUND_PENDING` → skips |
 
 ---

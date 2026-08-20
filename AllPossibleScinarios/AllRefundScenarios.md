@@ -34,7 +34,7 @@
 |---|---|
 | **CustomerApplication** (Saga Orchestrator) | Determines if refund is needed via `OrderContext.requiresRefund`. Publishes `PAYMENT_REFUND_REQUESTED` and `REFUND_GENERATED` outbox events. Records ledger transactions on refund confirmation. |
 | **PaymentGatewayIntegration** | Consumes `PAYMENT_REFUND_REQUESTED`, calls the gateway strategy (`IPaymentGatewayStrategy.initiateRefund()`), processes `refund.success` webhook, emits `PAYMENT_REFUNDED` / `PAYMENT_PARTIALLY_REFUNDED` back via outbox. |
-| **WalletService** | Consumes `REFUND_GENERATED` events, credits the customer wallet. Provides idempotent `reverseDebit()` for failed ledger reversals. |
+| **WalletService** | Consumes `REFUND_GENERATED` events, credits the customer wallet. Compensates ledger-rejected debits via `LedgerFailureConsumer` on `ledger-events-dlq`. |
 | **LedgerService** | Records the REFUND ledger entry (Platform → Customer) when `PAYMENT_REFUNDED` is confirmed. |
 
 ### PaymentIntentStatus Lifecycle (Refund-Related)
@@ -473,8 +473,8 @@ Admin can cancel orders at **any** non-terminal state. Every state handler's `ha
 
 ### 10.3 Wallet Refund Idempotency
 
-- `WalletService.reverseDebit()` uses `refundRefId = originalReferenceId + "_REFUND"`
-- Checks `processedEventRepository.existsById(refundRefId)` before processing
+- `WalletService.LedgerFailureConsumer` handles ledger-rejected debits off `ledger-events-dlq`
+- Idempotency is enforced by the consumer's own reference-id key before crediting
 - `GenericWalletEventConsumer` processes `REFUND_GENERATED` events with `referenceId: "REFUND_" + orderId`
 
 ---
@@ -498,9 +498,14 @@ Admin can cancel orders at **any** non-terminal state. Every state handler's `ha
 
 | Attribute | Value |
 |---|---|
-| **Method** | `WalletService.reverseDebit(walletId, amount, originalReferenceId, reason)` |
-| **Idempotency** | `refundRefId = originalReferenceId + "_REFUND"` |
+| **Mechanism** | `LedgerEventListener.handleDltEvent` forwards the failed payload to `ledger-events-dlq`; `WalletService.LedgerFailureConsumer` credits the amount back. |
+| **Idempotency** | Keyed on the original `referenceId` carried in the forwarded payload |
 | **Ledger Event** | Does **NOT** publish a ledger event (since the original ledger entry was rejected) |
+
+> **Note (removed):** an alternative request/reply route via `LEDGER_TRANSACTION_REPLY` and
+> `WalletService.reverseDebit()` was present in the code but **no service ever published to that
+> topic**, so it never ran. It was removed rather than left half-built; the DLQ route above is the
+> single compensation mechanism.
 
 ### 11.3 Wallet Inactive During Refund
 
