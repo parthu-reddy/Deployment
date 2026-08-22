@@ -417,6 +417,16 @@ During deployment, you might encounter some common pitfalls. Always check this l
     - **Cause:** Occasionally, running the Maven aggregator build within a complex shell script on resource-constrained VMs can cause transient reactor resolution failures. Maven fails to map the newly compiled library to the downstream service's classpath.
     - **Fix:** Run the Maven build command manually outside of the script first. From the root of the project: `mvn clean package -Pdev -Dmaven.test.skip=true`. If the problem persists for a specific module, rebuild it with its dependencies explicitly using `mvn clean package -pl :<failed-service-name> -am -Dmaven.test.skip=true`.
 
+40. **JPA Repositories / Entities Not Found in Local Microservice Package:**
+    - **Error:** When using `@EnableJpaRepositories` or `@EntityScan` to include the `common` library, the microservice's *own* repositories or entities stop working.
+    - **Cause:** Once you explicitly use `@EnableJpaRepositories` or `@EntityScan`, Spring Boot completely turns off its default behavior of scanning the current package. It will *only* scan what you explicitly specify.
+    - **Fix:** Always include your microservice's base package alongside the common package. For example: `@EntityScan(basePackages = {"com.fooddelivery", "com.fooddelivery.common.entity"})` and `@EnableJpaRepositories(basePackages = {"com.fooddelivery", "com.fooddelivery.common.repository"})`.
+
+41. **Service Crashes with 'Connection Refused' to 'localhost:5432' Despite DB_URL in docker-compose.yml:**
+    - **Error:** `Unable to obtain connection from database: Connection to localhost:5432 refused` during startup, typically from Flyway or HikariCP.
+    - **Cause:** The service's local `application.yml` is hardcoded to fallback to `localhost:5432` using a specific variable name like `SPRING_DATASOURCE_URL` instead of a generic `DB_URL`. If you only set `DB_URL` in `docker-compose.yml`, it has no effect on this specific service, causing it to fall back to `localhost`.
+    - **Fix:** Check the service's `application.yml` or config server file to see exactly which variable it expects (e.g. `SPRING_DATASOURCE_URL`). Add that exact environment variable to `docker-compose.yml` (e.g., `SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/db_name`) to correctly override the localhost fallback.
+
 ### Expected Warnings on OCI Free Tier (Ampere A1)
 During boot, you may see the following warnings in the logs of microservices (like `customer-service`):
 ```text
