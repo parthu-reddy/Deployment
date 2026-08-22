@@ -85,7 +85,7 @@ SERVICES=(
     "government-id-service"
     "ledger-service"
     "chat-service"
-    "ondc-integration-service"
+    # "ondc-integration-service"
     "wallet-service"
     "campaign-service"
     "bidding-engine"

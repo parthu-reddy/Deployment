@@ -93,12 +93,12 @@ spring:
         uri: lb:ws://chat-service
         predicates:
         - Path=/ws/chat/**
-      - id: ondc-integration-service
-        uri: lb://ondc-integration-service
-        predicates:
-        - Path=/ondc/**, /search, /select, /init, /confirm, /cancel, /status, /track,
-          /update, /rating, /on_search, /on_select, /on_init, /on_confirm, /on_cancel,
-          /on_status, /on_track
+#      - id: ondc-integration-service
+#        uri: lb://ondc-integration-service
+#        predicates:
+#        - Path=/ondc/**, /search, /select, /init, /confirm, /cancel, /status, /track,
+#          /update, /rating, /on_search, /on_select, /on_init, /on_confirm, /on_cancel,
+#          /on_status, /on_track
       - id: campaign-service
         uri: lb://campaign-service
         predicates:
@@ -169,12 +169,12 @@ spring:
         - Path=/service-docs/chat-service/**
         filters:
         - RewritePath=/service-docs/chat-service/(.*), /$1
-      - id: service-docs-ondc
-        uri: lb://ondc-integration-service
-        predicates:
-        - Path=/service-docs/ondc-integration-service/**
-        filters:
-        - RewritePath=/service-docs/ondc-integration-service/(.*), /$1
+#      - id: service-docs-ondc
+#        uri: lb://ondc-integration-service
+#        predicates:
+#        - Path=/service-docs/ondc-integration-service/**
+#        filters:
+#        - RewritePath=/service-docs/ondc-integration-service/(.*), /$1
       - id: service-docs-wallet
         uri: lb://wallet-service
         predicates:
@@ -288,8 +288,8 @@ springdoc:
       url: /service-docs/ledger-service/v3/api-docs
     - name: Chat Service
       url: /service-docs/chat-service/v3/api-docs
-    - name: ONDC Integration
-      url: /service-docs/ondc-integration-service/ondc/v3/api-docs
+#    - name: ONDC Integration
+#      url: /service-docs/ondc-integration-service/ondc/v3/api-docs
     - name: Wallet Service
       url: /service-docs/wallet-service/v3/api-docs
     - name: Campaign Service
@@ -300,3 +300,5 @@ springdoc:
       url: /service-docs/government-id-validation-service/v3/api-docs
     - name: Event Tracking
       url: /service-docs/event-tracking-service/v3/api-docs
+
+

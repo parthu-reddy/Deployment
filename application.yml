@@ -26,6 +26,11 @@ management:
     health:
       probes:
         enabled: true
+      group:
+        liveness:
+          include: livenessState,ping
+        readiness:
+          include: readinessState,db,diskSpace
   tracing:
     enabled: true
     sampling:
@@ -72,5 +77,8 @@ r2:
 # The two MUST share the same value or every tracking pixel is rejected.
 # Override with AUCTION_TOKEN_SECRET in every non-dev environment.
 platform:
+  business-zone: ${PLATFORM_BUSINESS_ZONE:UTC}
   auction:
     token-secret: ${AUCTION_TOKEN_SECRET:dev-only-insecure-auction-secret-override-in-production}
+
+

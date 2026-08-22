@@ -95,3 +95,5 @@ eureka:
       defaultZone: ${EUREKA_URLS:http://eureka-server-1:8761/eureka/,http://eureka-server-2:8761/eureka/}
   instance:
     prefer-ip-address: true
+
+

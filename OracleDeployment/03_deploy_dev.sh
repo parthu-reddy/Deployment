@@ -23,6 +23,11 @@ sed -i "s/set \$upstream http:\/\/[0-9.]*:8080;/set \$upstream http:\/\/api-gate
 sed -i "s/##resolver 127.0.0.11/resolver 127.0.0.11/g" FoodDeliveryAppUI/nginx.conf
 
 # Add the public IP to ALLOWED_ORIGINS in .env if not already present
+if ! grep -q "PLATFORM_BUSINESS_ZONE" Deployment/.env; then
+    echo "PLATFORM_BUSINESS_ZONE=Asia/Kolkata" >> Deployment/.env
+    echo "PLATFORM_DEFAULT_CURRENCY=INR" >> Deployment/.env
+fi
+
 if ! grep -q "http://$PUBLIC_IP" Deployment/.env; then
     sed -i "s|^ALLOWED_ORIGINS=.*|&,http://$PUBLIC_IP|g" Deployment/.env
 fi

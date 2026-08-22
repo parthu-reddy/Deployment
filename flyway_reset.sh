@@ -28,7 +28,7 @@ export PGPASSWORD="$PG_PASS"
 
 DATABASES=(
     "identity_db"
-    "food_delivery"
+    "customer_db"
     "delivery_db"
     "restaurant_db"
     "payment_db"

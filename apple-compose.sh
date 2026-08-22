@@ -45,7 +45,7 @@ if [ "$COMMAND" == "up" ]; then
     echo "Starting Postgres..."
     container run -d --name shared_postgres \
         -p 5432:5432 \
-        -e POSTGRES_DB=food_delivery \
+        -e POSTGRES_DB=postgres \
         -e POSTGRES_USER="${POSTGRES_USER}" \
         -e POSTGRES_PASS="${POSTGRES_PASS}" \
         -e POSTGRES_PASSWORD="${POSTGRES_PASS}" \
@@ -124,7 +124,7 @@ if [ "$COMMAND" == "up" ]; then
         elif [ "$name" == "eureka-server-1" ]; then
             ENV_VARS="-e EUREKA_USER=${EUREKA_USER:-admin} -e EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin} -e EUREKA_HOSTNAME=$HOST_IP -e EUREKA_CLIENT_REGISTER_WITH_EUREKA=false -e EUREKA_CLIENT_FETCH_REGISTRY=false -e EUREKA_DEFAULT_ZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@$HOST_IP:8761/eureka/"
         elif [ "$name" == "customer-service" ]; then
-            ENV_VARS="-e SPRING_CONFIG_IMPORT=optional:configserver:http://$HOST_IP:8888 -e SPRING_CLOUD_CONFIG_USERNAME=${CONFIG_USER} -e SPRING_CLOUD_CONFIG_PASSWORD=${CONFIG_PASSWORD} -e DB_URL=jdbc:postgresql://$HOST_IP:5432/food_delivery -e DB_USERNAME=${POSTGRES_USER} -e DB_PASSWORD=${POSTGRES_PASS} -e KAFKA_BOOTSTRAP_SERVERS=$HOST_IP:29092 -e REDIS_HOST=$HOST_IP -e EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@$HOST_IP:8761/eureka/ -e EUREKA_USER=${EUREKA_USER:-admin} -e EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin} -e EUREKA_INSTANCE_IP_ADDRESS=$HOST_IP -e SPRING_PROFILES_ACTIVE=dev"
+            ENV_VARS="-e SPRING_CONFIG_IMPORT=optional:configserver:http://$HOST_IP:8888 -e SPRING_CLOUD_CONFIG_USERNAME=${CONFIG_USER} -e SPRING_CLOUD_CONFIG_PASSWORD=${CONFIG_PASSWORD} -e DB_URL=jdbc:postgresql://$HOST_IP:5432/customer_db -e DB_USERNAME=${POSTGRES_USER} -e DB_PASSWORD=${POSTGRES_PASS} -e KAFKA_BOOTSTRAP_SERVERS=$HOST_IP:29092 -e REDIS_HOST=$HOST_IP -e EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@$HOST_IP:8761/eureka/ -e EUREKA_USER=${EUREKA_USER:-admin} -e EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin} -e EUREKA_INSTANCE_IP_ADDRESS=$HOST_IP -e SPRING_PROFILES_ACTIVE=dev"
         elif [ "$name" == "restaurant-service" ]; then
             ENV_VARS="-e SPRING_CONFIG_IMPORT=optional:configserver:http://$HOST_IP:8888 -e SPRING_CLOUD_CONFIG_USERNAME=${CONFIG_USER} -e SPRING_CLOUD_CONFIG_PASSWORD=${CONFIG_PASSWORD} -e DB_URL=jdbc:postgresql://$HOST_IP:5432/restaurant_db -e DB_USERNAME=${POSTGRES_USER} -e DB_PASSWORD=${POSTGRES_PASS} -e KAFKA_BOOTSTRAP_SERVERS=$HOST_IP:29092 -e REDIS_HOST=$HOST_IP -e EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@$HOST_IP:8761/eureka/ -e EUREKA_USER=${EUREKA_USER:-admin} -e EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin} -e KYB_FSSAI_API_URL=http://$HOST_IP:8080/mock/fssai -e EUREKA_INSTANCE_IP_ADDRESS=$HOST_IP -e SPRING_PROFILES_ACTIVE=dev"
         elif [ "$name" == "delivery-service" ]; then
