@@ -61,7 +61,7 @@ logging:
 eureka:
   client:
     serviceUrl:
-      defaultZone: ${EUREKA_URLS:http://localhost:8761/eureka/}
+      defaultZone: http://eureka-server:8761/eureka
     registry-fetch-interval-seconds: 10
   instance:
     prefer-ip-address: true

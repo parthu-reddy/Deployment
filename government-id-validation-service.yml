@@ -32,7 +32,7 @@ eureka:
     register-with-eureka: true
     fetch-registry: true
     serviceUrl:
-      defaultZone: ${EUREKA_URLS}
+      defaultZone: http://eureka-server:8761/eureka
   instance:
     prefer-ip-address: true
 
