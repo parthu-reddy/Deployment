@@ -78,15 +78,33 @@ if [ -d "FoodDeliveryAppUI" ]; then
     cd ..
 fi
 
-echo "5. Building and Starting Microservices Containers..."
+echo "5. Building and Starting Config and Eureka Containers sequentially..."
 cd Deployment
-SPRING_PROFILES_ACTIVE=dev docker compose up --build -d config-service eureka-server-1 eureka-server-2
+for service in config-service eureka-server-1 eureka-server-2; do
+    echo "Building $service..."
+    SPRING_PROFILES_ACTIVE=dev docker compose build $service
+    echo "Pruning dangling build cache to save space..."
+    docker builder prune -a -f
+    docker image prune -f
+    SPRING_PROFILES_ACTIVE=dev docker compose up -d $service
+done
 
 echo "Waiting 20 seconds for config/eureka to boot up..."
 sleep 20
 
 # Start everything else in the main Deployment
-SPRING_PROFILES_ACTIVE=dev docker compose up --build -d
+echo "Building microservices sequentially to avoid exhausting disk space..."
+SERVICES=$(docker compose config --services | grep -v -E 'zookeeper|kafka|postgres|redis|clickhouse|config-service|eureka-server-1|eureka-server-2|WARNING')
+for service in $SERVICES; do
+    echo "Building $service..."
+    SPRING_PROFILES_ACTIVE=dev docker compose build $service
+    echo "Pruning dangling build cache to save space..."
+    docker builder prune -a -f
+    docker image prune -f
+done
+
+echo "Starting all services..."
+SPRING_PROFILES_ACTIVE=dev docker compose up -d
 
 
 echo "=========================================================="
