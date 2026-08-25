@@ -438,3 +438,8 @@ java.lang.Exception: Apparent connection leak detected
 During deployment, running `mvn clean package` or `docker compose build` for multiple microservices simultaneously or retaining old Docker images can quickly exhaust the 45GB root volume on the OCI free tier. 
 **Error**: `failed to solve: process "/bin/sh -c mvn clean package -DskipTests" did not complete successfully: exit code: 1` or `no space left on device`.
 **Resolution**: Always build microservices sequentially rather than in parallel to keep peak memory and disk usage low. Use `docker system prune -a --volumes -f` before fresh deployments to clear old image layers, stopped containers, and anonymous volumes that accumulate from previous builds.
+
+42. **Local Changes Not Reflecting in Remote Deployment (Stale Code):**
+    - **Error:** You make a bug fix locally, execute the remote `03_deploy_dev.sh` script via ssh, but the Docker containers still crash with the exact same error, and inspecting the remote files shows your fix is missing.
+    - **Cause:** The deployment scripts (e.g. `03_deploy_dev.sh`) run *on the remote server* and compile the source code that exists *on the remote server*. They do not automatically pull from git or sync your local filesystem.
+    - **Fix:** You MUST synchronize your local changes to the remote server using `rsync` before triggering the remote deployment script. Ensure you properly escape spaces in the destination path (e.g., `rsync -avz ... ubuntu@HOST:"/home/ubuntu/Food\ Delivery.nosync/"`).
