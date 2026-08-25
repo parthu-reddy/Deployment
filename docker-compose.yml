@@ -171,15 +171,15 @@ services:
     ports:
     - 8092:8092
     environment:
-    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
+    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - DB_URL=jdbc:postgresql://postgres:5432/customer_db
     - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/customer_db
-    - DB_USERNAME=${POSTGRES_USER}
-    - DB_PASSWORD=${POSTGRES_PASS}
+    - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+    - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASS}
     - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     - REDIS_HOST=redis
-    - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+    - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
     - EUREKA_USER=${EUREKA_USER:-admin}
     - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     - PLATFORM_BUSINESS_ZONE=${PLATFORM_BUSINESS_ZONE:-Asia/Kolkata}
@@ -219,15 +219,15 @@ services:
     ports:
     - 8094:8094
     environment:
-    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
+    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - DB_URL=jdbc:postgresql://postgres:5432/restaurant_db
     - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/restaurant_db
-    - DB_USERNAME=${POSTGRES_USER}
-    - DB_PASSWORD=${POSTGRES_PASS}
+    - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+    - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASS}
     - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     - REDIS_HOST=redis
-    - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+    - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
     - EUREKA_USER=${EUREKA_USER:-admin}
     - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     - PLATFORM_BUSINESS_ZONE=${PLATFORM_BUSINESS_ZONE:-Asia/Kolkata}
@@ -268,15 +268,15 @@ services:
     ports:
     - 8095:8095
     environment:
-    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
+    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - DB_URL=jdbc:postgresql://postgres:5432/delivery_db
     - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/delivery_db
-    - DB_USERNAME=${POSTGRES_USER}
-    - DB_PASSWORD=${POSTGRES_PASS}
+    - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+    - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASS}
     - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     - REDIS_HOST=redis
-    - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+    - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
     - EUREKA_USER=${EUREKA_USER:-admin}
     - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     - PLATFORM_BUSINESS_ZONE=${PLATFORM_BUSINESS_ZONE:-Asia/Kolkata}
@@ -316,9 +316,9 @@ services:
     ports:
     - 8085:8085
     environment:
-    - DB_USERNAME=${POSTGRES_USER}
-    - DB_PASSWORD=${POSTGRES_PASS}
-    - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+    - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+    - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASS}
+    - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
     - EUREKA_USER=${EUREKA_USER:-admin}
     - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     - PLATFORM_BUSINESS_ZONE=${PLATFORM_BUSINESS_ZONE:-Asia/Kolkata}
@@ -330,7 +330,7 @@ services:
     - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/payment_db
     - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     - REDIS_HOST=redis
-    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default},debug
+    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev},debug
     - R2_BUCKET_NAME=${R2_BUCKET_NAME}
     - R2_ENDPOINT=${R2_ENDPOINT}
     - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
@@ -365,11 +365,11 @@ services:
     ports:
     - 8083:8083
     environment:
-    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
+    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     - REDIS_HOST=redis
-    - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+    - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
     - EUREKA_USER=${EUREKA_USER:-admin}
     - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     - PLATFORM_BUSINESS_ZONE=${PLATFORM_BUSINESS_ZONE:-Asia/Kolkata}
@@ -408,18 +408,18 @@ services:
     ports:
     - 8081:8081
     environment:
-    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
+    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - DB_HOST=postgres
     - DB_PORT=5432
     - DB_NAME=notification_db
     - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/notification_db
-    - DB_USER=${POSTGRES_USER}
-    - DB_PASSWORD=${POSTGRES_PASS}
+    - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+    - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASS}
     - KAFKA_BROKERS=kafka:29092
     - REDIS_HOST=redis
     - REDIS_PORT=6379
-    - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+    - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
     - EUREKA_USER=${EUREKA_USER:-admin}
     - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     - PLATFORM_BUSINESS_ZONE=${PLATFORM_BUSINESS_ZONE:-Asia/Kolkata}
@@ -463,10 +463,10 @@ services:
     - ./certs:/certs
     environment:
     - ALLOWED_ORIGINS=http://140.245.234.137,http://140.245.234.137:3000,http://localhost:3000,http://localhost,https://gulf-strike-dark-extras.trycloudflare.com
-    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
+    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - JWT_PUBLIC_KEY_PATH=file:/certs/public.pem
-    - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+    - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
     - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
     - EUREKA_USER=${EUREKA_USER:-admin}
     - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
@@ -507,16 +507,16 @@ services:
     volumes:
     - ./certs:/certs
     environment:
-    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
+    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - JWT_PRIVATE_KEY_PATH=file:/certs/private.pem
     - DB_URL=jdbc:postgresql://postgres:5432/identity_db
     - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/identity_db
-    - DB_USERNAME=${POSTGRES_USER}
-    - DB_PASSWORD=${POSTGRES_PASS}
+    - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+    - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASS}
     - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     - REDIS_HOST=redis
-    - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+    - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
     - EUREKA_USER=${EUREKA_USER:-admin}
     - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     - PLATFORM_BUSINESS_ZONE=${PLATFORM_BUSINESS_ZONE:-Asia/Kolkata}
@@ -556,17 +556,17 @@ services:
     ports:
     - 8087:8087
     environment:
-    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
+    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - DB_URL=jdbc:postgresql://postgres:5432/government_id_db
     - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/government_id_db
-    - DB_USERNAME=${POSTGRES_USER}
     - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
-    - DB_PASSWORD=${POSTGRES_PASS}
+    - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+    - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASS}
     - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASS}
     - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     - REDIS_HOST=redis
-    - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+    - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
     - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
     - EUREKA_CLIENT_FETCH_REGISTRY=true
     - EUREKA_USER=${EUREKA_USER:-admin}
@@ -624,15 +624,15 @@ services:
     ports:
     - 8089:8089
     environment:
-    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
+    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - DB_URL=jdbc:postgresql://postgres:5432/ledger_db
     - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/ledger_db
-    - DB_USERNAME=${POSTGRES_USER}
-    - DB_PASSWORD=${POSTGRES_PASS}
+    - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+    - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASS}
     - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     - REDIS_HOST=redis
-    - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+    - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
     - EUREKA_USER=${EUREKA_USER:-admin}
     - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     - PLATFORM_BUSINESS_ZONE=${PLATFORM_BUSINESS_ZONE:-Asia/Kolkata}
@@ -667,15 +667,15 @@ services:
     ports:
     - 8096:8096
     environment:
-    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
+    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - DB_URL=jdbc:postgresql://postgres:5432/chat_db
     - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/chat_db
-    - DB_USERNAME=${POSTGRES_USER}
-    - DB_PASSWORD=${POSTGRES_PASS}
+    - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+    - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASS}
     - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     - REDIS_HOST=redis
-    - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+    - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
     - EUREKA_USER=${EUREKA_USER:-admin}
     - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     - PLATFORM_BUSINESS_ZONE=${PLATFORM_BUSINESS_ZONE:-Asia/Kolkata}
@@ -715,13 +715,13 @@ services:
 #    ports:
 #    - 8098:8098
 #    environment:
-#    - DB_USERNAME=${POSTGRES_USER}
-#    - DB_PASSWORD=${POSTGRES_PASS}
-#    - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+#    - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+#    - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASS}
+#    - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
 #    - EUREKA_USER=${EUREKA_USER:-admin}
 #    - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
 #    - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
-#    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
+#    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
 #    - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
 #    - DB_URL=jdbc:postgresql://postgres:5432/ondc_db
 #    - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
@@ -755,23 +755,23 @@ services:
     ports:
     - 8120:8120
     environment:
-    - DB_USERNAME=${POSTGRES_USER}
-    - DB_PASSWORD=${POSTGRES_PASS}
-    - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+    - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+    - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASS}
+    - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
     - EUREKA_USER=${EUREKA_USER:-admin}
     - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     - PLATFORM_BUSINESS_ZONE=${PLATFORM_BUSINESS_ZONE:-Asia/Kolkata}
     - PLATFORM_DEFAULT_CURRENCY=${PLATFORM_DEFAULT_CURRENCY:-INR}
     - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
-    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
+    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - DB_HOST=postgres
     - DB_PORT=5432
     - DB_NAME=wallet_db
     - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/wallet_db
-    - DB_USER=${POSTGRES_USER}
+    - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
     - PLATFORM_DEFAULT_CURRENCY=INR
-    - DB_PASS=${POSTGRES_PASS}
+    - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASS}
     - KAFKA_BROKERS=kafka:29092
     depends_on:
       config-service:
@@ -819,9 +819,9 @@ services:
     ports:
     - 8088:8088
     environment:
-    - DB_USERNAME=${POSTGRES_USER}
-    - DB_PASSWORD=${POSTGRES_PASS}
-    - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+    - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+    - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASS}
+    - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
     - EUREKA_USER=${EUREKA_USER:-admin}
     - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     - PLATFORM_BUSINESS_ZONE=${PLATFORM_BUSINESS_ZONE:-Asia/Kolkata}
@@ -862,10 +862,10 @@ services:
     ports:
     - 8102:8102
     environment:
-    - DB_USERNAME=${POSTGRES_USER}
-    - DB_PASSWORD=${POSTGRES_PASS}
+    - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+    - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASS}
     - REDIS_HOST=redis
-    - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+    - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
     - EUREKA_USER=${EUREKA_USER:-admin}
     - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     - PLATFORM_BUSINESS_ZONE=${PLATFORM_BUSINESS_ZONE:-Asia/Kolkata}
@@ -905,11 +905,11 @@ services:
     environment:
     - DB_URL=jdbc:postgresql://postgres:5432/budget_db
     - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/budget_db
-    - DB_USERNAME=${POSTGRES_USER}
     - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
-    - DB_PASSWORD=${POSTGRES_PASS}
+    - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
     - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASS}
-    - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+    - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASS}
+    - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
     - EUREKA_USER=${EUREKA_USER:-admin}
     - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     - PLATFORM_BUSINESS_ZONE=${PLATFORM_BUSINESS_ZONE:-Asia/Kolkata}
@@ -948,9 +948,9 @@ services:
     ports:
     - 8104:8104
     environment:
-    - DB_USERNAME=${POSTGRES_USER}
-    - DB_PASSWORD=${POSTGRES_PASS}
-    - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+    - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+    - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASS}
+    - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
     - EUREKA_USER=${EUREKA_USER:-admin}
     - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     - PLATFORM_BUSINESS_ZONE=${PLATFORM_BUSINESS_ZONE:-Asia/Kolkata}
@@ -999,9 +999,9 @@ services:
 #    ports:
 #    - 8099:8099
 #    environment:
-#    - DB_USERNAME=${POSTGRES_USER}
-#    - DB_PASSWORD=${POSTGRES_PASS}
-#    - EUREKA_URLS=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+#    - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+#    - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASS}
+#    - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
 #    - EUREKA_USER=${EUREKA_USER:-admin}
 #    - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
 #    - PLATFORM_BUSINESS_ZONE=${PLATFORM_BUSINESS_ZONE:-Asia/Kolkata}
