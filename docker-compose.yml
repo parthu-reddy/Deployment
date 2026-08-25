@@ -126,7 +126,7 @@ services:
     - EUREKA_HOSTNAME=eureka-server-1
     - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
     - EUREKA_CLIENT_FETCH_REGISTRY=true
-    - EUREKA_DEFAULT_ZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+    - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
     healthcheck:
       test:
       - CMD-SHELL
@@ -152,7 +152,7 @@ services:
     - EUREKA_HOSTNAME=eureka-server-2
     - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
     - EUREKA_CLIENT_FETCH_REGISTRY=true
-    - EUREKA_DEFAULT_ZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/
+    - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/
     healthcheck:
       test:
       - CMD-SHELL
