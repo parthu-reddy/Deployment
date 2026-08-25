@@ -174,6 +174,7 @@ services:
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - DB_URL=jdbc:postgresql://postgres:5432/customer_db
+    - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/customer_db
     - DB_USERNAME=${POSTGRES_USER}
     - DB_PASSWORD=${POSTGRES_PASS}
     - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
@@ -221,6 +222,7 @@ services:
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - DB_URL=jdbc:postgresql://postgres:5432/restaurant_db
+    - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/restaurant_db
     - DB_USERNAME=${POSTGRES_USER}
     - DB_PASSWORD=${POSTGRES_PASS}
     - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
@@ -269,6 +271,7 @@ services:
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - DB_URL=jdbc:postgresql://postgres:5432/delivery_db
+    - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/delivery_db
     - DB_USERNAME=${POSTGRES_USER}
     - DB_PASSWORD=${POSTGRES_PASS}
     - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
@@ -324,6 +327,7 @@ services:
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - PORT=8085
     - DB_URL=jdbc:postgresql://postgres:5432/payment_db
+    - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/payment_db
     - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     - REDIS_HOST=redis
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default},debug
@@ -409,6 +413,7 @@ services:
     - DB_HOST=postgres
     - DB_PORT=5432
     - DB_NAME=notification_db
+    - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/notification_db
     - DB_USER=${POSTGRES_USER}
     - DB_PASSWORD=${POSTGRES_PASS}
     - KAFKA_BROKERS=kafka:29092
@@ -506,6 +511,7 @@ services:
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - JWT_PRIVATE_KEY_PATH=file:/certs/private.pem
     - DB_URL=jdbc:postgresql://postgres:5432/identity_db
+    - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/identity_db
     - DB_USERNAME=${POSTGRES_USER}
     - DB_PASSWORD=${POSTGRES_PASS}
     - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
@@ -621,6 +627,7 @@ services:
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - DB_URL=jdbc:postgresql://postgres:5432/ledger_db
+    - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/ledger_db
     - DB_USERNAME=${POSTGRES_USER}
     - DB_PASSWORD=${POSTGRES_PASS}
     - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
@@ -663,6 +670,7 @@ services:
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - DB_URL=jdbc:postgresql://postgres:5432/chat_db
+    - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/chat_db
     - DB_USERNAME=${POSTGRES_USER}
     - DB_PASSWORD=${POSTGRES_PASS}
     - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
@@ -760,6 +768,7 @@ services:
     - DB_HOST=postgres
     - DB_PORT=5432
     - DB_NAME=wallet_db
+    - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/wallet_db
     - DB_USER=${POSTGRES_USER}
     - PLATFORM_DEFAULT_CURRENCY=INR
     - DB_PASS=${POSTGRES_PASS}
@@ -821,6 +830,7 @@ services:
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - DB_URL=jdbc:postgresql://postgres:5432/campaign_db
+    - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/campaign_db
     - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     - REDIS_HOST=redis
     - SPRING_DATA_REDIS_HOST=redis
