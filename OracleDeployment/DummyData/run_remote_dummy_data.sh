@@ -30,9 +30,9 @@ echo "Starting remote dummy data insertion..."
 run_sql "identity_db" "dummy_riders_customers_identity.sql"
 run_sql "identity_db" "dummy_identity_data.sql"
 
-# 2. Customer DB (Uses the food_delivery database)
-run_sql "food_delivery" "dummy_customers.sql"
-run_sql "food_delivery" "dummy_customer_data.sql"
+# 2. Customer DB (Uses the customer_db database)
+run_sql "customer_db" "dummy_customers.sql"
+run_sql "customer_db" "dummy_customer_data.sql"
 
 # 3. Delivery DB
 run_sql "delivery_db" "dummy_riders.sql"
