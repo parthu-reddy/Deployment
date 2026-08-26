@@ -238,6 +238,7 @@ rbac:
     - /api/v1/chat
     - /ws/chat
     - /api/v1/tracking
+    - /api/v1/logistics/route
     restaurant:
     - /api/v1/restaurants
     - /api/v1/brands

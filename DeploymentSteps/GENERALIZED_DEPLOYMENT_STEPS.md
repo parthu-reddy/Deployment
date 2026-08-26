@@ -443,3 +443,13 @@ During deployment, running `mvn clean package` or `docker compose build` for mul
     - **Error:** You make a bug fix locally, execute the remote `03_deploy_dev.sh` script via ssh, but the Docker containers still crash with the exact same error, and inspecting the remote files shows your fix is missing.
     - **Cause:** The deployment scripts (e.g. `03_deploy_dev.sh`) run *on the remote server* and compile the source code that exists *on the remote server*. They do not automatically pull from git or sync your local filesystem.
     - **Fix:** You MUST synchronize your local changes to the remote server using `rsync` before triggering the remote deployment script. Ensure you properly escape spaces in the destination path (e.g., `rsync -avz ... ubuntu@HOST:"/home/ubuntu/Food\ Delivery.nosync/"`).
+
+43. **Rsync Dropping Connection or Stalling on Large Transfers:**
+    - **Error:** `client_loop: send disconnect: Broken pipe` or `Connection reset by peer` or rsync just hangs during transfer.
+    - **Cause:** SSH connections can time out or be dropped by the network/firewall if there is no activity on the control channel, especially on slow network connections or when transferring large codebases.
+    - **Fix:** Pass SSH keep-alive options to rsync using the `-e` flag. For example: `rsync -avz -e "ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=3" ...`.
+
+44. **Copying Stale `target/*.jar` Artifacts During Local to Remote Sync:**
+    - **Error:** Remote deployment runs, but it executes an old version of the code, ignoring your recent local changes.
+    - **Cause:** If you don't exclude `target/` directories during `rsync`, you might copy compiled local artifacts to the remote machine. If you haven't run `mvn clean package` locally before the sync, these stale `.jar` files will be transferred and might be picked up by the remote Docker build step, bypassing the remote compilation.
+    - **Fix:** Always explicitly exclude build directories in your `rsync` command. You should append: `--exclude "target/" --exclude "node_modules/" --exclude "dist/" --exclude ".next/" --exclude ".git/" --exclude ".gemini/"` to ensure only raw source code is synced. Never copy `target/*.jar` from a local directory directly unless you have just run `mvn clean package`.
