@@ -106,7 +106,7 @@ with open("dummy_riders.sql", "w") as f:
     f.write("BEGIN;\n\n")
     for i, r in enumerate(riders):
         vtype = VEHICLE_TYPES[i % len(VEHICLE_TYPES)]
-        f.write(f"INSERT INTO delivery_executives (id, phone_number, vehicle_number, status, full_name, email, last_known_location, photo_url, verification_status, vehicle_type, is_active, last_biometric_verification_at) VALUES ('{r['id']}', '{r['phone']}', '{r['vehicle']}', 'ONLINE', '{r['name']}', '{r['email']}', ST_SetSRID(ST_MakePoint({r['lng']}, {r['lat']}), 4326), {get_image_sql_val()}, 'APPROVED', '{vtype}', TRUE, CURRENT_TIMESTAMP);\n")
+        f.write(f"INSERT INTO delivery_executives (id, phone_number, vehicle_number, status, full_name, email, last_known_location, photo_url, verification_status, vehicle_type, is_active, last_biometric_verification_at, city_id) VALUES ('{r['id']}', '{r['phone']}', '{r['vehicle']}', 'ONLINE', '{r['name']}', '{r['email']}', ST_SetSRID(ST_MakePoint({r['lng']}, {r['lat']}), 4326), {get_image_sql_val()}, 'APPROVED', '{vtype}', TRUE, CURRENT_TIMESTAMP, 'BLR');\n")
     f.write("\nCOMMIT;\n")
 
 with open("dummy_government_id_executives.sql", "w") as f:
