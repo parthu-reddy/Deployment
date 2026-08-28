@@ -483,7 +483,7 @@ services:
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - OLA_MAPS_API_KEY=${OLA_MAPS_API_KEY}
-    - ALLOWED_ORIGINS=http://140.245.234.137,http://140.245.234.137:3000,http://localhost:3000,http://localhost,https://gulf-strike-dark-extras.trycloudflare.com
+    - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - JWT_PUBLIC_KEY_PATH=file:/certs/public.pem

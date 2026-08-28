@@ -1,11 +1,31 @@
+import os
 import subprocess
 import time
 import random
 import math
 import sys
 
+# Credentials come from Deployment/.env, which is NOT tracked in git. It is written either by hand or
+# by fetch_secrets_from_vault.sh. This script previously embedded the Postgres password inline;
+# rotating .env would then have broken it, and the quickest fix under pressure is to paste the new
+# password straight back in, recreating the problem with a fresh secret. Same reasoning, and the same
+# resolution, as reset_remote_db.sh and wait_for_schemas.sh alongside it.
+ENV_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".env")
+if os.path.isfile(ENV_FILE):
+    with open(ENV_FILE, encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, value = line.partition("=")
+            # Do not clobber a value the caller exported deliberately.
+            os.environ.setdefault(key.strip(), value.strip())
+
+DB_PASS = os.environ.get("POSTGRES_PASS")
+if not DB_PASS:
+    sys.exit("POSTGRES_PASS is not set. Populate Deployment/.env (see .env.example) or export it.")
+
 # Configuration
-DB_PASS = "***REMOVED***"
 
 # Coordinate Generation Configuration
 base_lat = 12.990300
@@ -23,9 +43,13 @@ def generate_random_point(lat, lng, radius_km):
     return lat + y, lng + new_lng
 
 def run_psql(query):
-    cmd = f"docker compose exec -T -e PGPASSWORD={DB_PASS} postgres psql -h 127.0.0.1 -U postgres -d delivery_db -t -c \"{query}\""
+    cmd = [
+        "docker", "compose", "exec", "-T", "-e", f"PGPASSWORD={DB_PASS}",
+        "postgres", "psql", "-h", "127.0.0.1", "-U", "postgres",
+        "-d", "delivery_db", "-t", "-c", query,
+    ]
     try:
-        output = subprocess.check_output(cmd, shell=True).decode('utf-8')
+        output = subprocess.check_output(cmd).decode('utf-8')
         return [line.strip() for line in output.split('\n') if line.strip()]
     except subprocess.CalledProcessError as e:
         print(f"Database query failed: {e}")

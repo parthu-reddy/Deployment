@@ -11,3 +11,7 @@ effective-pom.xml
 # Holds live credentials. Written by hand on the VM, or by
 # OracleDeployment/fetch_secrets_from_vault.sh. Never commit it.
 .env
+
+# Python bytecode from the DummyData helper scripts.
+__pycache__/
+*.pyc
