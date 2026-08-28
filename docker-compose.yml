@@ -95,6 +95,8 @@ services:
     volumes:
     - ./:/config
     environment:
+    - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
+    - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_PROFILES_ACTIVE=native
     - SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=file:/config
     - SPRING_CONFIG_IMPORT=optional:file:/config/config-service.yml
@@ -119,6 +121,8 @@ services:
     ports:
     - 8761:8761
     environment:
+    - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
+    - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - EUREKA_USER=${EUREKA_USER:-admin}
     - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     - PLATFORM_BUSINESS_ZONE=${PLATFORM_BUSINESS_ZONE:-Asia/Kolkata}
@@ -145,6 +149,8 @@ services:
     ports:
     - 8762:8761
     environment:
+    - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
+    - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - EUREKA_USER=${EUREKA_USER:-admin}
     - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     - PLATFORM_BUSINESS_ZONE=${PLATFORM_BUSINESS_ZONE:-Asia/Kolkata}
@@ -171,6 +177,8 @@ services:
     ports:
     - 8092:8092
     environment:
+    - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
+    - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - DB_URL=jdbc:postgresql://postgres:5432/customer_db
@@ -219,6 +227,8 @@ services:
     ports:
     - 8094:8094
     environment:
+    - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
+    - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - DB_URL=jdbc:postgresql://postgres:5432/restaurant_db
@@ -268,6 +278,8 @@ services:
     ports:
     - 8095:8095
     environment:
+    - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
+    - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - DB_URL=jdbc:postgresql://postgres:5432/delivery_db
@@ -316,6 +328,8 @@ services:
     ports:
     - 8085:8085
     environment:
+    - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
+    - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
     - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASS}
     - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
@@ -365,6 +379,8 @@ services:
     ports:
     - 8083:8083
     environment:
+    - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
+    - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
@@ -408,6 +424,8 @@ services:
     ports:
     - 8081:8081
     environment:
+    - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
+    - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - DB_HOST=postgres
@@ -462,6 +480,9 @@ services:
     volumes:
     - ./certs:/certs
     environment:
+    - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
+    - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
+    - OLA_MAPS_API_KEY=${OLA_MAPS_API_KEY}
     - ALLOWED_ORIGINS=http://140.245.234.137,http://140.245.234.137:3000,http://localhost:3000,http://localhost,https://gulf-strike-dark-extras.trycloudflare.com
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
@@ -507,6 +528,8 @@ services:
     volumes:
     - ./certs:/certs
     environment:
+    - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
+    - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - JWT_PRIVATE_KEY_PATH=file:/certs/private.pem
@@ -556,6 +579,8 @@ services:
     ports:
     - 8087:8087
     environment:
+    - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
+    - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - DB_URL=jdbc:postgresql://postgres:5432/government_id_db
@@ -624,6 +649,8 @@ services:
     ports:
     - 8089:8089
     environment:
+    - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
+    - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - DB_URL=jdbc:postgresql://postgres:5432/ledger_db
@@ -667,6 +694,8 @@ services:
     ports:
     - 8096:8096
     environment:
+    - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
+    - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - DB_URL=jdbc:postgresql://postgres:5432/chat_db
@@ -755,6 +784,8 @@ services:
     ports:
     - 8120:8120
     environment:
+    - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
+    - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
     - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASS}
     - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
@@ -819,6 +850,9 @@ services:
     ports:
     - 8088:8088
     environment:
+    - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
+    - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
+    - PLATFORM_BUSINESS_ZONE=${PLATFORM_BUSINESS_ZONE:-Asia/Kolkata}
     - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
     - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASS}
     - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
@@ -862,6 +896,9 @@ services:
     ports:
     - 8102:8102
     environment:
+    - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
+    - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
+    - PLATFORM_BUSINESS_ZONE=${PLATFORM_BUSINESS_ZONE:-Asia/Kolkata}
     - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
     - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASS}
     - REDIS_HOST=redis
@@ -903,6 +940,9 @@ services:
     ports:
     - 8103:8103
     environment:
+    - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
+    - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
+    - PLATFORM_BUSINESS_ZONE=${PLATFORM_BUSINESS_ZONE:-Asia/Kolkata}
     - DB_URL=jdbc:postgresql://postgres:5432/budget_db
     - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/budget_db
     - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
@@ -948,6 +988,8 @@ services:
     ports:
     - 8104:8104
     environment:
+    - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
+    - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
     - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASS}
     - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/

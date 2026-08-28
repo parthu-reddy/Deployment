@@ -84,6 +84,6 @@ r2:
 platform:
   business-zone: ${PLATFORM_BUSINESS_ZONE:UTC}
   auction:
-    token-secret: ${AUCTION_TOKEN_SECRET:dev-only-insecure-auction-secret-override-in-production}
+    token-secret: ${AUCTION_TOKEN_SECRET:}
 
 

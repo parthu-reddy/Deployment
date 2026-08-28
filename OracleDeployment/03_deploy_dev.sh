@@ -22,6 +22,17 @@ sed -i "s/set \$upstream http:\/\/[0-9.]*:8080;/set \$upstream http:\/\/api-gate
 # Uncomment Docker DNS resolver in Nginx so it can resolve 'api-gateway'
 sed -i "s/##resolver 127.0.0.11/resolver 127.0.0.11/g" FoodDeliveryAppUI/nginx.conf
 
+# Materialise Deployment/.env from OCI Vault when one is configured. Opt-in: with OCI_VAULT_ID
+# unset, the existing hand-maintained .env is used exactly as before. The script exits non-zero on
+# any missing or empty secret, and `set -e` above stops the deploy there rather than starting
+# services with blank credentials.
+if [ -n "${OCI_VAULT_ID:-}" ]; then
+    echo "OCI_VAULT_ID is set - refreshing Deployment/.env from the vault..."
+    ./Deployment/OracleDeployment/fetch_secrets_from_vault.sh
+else
+    echo "OCI_VAULT_ID not set - using the existing Deployment/.env."
+fi
+
 # Add the public IP to ALLOWED_ORIGINS in .env if not already present
 if ! grep -q "PLATFORM_BUSINESS_ZONE" Deployment/.env; then
     echo "PLATFORM_BUSINESS_ZONE=Asia/Kolkata" >> Deployment/.env
@@ -48,7 +59,8 @@ SPRING_PROFILES_ACTIVE=dev docker compose up -d zookeeper kafka postgres redis
 echo "Waiting for infrastructure to initialize..."
 # Wait for postgres to be fully ready
 for i in {1..12}; do
-  if docker compose exec -T -e PGPASSWORD=password postgres pg_isready -h 127.0.0.1 -U postgres; then
+  if # pg_isready does not authenticate, so no password is needed here
+  docker compose exec -T postgres pg_isready -h 127.0.0.1 -U postgres; then
     echo "Postgres is ready."
     break
   fi

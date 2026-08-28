@@ -37,7 +37,8 @@ SPRING_PROFILES_ACTIVE=dev docker compose up -d zookeeper kafka postgres redis c
 
 echo "Waiting for Postgres to initialize..."
 for i in {1..12}; do
-  if docker compose exec -T -e PGPASSWORD=password postgres pg_isready -h 127.0.0.1 -U postgres; then
+  if # pg_isready does not authenticate, so no password is needed here
+  docker compose exec -T postgres pg_isready -h 127.0.0.1 -U postgres; then
     echo "Postgres is ready."
     break
   fi

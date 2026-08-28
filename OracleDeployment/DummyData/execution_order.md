@@ -12,7 +12,7 @@ Save this as `init_dummy_data.sh` and run it with `bash init_dummy_data.sh`:
 #!/bin/bash
 
 # Configuration
-DB_PASS="***REMOVED***"
+DB_PASS="${POSTGRES_PASS:?set POSTGRES_PASS, or source Deployment/.env}"
 
 echo "=========================================="
 echo "1. Stopping microservices to release DB connections..."

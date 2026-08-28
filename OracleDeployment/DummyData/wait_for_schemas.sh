@@ -1,8 +1,17 @@
 #!/bin/bash
+set -uo pipefail
 SSH_KEY="/Users/parthureddy/Documents/OracleSSH/ssh-key-2026-08-16.key"
 REMOTE_USER="ubuntu"
 REMOTE_HOST="140.245.234.137"
-DB_PASS="***REMOVED***"
+# Credentials come from Deployment/.env, which is NOT tracked in git. It is written either by hand
+# or by fetch_secrets_from_vault.sh. This script previously embedded the Postgres password inline;
+# rotating .env would then have broken it, and the quickest fix under pressure is to paste the new
+# password straight back in -- recreating the problem with a fresh secret.
+ENV_FILE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../.env"
+if [[ -f "$ENV_FILE" ]]; then
+    set -a; . "$ENV_FILE"; set +a
+fi
+DB_PASS="${POSTGRES_PASS:?POSTGRES_PASS is not set. Populate Deployment/.env (see .env.example) or export it.}"
 COMPOSE_DIR="Food Delivery.nosync/Deployment"
 
 echo "Waiting for Spring Boot microservices to boot up and generate their database schemas..."
