@@ -46,6 +46,8 @@ sleep 30
 
 echo "3. Building Java Microservices Natively..."
 cd ..
+# Install the parent POM first so new dependency versions are visible to the modules
+mvn -N install -f FoodDeliveryParent/pom.xml
 mvn clean package -DskipTests
 
 # Check if UI is available and install dependencies if package.json exists
