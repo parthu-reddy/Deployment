@@ -30,6 +30,7 @@ spring:
         cors-configurations:
           '[/**]':
             allowedOrigins: ${ALLOWED_ORIGINS:http://localhost:3000}
+            allowedOriginPatterns: ${ALLOWED_ORIGIN_PATTERNS:}
             allowedMethods:
             - GET
             - POST
