@@ -32,3 +32,13 @@ When a microservice needs dependencies from other modules within the same reposi
   1. Build the parent project using `mvn clean package -DskipTests` to generate the `.jar` files in all the respective `target` directories.
   2. Configure `docker-compose.yml` to use the parent directory as the build context (`context: ../`) and explicitly specify the dockerfile location (`dockerfile: <MicroserviceName>/Dockerfile`).
   3. The `Dockerfile` can then copy the pre-built `target/*.jar` from the build context instead of trying to run `mvn package` during the Docker build stage.
+
+### Rsync / File Transfer Issues with Spaces in Paths
+- **Error:** When syncing files to a remote VM, a service folder goes missing, or it creates a weird folder structure (e.g. creating `Food/` instead of `Food Delivery.nosync/`).
+- **Cause:** The destination path had spaces and wasn't properly quoted for the remote shell.
+- **Fix:** Make sure to quote the destination properly if it has spaces. For example: `rsync -avz ... user@host:"'Food Delivery.nosync/'"` (single quotes inside double quotes).
+
+### Multi-Module Project Parent POM Not Resolving Remotely
+- **Error:** Remote deployment fails during Maven build with missing artifact errors for internal dependencies.
+- **Cause:** The `FoodDeliveryParent` project contains the dependency management for the entire architecture, but it is not part of the root aggregator POM.
+- **Fix:** Ensure the deployment scripts explicitly run `mvn -N install -f FoodDeliveryParent/pom.xml` before executing the `mvn clean package` command for the rest of the workspace.
