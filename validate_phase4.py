@@ -59,7 +59,7 @@ def main():
     if SERVICE_MAP.is_file():
         for line in SERVICE_MAP.read_text(encoding="utf-8").splitlines():
             parts = line.split("\t")
-            if len(parts) == 2 and not line.startswith("#"):
+            if len(parts) >= 2 and not line.startswith("#"):
                 module_to_service.setdefault(parts[0].strip(), parts[1].strip())
     check("SERVICE-MAP-EXISTS", bool(module_to_service),
           f"{SERVICE_MAP} missing or empty -- Phase 1 creates it; without it check 1 cannot "

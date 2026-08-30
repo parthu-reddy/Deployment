@@ -29,7 +29,7 @@ remote() { ssh -o StrictHostKeyChecking=no -o ConnectTimeout=20 -i "$SSH_KEY" "$
 [[ -n "${REGISTRY:-}" ]] || die "REGISTRY is not set"
 [[ $# -gt 0 ]] || die "usage: deploy.sh <compose-service>..."
 
-valid() { awk -F'\t' '!/^#/ && NF==2 {print $2}' "$MAP"; }
+valid() { awk -F'\t' '!/^#/ && NF>=2 {print $2}' "$MAP"; }
 
 # Resolve everything locally before touching the VM: a typo must cost a second, not a failed
 # half-deploy. This retires the 7 stale service names the old per-service scripts carried.

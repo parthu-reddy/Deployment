@@ -29,11 +29,14 @@ if ! grep -q "$(echo "$REGISTRY" | cut -d/ -f1)" "${DOCKER_CONFIG:-$HOME/.docker
     die "not logged in to ${REGISTRY%%/*} -- run: docker login ${REGISTRY%%/*}"
 fi
 
-module_for() {   # compose-service -> module dir
-    awk -F'\t' -v s="$1" '!/^#/ && $2==s {print $1; found=1} END{exit !found}' "$MAP"
-}
+module_for()  { awk -F'\t' -v s="$1" '!/^#/ && $2==s {print $1; f=1} END{exit !f}' "$MAP"; }
+# The UI builds with its OWN directory as context (COPY nginx.conf), while every Java service
+# builds from the workspace root (COPY <Module>/target/*.jar). Assuming one context for all is
+# what broke the first full publish, 11 images in.
+context_for()    { awk -F'\t' -v s="$1" '!/^#/ && $2==s {print $3; f=1} END{exit !f}' "$MAP"; }
+dockerfile_for() { awk -F'\t' -v s="$1" '!/^#/ && $2==s {print $4; f=1} END{exit !f}' "$MAP"; }
 
-all_services() { awk -F'\t' '!/^#/ && NF==2 {print $2}' "$MAP"; }
+all_services() { awk -F'\t' '!/^#/ && NF>=2 {print $2}' "$MAP"; }
 
 tag_for() {      # module dir -> <short-sha>[-dirty]
     local module="$1" dir="$ROOT/$module" sha
@@ -85,12 +88,14 @@ for svc in "${SERVICES[@]}"; do
     fi
 
     echo "==> $svc  ($module @ $tag)"
+    ctx="$(context_for "$svc")"; dockerfile="$(dockerfile_for "$svc")"
+    [[ "$ctx" == "." ]] && ctx_path="$ROOT" || ctx_path="$ROOT/$ctx"
     docker buildx build \
         --platform "$PLATFORM" \
-        -f "$ROOT/$module/Dockerfile" \
+        -f "$ctx_path/${dockerfile##*/}" \
         -t "$image" \
         --push \
-        "$ROOT" </dev/null
+        "$ctx_path" </dev/null
 
     record "$svc" "$tag"
     echo "    pushed $image"

@@ -1,25 +1,26 @@
-# module-dir	compose-service
-# Generated from a comment-stripped parse of docker-compose.yml.
-# The mapping is NOT derivable by string munging -- CommunicationService is chat-service,
-# UserTrackingService is event-tracking-service, and EurekaServer yields TWO services.
-# publish.sh, deploy.sh and the phase validators all read this file. Do not re-derive it.
-ApiGateway	api-gateway
-BiddingEngine	bidding-engine
-BudgetLimitingService	budget-pacing-service
-CampaignService	campaign-service
-CommunicationIntegration	communication-integration
-CommunicationService	chat-service
-ConfigService	config-service
-CustomerApplication	customer-service
-DeliveryExecutiveApplication	delivery-service
-EurekaServer	eureka-server-1
-EurekaServer	eureka-server-2
-FoodDeliveryAppUI	food-delivery-app-ui
-GovernmentIDValidationService	government-id-service
-IdentityService	identity-service
-LedgerService	ledger-service
-MapsIntegration	maps-integration
-PaymentGatewayIntegration	payment-gateway
-RestaurantApplication	restaurant-service
-UserTrackingService	event-tracking-service
-WalletService	wallet-service
+# module-dir	compose-service	build-context	dockerfile
+# Generated from docker-compose.yml (comments stripped), MERGED with the previous map so
+# services already cut over to image: are not dropped as the cutover progresses.
+# Nothing here is derivable: CommunicationService is chat-service, EurekaServer yields two
+# services, and the UI builds with its OWN directory as context while every Java service
+# builds from the workspace root -- which is what broke the first full publish.
+ApiGateway	api-gateway	.	ApiGateway/Dockerfile
+BiddingEngine	bidding-engine	.	BiddingEngine/Dockerfile
+BudgetLimitingService	budget-pacing-service	.	BudgetLimitingService/Dockerfile
+CampaignService	campaign-service	.	CampaignService/Dockerfile
+CommunicationService	chat-service	.	CommunicationService/Dockerfile
+CommunicationIntegration	communication-integration	.	CommunicationIntegration/Dockerfile
+ConfigService	config-service	.	ConfigService/Dockerfile
+CustomerApplication	customer-service	.	CustomerApplication/Dockerfile
+DeliveryExecutiveApplication	delivery-service	.	DeliveryExecutiveApplication/Dockerfile
+EurekaServer	eureka-server-1	.	EurekaServer/Dockerfile
+EurekaServer	eureka-server-2	.	EurekaServer/Dockerfile
+UserTrackingService	event-tracking-service	.	UserTrackingService/Dockerfile
+FoodDeliveryAppUI	food-delivery-app-ui	FoodDeliveryAppUI	Dockerfile
+GovernmentIDValidationService	government-id-service	.	GovernmentIDValidationService/Dockerfile
+IdentityService	identity-service	.	IdentityService/Dockerfile
+LedgerService	ledger-service	.	LedgerService/Dockerfile
+MapsIntegration	maps-integration	.	MapsIntegration/Dockerfile
+PaymentGatewayIntegration	payment-gateway	.	PaymentGatewayIntegration/Dockerfile
+RestaurantApplication	restaurant-service	.	RestaurantApplication/Dockerfile
+WalletService	wallet-service	.	WalletService/Dockerfile
