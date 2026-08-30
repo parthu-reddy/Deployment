@@ -15,3 +15,6 @@ effective-pom.xml
 # Python bytecode from the DummyData helper scripts.
 __pycache__/
 *.pyc
+
+# Untracked 2026-08-30: generated/editor artefacts that should never be committed
+*.class
