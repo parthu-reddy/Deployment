@@ -121,7 +121,12 @@ while read -r required; do
   [[ -z "$required" ]] && continue
   grep -q "^${required}=" "$TMP_ENV" || missing+=("$required")
 done < <(grep -oE '\$\{[A-Z0-9_]+' "$(dirname "$ENV_FILE")/docker-compose.yml" \
-         | tr -d '${' | sort -u)
+         | tr -d '${' | sort -u \
+         | grep -vE '_TAG$|^REGISTRY$')
+# _TAG and REGISTRY are deployment state, not configuration: deploy.sh injects them from
+# Deployment/.versions at deploy time so a container's image is decided by a recorded tag rather
+# than by whatever someone last typed into .env. Requiring them here would force the tag of a
+# running container into a hand-edited file, which is the opposite of what .versions is for.
 if (( ${#missing[@]} > 0 )); then
   echo "FATAL: docker-compose.yml interpolates these, and the generated .env does not set them:" >&2
   printf '       %s\n' "${missing[@]}" >&2
