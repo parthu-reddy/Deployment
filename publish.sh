@@ -103,6 +103,13 @@ for svc in "${SERVICES[@]}"; do
 
     record "$svc" "$tag"
     echo "    pushed $image"
+
+    # The image is in the registry now; keeping it locally only consumes disk. Without this,
+    # peak usage grows with the NUMBER OF SERVICES -- 20 images plus buildx cache exhausted a
+    # GitHub runner mid-run. Pruning makes peak disk flat instead, so adding services later
+    # cannot reintroduce the failure.
+    docker image rm -f "$image" >/dev/null 2>&1 || true
+    docker buildx prune -f >/dev/null 2>&1 || true
 done
 
 echo
