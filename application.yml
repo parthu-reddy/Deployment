@@ -39,7 +39,10 @@ management:
   tracing:
     enabled: true
     sampling:
-      probability: 1.0
+      # Was 1.0 -- every request produced a trace, all retained by jaeger in memory. Over 14 days
+      # that reached 3.1 GB on a 23 GB box and starved the host (2026-08-30). Sample a fraction;
+      # raise it temporarily when actually chasing something.
+      probability: ${TRACING_SAMPLE_RATE:0.1}
 
   otlp:
     tracing:

@@ -3,14 +3,22 @@ services:
   jaeger:
     image: jaegertracing/all-in-one:1.50
     container_name: shared_jaeger
+    environment:
+    # all-in-one defaults to in-memory storage with UNBOUNDED retention. Without this it grew to
+    # 3.1 GB -- the largest consumer on the box, larger than any actual service.
+    - MEMORY_MAX_TRACES=20000
     ports:
     - "16686:16686"
     - "4317:4317"
     - "4318:4318"
+    # Backstop: if the app-level cap is ever wrong, Docker enforces the ceiling instead of the host
+    # running out. Development tooling must not be able to starve the services it observes.
+    mem_limit: 512m
     restart: unless-stopped
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: shared_zookeeper
+    mem_limit: 320m
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
@@ -20,6 +28,7 @@ services:
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     container_name: shared_kafka
+    mem_limit: 1600m
     depends_on:
     - zookeeper
     ports:
@@ -47,6 +56,7 @@ services:
   postgres:
     image: kartoza/postgis:16-3.4
     container_name: shared_postgres
+    mem_limit: 768m
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASS: ${POSTGRES_PASS}
@@ -69,6 +79,7 @@ services:
   redis:
     image: redis:7.2
     container_name: shared_redis
+    mem_limit: 192m
     ports:
     - 6379:6379
     volumes:
@@ -97,6 +108,7 @@ services:
       context: ../
       dockerfile: ConfigService/Dockerfile
     container_name: config-service
+    mem_limit: 512m
     user: root
     ports:
     - 8888:8888
@@ -127,6 +139,7 @@ services:
       context: ../
       dockerfile: EurekaServer/Dockerfile
     container_name: eureka-server-1
+    mem_limit: 512m
     ports:
     - 8761:8761
     environment:
@@ -156,6 +169,7 @@ services:
       context: ../
       dockerfile: EurekaServer/Dockerfile
     container_name: eureka-server-2
+    mem_limit: 512m
     ports:
     - 8762:8761
     environment:
@@ -185,6 +199,7 @@ services:
       context: ../
       dockerfile: CustomerApplication/Dockerfile
     container_name: customer-service
+    mem_limit: 896m
     ports:
     - 8092:8092
     environment:
@@ -236,6 +251,7 @@ services:
       context: ../
       dockerfile: RestaurantApplication/Dockerfile
     container_name: restaurant-service
+    mem_limit: 896m
     ports:
     - 8094:8094
     environment:
@@ -288,6 +304,7 @@ services:
       context: ../
       dockerfile: DeliveryExecutiveApplication/Dockerfile
     container_name: delivery-service
+    mem_limit: 896m
     ports:
     - 8095:8095
     environment:
@@ -339,6 +356,7 @@ services:
       context: ../
       dockerfile: PaymentGatewayIntegration/Dockerfile
     container_name: payment-gateway
+    mem_limit: 1024m
     ports:
     - 8085:8085
     environment:
@@ -391,6 +409,7 @@ services:
       context: ../
       dockerfile: MapsIntegration/Dockerfile
     container_name: maps-integration
+    mem_limit: 896m
     ports:
     - 8083:8083
     environment:
@@ -437,6 +456,7 @@ services:
       context: ../
       dockerfile: CommunicationIntegration/Dockerfile
     container_name: communication-integration
+    mem_limit: 1024m
     ports:
     - 8081:8081
     environment:
@@ -491,6 +511,7 @@ services:
       context: ../
       dockerfile: ApiGateway/Dockerfile
     container_name: api-gateway
+    mem_limit: 896m
     user: root
     ports:
     - 8080:8080
@@ -541,6 +562,7 @@ services:
       context: ../
       dockerfile: IdentityService/Dockerfile
     container_name: identity-service
+    mem_limit: 896m
     user: root
     ports:
     - 8086:8086
@@ -596,6 +618,7 @@ services:
       context: ../
       dockerfile: GovernmentIDValidationService/Dockerfile
     container_name: government-id-service
+    mem_limit: 1024m
     ports:
     - 8087:8087
     environment:
@@ -649,6 +672,7 @@ services:
       context: ../FoodDeliveryAppUI
       dockerfile: Dockerfile
     container_name: food-delivery-app-ui
+    mem_limit: 128m
     ports:
     - 80:80
     depends_on:
@@ -667,6 +691,7 @@ services:
       context: ../
       dockerfile: LedgerService/Dockerfile
     container_name: ledger-service
+    mem_limit: 896m
     ports:
     - 8089:8089
     environment:
@@ -713,6 +738,7 @@ services:
       context: ../
       dockerfile: CommunicationService/Dockerfile
     container_name: chat-service
+    mem_limit: 896m
     ports:
     - 8096:8096
     environment:
@@ -804,6 +830,7 @@ services:
       context: ../
       dockerfile: WalletService/Dockerfile
     container_name: wallet-service
+    mem_limit: 896m
     ports:
     - 8120:8120
     environment:
@@ -849,6 +876,7 @@ services:
   clickhouse:
     image: clickhouse/clickhouse-server:latest
     container_name: shared_clickhouse
+    mem_limit: 1024m
     ports:
     - 8123:8123
     - 9000:9000
@@ -871,6 +899,7 @@ services:
       context: ../
       dockerfile: CampaignService/Dockerfile
     container_name: campaign-service
+    mem_limit: 896m
     ports:
     - 8088:8088
     environment:
@@ -918,6 +947,7 @@ services:
       context: ../
       dockerfile: BiddingEngine/Dockerfile
     container_name: bidding-engine
+    mem_limit: 896m
     ports:
     - 8102:8102
     environment:
@@ -963,6 +993,7 @@ services:
       context: ../
       dockerfile: BudgetLimitingService/Dockerfile
     container_name: budget-pacing-service
+    mem_limit: 896m
     ports:
     - 8103:8103
     environment:
@@ -1012,6 +1043,7 @@ services:
       context: ../
       dockerfile: UserTrackingService/Dockerfile
     container_name: event-tracking-service
+    mem_limit: 896m
     ports:
     - 8104:8104
     environment:
@@ -1056,6 +1088,7 @@ services:
   api-docs:
     image: nginx:alpine
     container_name: api-docs
+    mem_limit: 64m
     ports:
       - "8090:80"
     volumes:
