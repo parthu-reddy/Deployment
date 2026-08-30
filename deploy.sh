@@ -52,7 +52,17 @@ before="$(remote "cd '$REMOTE' && for s in ${SERVICES[*]}; do printf '%s=%s\n' \
 
 # compose interpolates ${REGISTRY} and ${<SVC>_TAG} from the shell it runs in, and .versions lives
 # on this machine -- so the values are passed explicitly rather than assumed present on the VM.
+# EVERY tag, not just the ones being deployed. `docker compose up -d <one-service>` still parses
+# the whole file, so an unset ${X_TAG} for any other service resolves to a blank string and
+# compose fails with "invalid reference format" on an image that was never being touched.
 ENVS="REGISTRY=$REGISTRY"
+while IFS= read -r line; do
+    case "$line" in ''|\#*) continue;; esac
+    ENVS="$ENVS $line"
+done < "$VERSIONS"
+
+# The deployed services use the tag resolved above, which is the same value unless .versions
+# changed under us mid-run; re-stating them makes the intent explicit rather than implicit.
 for i in "${!SERVICES[@]}"; do
     ENVS="$ENVS $(echo "${SERVICES[$i]}" | tr 'a-z-' 'A-Z_')_TAG=${IMAGES[$i]##*:}"
 done
