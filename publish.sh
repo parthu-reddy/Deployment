@@ -90,9 +90,13 @@ for svc in "${SERVICES[@]}"; do
     echo "==> $svc  ($module @ $tag)"
     ctx="$(context_for "$svc")"; dockerfile="$(dockerfile_for "$svc")"
     [[ "$ctx" == "." ]] && ctx_path="$ROOT" || ctx_path="$ROOT/$ctx"
+    # The map stores the Dockerfile path RELATIVE TO ITS CONTEXT, so it is joined, never
+    # basenamed. Stripping the directory turned ApiGateway/Dockerfile into Dockerfile and
+    # resolved it against the workspace root, which failed after a full checkout and build.
+    [[ -f "$ctx_path/$dockerfile" ]] || die "$svc: no Dockerfile at ${ctx_path#$ROOT/}/$dockerfile"
     docker buildx build \
         --platform "$PLATFORM" \
-        -f "$ctx_path/${dockerfile##*/}" \
+        -f "$ctx_path/$dockerfile" \
         -t "$image" \
         --push \
         "$ctx_path" </dev/null
