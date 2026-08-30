@@ -104,9 +104,7 @@ services:
       retries: 10
       start_period: 120s
   config-service:
-    build:
-      context: ../
-      dockerfile: ConfigService/Dockerfile
+    image: ${REGISTRY}/food-delivery/config-service:${CONFIG_SERVICE_TAG}
     container_name: config-service
     mem_limit: 512m
     user: root
@@ -135,9 +133,7 @@ services:
       start_period: 120s
     restart: unless-stopped
   eureka-server-1:
-    build:
-      context: ../
-      dockerfile: EurekaServer/Dockerfile
+    image: ${REGISTRY}/food-delivery/eureka-server-1:${EUREKA_SERVER_1_TAG}
     container_name: eureka-server-1
     mem_limit: 512m
     ports:
@@ -165,9 +161,7 @@ services:
       start_period: 120s
     restart: unless-stopped
   eureka-server-2:
-    build:
-      context: ../
-      dockerfile: EurekaServer/Dockerfile
+    image: ${REGISTRY}/food-delivery/eureka-server-2:${EUREKA_SERVER_2_TAG}
     container_name: eureka-server-2
     mem_limit: 512m
     ports:
@@ -195,9 +189,7 @@ services:
       start_period: 120s
     restart: unless-stopped
   customer-service:
-    build:
-      context: ../
-      dockerfile: CustomerApplication/Dockerfile
+    image: ${REGISTRY}/food-delivery/customer-service:${CUSTOMER_SERVICE_TAG}
     container_name: customer-service
     mem_limit: 896m
     ports:
@@ -247,9 +239,7 @@ services:
       start_period: 120s
     restart: on-failure
   restaurant-service:
-    build:
-      context: ../
-      dockerfile: RestaurantApplication/Dockerfile
+    image: ${REGISTRY}/food-delivery/restaurant-service:${RESTAURANT_SERVICE_TAG}
     container_name: restaurant-service
     mem_limit: 896m
     ports:
@@ -300,9 +290,7 @@ services:
       start_period: 120s
     restart: on-failure
   delivery-service:
-    build:
-      context: ../
-      dockerfile: DeliveryExecutiveApplication/Dockerfile
+    image: ${REGISTRY}/food-delivery/delivery-service:${DELIVERY_SERVICE_TAG}
     container_name: delivery-service
     mem_limit: 896m
     ports:
@@ -352,9 +340,7 @@ services:
       start_period: 120s
     restart: on-failure
   payment-gateway:
-    build:
-      context: ../
-      dockerfile: PaymentGatewayIntegration/Dockerfile
+    image: ${REGISTRY}/food-delivery/payment-gateway:${PAYMENT_GATEWAY_TAG}
     container_name: payment-gateway
     mem_limit: 1024m
     ports:
@@ -405,9 +391,7 @@ services:
       start_period: 120s
     restart: on-failure
   maps-integration:
-    build:
-      context: ../
-      dockerfile: MapsIntegration/Dockerfile
+    image: ${REGISTRY}/food-delivery/maps-integration:${MAPS_INTEGRATION_TAG}
     container_name: maps-integration
     mem_limit: 896m
     ports:
@@ -452,9 +436,7 @@ services:
       start_period: 120s
     restart: on-failure
   communication-integration:
-    build:
-      context: ../
-      dockerfile: CommunicationIntegration/Dockerfile
+    image: ${REGISTRY}/food-delivery/communication-integration:${COMMUNICATION_INTEGRATION_TAG}
     container_name: communication-integration
     mem_limit: 1024m
     ports:
@@ -556,9 +538,7 @@ services:
       start_period: 120s
     restart: on-failure
   identity-service:
-    build:
-      context: ../
-      dockerfile: IdentityService/Dockerfile
+    image: ${REGISTRY}/food-delivery/identity-service:${IDENTITY_SERVICE_TAG}
     container_name: identity-service
     mem_limit: 896m
     user: root
@@ -612,9 +592,7 @@ services:
       start_period: 120s
     restart: on-failure
   government-id-service:
-    build:
-      context: ../
-      dockerfile: GovernmentIDValidationService/Dockerfile
+    image: ${REGISTRY}/food-delivery/government-id-service:${GOVERNMENT_ID_SERVICE_TAG}
     container_name: government-id-service
     mem_limit: 1024m
     ports:
@@ -666,9 +644,7 @@ services:
       start_period: 120s
     restart: on-failure
   food-delivery-app-ui:
-    build:
-      context: ../FoodDeliveryAppUI
-      dockerfile: Dockerfile
+    image: ${REGISTRY}/food-delivery/food-delivery-app-ui:${FOOD_DELIVERY_APP_UI_TAG}
     container_name: food-delivery-app-ui
     mem_limit: 128m
     ports:
@@ -685,9 +661,7 @@ services:
       start_period: 10s
     restart: on-failure
   ledger-service:
-    build:
-      context: ../
-      dockerfile: LedgerService/Dockerfile
+    image: ${REGISTRY}/food-delivery/ledger-service:${LEDGER_SERVICE_TAG}
     container_name: ledger-service
     mem_limit: 896m
     ports:
@@ -732,9 +706,7 @@ services:
       start_period: 120s
     restart: on-failure
   chat-service:
-    build:
-      context: ../
-      dockerfile: CommunicationService/Dockerfile
+    image: ${REGISTRY}/food-delivery/chat-service:${CHAT_SERVICE_TAG}
     container_name: chat-service
     mem_limit: 896m
     ports:
@@ -824,9 +796,7 @@ services:
 #      start_period: 120s
 #    restart: on-failure
   wallet-service:
-    build:
-      context: ../
-      dockerfile: WalletService/Dockerfile
+    image: ${REGISTRY}/food-delivery/wallet-service:${WALLET_SERVICE_TAG}
     container_name: wallet-service
     mem_limit: 896m
     ports:
@@ -893,9 +863,7 @@ services:
       retries: 5
       start_period: 30s
   campaign-service:
-    build:
-      context: ../
-      dockerfile: CampaignService/Dockerfile
+    image: ${REGISTRY}/food-delivery/campaign-service:${CAMPAIGN_SERVICE_TAG}
     container_name: campaign-service
     mem_limit: 896m
     ports:
@@ -941,9 +909,7 @@ services:
       start_period: 120s
     restart: on-failure
   bidding-engine:
-    build:
-      context: ../
-      dockerfile: BiddingEngine/Dockerfile
+    image: ${REGISTRY}/food-delivery/bidding-engine:${BIDDING_ENGINE_TAG}
     container_name: bidding-engine
     mem_limit: 896m
     ports:
@@ -987,9 +953,7 @@ services:
       start_period: 120s
     restart: on-failure
   budget-pacing-service:
-    build:
-      context: ../
-      dockerfile: BudgetLimitingService/Dockerfile
+    image: ${REGISTRY}/food-delivery/budget-pacing-service:${BUDGET_PACING_SERVICE_TAG}
     container_name: budget-pacing-service
     mem_limit: 896m
     ports:
@@ -1037,9 +1001,7 @@ services:
       start_period: 120s
     restart: on-failure
   event-tracking-service:
-    build:
-      context: ../
-      dockerfile: UserTrackingService/Dockerfile
+    image: ${REGISTRY}/food-delivery/event-tracking-service:${EVENT_TRACKING_SERVICE_TAG}
     container_name: event-tracking-service
     mem_limit: 896m
     ports:
