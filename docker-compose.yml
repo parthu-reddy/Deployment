@@ -1,5 +1,13 @@
 version: '3.8'
 services:
+  jaeger:
+    image: jaegertracing/all-in-one:1.50
+    container_name: shared_jaeger
+    ports:
+    - "16686:16686"
+    - "4317:4317"
+    - "4318:4318"
+    restart: unless-stopped
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: shared_zookeeper
@@ -95,6 +103,7 @@ services:
     volumes:
     - ./:/config
     environment:
+    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_PROFILES_ACTIVE=native
@@ -121,6 +130,7 @@ services:
     ports:
     - 8761:8761
     environment:
+    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - EUREKA_USER=${EUREKA_USER:-admin}
@@ -149,6 +159,7 @@ services:
     ports:
     - 8762:8761
     environment:
+    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - EUREKA_USER=${EUREKA_USER:-admin}
@@ -177,6 +188,7 @@ services:
     ports:
     - 8092:8092
     environment:
+    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
@@ -227,6 +239,7 @@ services:
     ports:
     - 8094:8094
     environment:
+    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
@@ -278,6 +291,7 @@ services:
     ports:
     - 8095:8095
     environment:
+    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
@@ -328,6 +342,7 @@ services:
     ports:
     - 8085:8085
     environment:
+    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
@@ -379,6 +394,7 @@ services:
     ports:
     - 8083:8083
     environment:
+    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
@@ -424,6 +440,7 @@ services:
     ports:
     - 8081:8081
     environment:
+    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
@@ -480,6 +497,7 @@ services:
     volumes:
     - ./certs:/certs
     environment:
+    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - OLA_MAPS_API_KEY=${OLA_MAPS_API_KEY}
@@ -529,6 +547,7 @@ services:
     volumes:
     - ./certs:/certs
     environment:
+    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
@@ -580,6 +599,7 @@ services:
     ports:
     - 8087:8087
     environment:
+    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
@@ -650,6 +670,7 @@ services:
     ports:
     - 8089:8089
     environment:
+    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
@@ -695,6 +716,7 @@ services:
     ports:
     - 8096:8096
     environment:
+    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
@@ -785,6 +807,7 @@ services:
     ports:
     - 8120:8120
     environment:
+    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
@@ -851,6 +874,7 @@ services:
     ports:
     - 8088:8088
     environment:
+    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - PLATFORM_BUSINESS_ZONE=${PLATFORM_BUSINESS_ZONE:-Asia/Kolkata}
@@ -897,6 +921,7 @@ services:
     ports:
     - 8102:8102
     environment:
+    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - PLATFORM_BUSINESS_ZONE=${PLATFORM_BUSINESS_ZONE:-Asia/Kolkata}
@@ -941,6 +966,7 @@ services:
     ports:
     - 8103:8103
     environment:
+    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - PLATFORM_BUSINESS_ZONE=${PLATFORM_BUSINESS_ZONE:-Asia/Kolkata}
@@ -989,6 +1015,7 @@ services:
     ports:
     - 8104:8104
     environment:
+    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}

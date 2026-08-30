@@ -468,3 +468,8 @@ During deployment, running `mvn clean package` or `docker compose build` for mul
     - **Error:** Remote deployment fails during Maven build with missing artifact errors for internal dependencies (e.g., `identity-signing:jar is missing` or `dependencies.dependency.version is missing`).
     - **Cause:** The `FoodDeliveryParent` project contains the dependency management for the entire architecture, but it is not part of the root aggregator POM. Running `mvn clean package` on the root aggregator does not install the parent POM into the local `.m2` repository of the remote server, meaning downstream modules fail to resolve managed versions of new dependencies.
     - **Fix:** Ensure the deployment scripts (e.g., `03_deploy_dev.sh`) explicitly run `mvn -N install -f FoodDeliveryParent/pom.xml` before executing the `mvn clean package` command for the rest of the workspace.
+
+### Tracing Configuration Checklist
+- Ensure a Jaeger (or OpenTelemetry Collector) container is running and exposed in `docker-compose.yml`.
+- Ensure all microservices have `OTLP_ENDPOINT=http://jaeger:4318/v1/traces` correctly injected in their `environment:` block so they don't spam errors trying to connect to their own internal `localhost:4318`.
+- Failure to do this will result in `java.net.ConnectException` logs filling up memory and causing health check timeouts.

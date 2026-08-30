@@ -15,7 +15,7 @@ DB_PASS="${POSTGRES_PASS:?POSTGRES_PASS is not set. Populate Deployment/.env (se
 COMPOSE_DIR="Food Delivery.nosync/Deployment"
 
 echo "Waiting for Spring Boot microservices to boot up and generate their database schemas..."
-for db_table in "identity_db:users" "food_delivery:customers" "delivery_db:delivery_executives" "restaurant_db:brands" "government_id_db:executive_documents" "ledger_db:ledger_entries" "chat_db:chat_sessions"; do
+for db_table in "identity_db:users" "customer_db:customers" "delivery_db:delivery_executives" "restaurant_db:brands" "government_id_db:executive_documents" "ledger_db:ledger_entries" "chat_db:chat_sessions"; do
     db="${db_table%%:*}"
     table="${db_table##*:}"
     echo "Waiting for table $table in $db..."
