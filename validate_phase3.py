@@ -60,7 +60,10 @@ def main():
         declared = set(re.findall(r"^([A-Z0-9_]+)=", example.read_text(encoding="utf-8"), re.M))
         used = set()
         for m in re.finditer(r"\$\{([A-Z0-9_]+)(:-[^}]*)?\}", COMPOSE.read_text(encoding="utf-8")):
-            if not m.group(2):                      # no inline default -> must be declared
+            # <SVC>_TAG is injected by deploy.sh from Deployment/.versions, which is deployment
+            # state rather than configuration. Declaring it in .env.example would invite someone
+            # to hand-edit the tag a container runs.
+            if not m.group(2) and not m.group(1).endswith("_TAG"):
                 used.add(m.group(1))
         missing = sorted(used - declared)
         check("COMPOSE-VARS-DECLARED", not missing,

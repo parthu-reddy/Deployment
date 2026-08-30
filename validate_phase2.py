@@ -61,9 +61,11 @@ def main():
         check("ENTRYPOINT-DEPLOYS-ONLY", not found,
               "deploy.sh still does: " + ", ".join(found))
 
+        # service-map.tsv is the source of truth for valid service names (Phase 1), not compose --
+        # the map also carries the module each service is built from, which compose does not.
         check("ENTRYPOINT-VALIDATES-SERVICE",
-              "docker-compose.yml" in body or "compose config" in body,
-              "deploy.sh does not resolve the service name against compose -- a typo will reach SSH")
+              "service-map" in body or "docker-compose.yml" in body or "compose config" in body,
+              "deploy.sh does not resolve the service name against service-map.tsv -- a typo will reach SSH")
 
         check("ENTRYPOINT-WAITS-FOR-HEALTH",
               re.search(r"health|compose\s+ps", body) is not None,
