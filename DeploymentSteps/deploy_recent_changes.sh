@@ -39,9 +39,9 @@ echo "Building and restarting changed services on remote..."
 ssh -o StrictHostKeyChecking=no -i $SSH_KEY ubuntu@$ORACLE_IP << 'EOF'
 cd "Food Delivery.nosync"
 # Rebuild common library first
-mvn clean install -pl CommonLibrary -am -DskipTests
+mvn clean install -pl CommonLibrary -am -DskipTests </dev/null
 # Rebuild changed services
-mvn clean package -pl CustomerApplication,DeliveryExecutiveApplication,RestaurantApplication -am -Pdev -Dmaven.test.skip=true
+mvn clean package -pl CustomerApplication,DeliveryExecutiveApplication,RestaurantApplication -am -Pdev -Dmaven.test.skip=true </dev/null
 
 cd Deployment
 export SPRING_PROFILES_ACTIVE=dev
@@ -49,8 +49,8 @@ docker compose build --no-cache customer-service delivery-service restaurant-ser
 docker compose up -d customer-service delivery-service restaurant-service
 
 cd ../FoodDeliveryAppUI
-npm install
-npm run build
+npm install </dev/null
+npm run build </dev/null
 npx pm2 restart all || npx pm2 start dist/server.cjs
 EOF
 

@@ -69,6 +69,18 @@ spring:
         uri: lb://payment-service
         predicates:
         - Path=/api/v1/webhooks/**, /api/v1/payments/**
+      # Ola Maps tile/places proxy. nginx forwards /olamaps/ here (its own comment says
+      # "via Api Gateway"), but no route existed, so every tile request 404'd and maps have
+      # never rendered in this deployment. Mirrors FoodDeliveryAppUI/server.ts, which is the
+      # dev-time proxy and is NOT running in production -- nginx serves the built assets instead.
+      # The key stays server-side; the browser never sees it.
+      - id: olamaps-proxy
+        uri: https://api.olamaps.io
+        predicates:
+        - Path=/olamaps/**
+        filters:
+        - RewritePath=/olamaps/(?<segment>.*), /$\{segment}
+        - AddRequestParameter=api_key, ${OLA_MAPS_API_KEY:}
       - id: maps-service
         uri: lb://mapsintegration
         predicates:

@@ -15,7 +15,7 @@ rsync -avz -e "ssh -o StrictHostKeyChecking=no -i $SSH_KEY" \
 echo "Building and restarting food-delivery-app-ui on remote..."
 ssh -o StrictHostKeyChecking=no -i $SSH_KEY ubuntu@$ORACLE_IP << 'EOF'
 cd "Food Delivery.nosync/FoodDeliveryAppUI"
-npm run build
+npm run build </dev/null
 cd ../Deployment
 export SPRING_PROFILES_ACTIVE=dev
 docker compose build --no-cache food-delivery-app-ui

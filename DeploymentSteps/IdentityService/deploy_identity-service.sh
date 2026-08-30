@@ -23,9 +23,9 @@ echo "Building and restarting identity-service on remote..."
 ssh -o StrictHostKeyChecking=no -i $SSH_KEY ubuntu@$ORACLE_IP << 'EOF'
 cd "Food Delivery.nosync"
 # Rebuild common library first
-mvn clean install -pl CommonLibrary -am -DskipTests
+mvn clean install -pl CommonLibrary -am -DskipTests </dev/null
 # Rebuild IdentityService
-mvn clean package -pl IdentityService -am -Pdev -Dmaven.test.skip=true
+mvn clean package -pl IdentityService -am -Pdev -Dmaven.test.skip=true </dev/null
 
 cd Deployment
 export SPRING_PROFILES_ACTIVE=dev

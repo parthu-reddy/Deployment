@@ -1,0 +1,25 @@
+# module-dir	compose-service
+# Generated from a comment-stripped parse of docker-compose.yml.
+# The mapping is NOT derivable by string munging -- CommunicationService is chat-service,
+# UserTrackingService is event-tracking-service, and EurekaServer yields TWO services.
+# publish.sh, deploy.sh and the phase validators all read this file. Do not re-derive it.
+ApiGateway	api-gateway
+BiddingEngine	bidding-engine
+BudgetLimitingService	budget-pacing-service
+CampaignService	campaign-service
+CommunicationIntegration	communication-integration
+CommunicationService	chat-service
+ConfigService	config-service
+CustomerApplication	customer-service
+DeliveryExecutiveApplication	delivery-service
+EurekaServer	eureka-server-1
+EurekaServer	eureka-server-2
+FoodDeliveryAppUI	food-delivery-app-ui
+GovernmentIDValidationService	government-id-service
+IdentityService	identity-service
+LedgerService	ledger-service
+MapsIntegration	maps-integration
+PaymentGatewayIntegration	payment-gateway
+RestaurantApplication	restaurant-service
+UserTrackingService	event-tracking-service
+WalletService	wallet-service
