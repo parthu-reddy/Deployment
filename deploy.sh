@@ -50,8 +50,15 @@ for i in "${!SERVICES[@]}"; do echo "    ${SERVICES[$i]} -> ${IMAGES[$i]}"; done
 
 before="$(remote "cd '$REMOTE' && for s in ${SERVICES[*]}; do printf '%s=%s\n' \"\$s\" \"\$(docker inspect -f '{{.Config.Image}}' \$s 2>/dev/null || echo none)\"; done")"
 
+# compose interpolates ${REGISTRY} and ${<SVC>_TAG} from the shell it runs in, and .versions lives
+# on this machine -- so the values are passed explicitly rather than assumed present on the VM.
+ENVS="REGISTRY=$REGISTRY"
+for i in "${!SERVICES[@]}"; do
+    ENVS="$ENVS $(echo "${SERVICES[$i]}" | tr 'a-z-' 'A-Z_')_TAG=${IMAGES[$i]##*:}"
+done
+
 # One round trip. --remove-orphans so undeclared containers cannot accumulate silently.
-remote "cd '$REMOTE' && docker compose pull ${SERVICES[*]} && docker compose up -d --remove-orphans ${SERVICES[*]}"
+remote "cd '$REMOTE' && env $ENVS docker compose pull ${SERVICES[*]} && env $ENVS docker compose up -d --remove-orphans ${SERVICES[*]}"
 
 echo "==> waiting for health (timeout ${HEALTH_TIMEOUT}s)"
 remote "cd '$REMOTE' && end=\$((SECONDS+$HEALTH_TIMEOUT)); while [ \$SECONDS -lt \$end ]; do

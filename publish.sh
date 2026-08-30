@@ -70,8 +70,18 @@ for svc in "${SERVICES[@]}"; do
     # The UI is the exception: its Dockerfile copies a Vite dist/.
     if [[ "$module" == "FoodDeliveryAppUI" ]]; then
         [[ -d "$ROOT/$module/dist" ]] || die "$module/dist missing -- run: (cd $module && npm ci && npm run build)"
-    elif ! compgen -G "$ROOT/$module/target/*.jar" >/dev/null; then
-        die "$module/target/*.jar missing -- run: bash FoodDeliveryContracts/build_verify.sh"
+    elif ! compgen -G "$ROOT/$module/target/*-SNAPSHOT.jar" >/dev/null; then
+        die "$module/target/*-SNAPSHOT.jar missing -- run: bash FoodDeliveryContracts/build_verify.sh"
+    else
+        # Existing is not the same as current. On 2026-08-30 a jar built at 07:52 was published for
+        # a source change made at 09:46: `mvn compile` had been run, which produces classes but no
+        # jar, so the image shipped without the change and the deploy reported success. Staleness
+        # must be checked, not assumed.
+        jar="$(ls -t "$ROOT/$module"/target/*-SNAPSHOT.jar | head -1)"
+        newer="$(find "$ROOT/$module/src" -name '*.java' -newer "$jar" -print -quit 2>/dev/null)"
+        if [[ -n "$newer" ]]; then
+            die "$module: $(basename "$jar") is older than $(basename "$newer"). The jar predates the source. Run: bash FoodDeliveryContracts/build_verify.sh"
+        fi
     fi
 
     echo "==> $svc  ($module @ $tag)"

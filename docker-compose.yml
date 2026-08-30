@@ -507,9 +507,7 @@ services:
       start_period: 120s
     restart: on-failure
   api-gateway:
-    build:
-      context: ../
-      dockerfile: ApiGateway/Dockerfile
+    image: ${REGISTRY}/food-delivery/api-gateway:${API_GATEWAY_TAG}
     container_name: api-gateway
     mem_limit: 896m
     user: root
