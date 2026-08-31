@@ -37,10 +37,17 @@ def main():
     entry = DEPLOY_DIR / "deploy.sh"
     check("ENTRYPOINT-EXISTS", entry.is_file(), f"{entry} not found")
 
-    strays = sorted(p.relative_to(ROOT).as_posix()
-                    for p in DEPLOY_DIR.rglob("deploy_*.sh"))
+    # Only scripts that DEPLOY TO THE VM are superseded by deploy.sh. Deployment/ also holds a
+    # separate family of local-development scripts (--apple / --docker engine switching, building
+    # against the developer's own machine) which this phase does not replace. Matching on the
+    # filename alone conflated the two and would have deleted a working local workflow.
+    strays = []
+    for p in sorted(DEPLOY_DIR.rglob("deploy_*.sh")):
+        body = p.read_text(encoding="utf-8", errors="ignore")
+        if re.search(r"ubuntu@|ORACLE_IP|140\.245\.", body):
+            strays.append(p.relative_to(ROOT).as_posix())
     check("NO-PER-SERVICE-SCRIPTS", not strays,
-          f"{len(strays)} remain: " + ", ".join(strays[:6]))
+          f"{len(strays)} script(s) still deploy to the VM: " + ", ".join(strays[:6]))
 
     recent = DEPLOY_DIR / "DeploymentSteps/deploy_recent_changes.sh"
     check("NO-RECENT-CHANGES-SCRIPT", not recent.is_file(),
@@ -91,9 +98,14 @@ def main():
     ui_readme = DEPLOY_DIR / "OracleDeployment/UIDeployment/README.md"
     if ui_readme.is_file():
         t = ui_readme.read_text(encoding="utf-8")
-        stale = [s for s in ("--no-cache", "npm run build", "rsync") if s in t]
+        # Only look inside fenced code blocks. Prose that explains why a step is obsolete is not
+        # an instruction to perform it, and matching the whole document flagged a rewrite whose
+        # entire point was recording that those steps no longer apply. Sixth occurrence of this
+        # trap in this workspace: a checker reading documentation as if it were the thing itself.
+        commands = "\n".join(re.findall(r"```[a-z]*\n(.*?)```", t, re.S))
+        stale = [s for s in ("--no-cache", "npm run build", "rsync") if s in commands]
         check("UI-DOCS-REWRITTEN", not stale,
-              "still documents VM-side steps: " + ", ".join(stale))
+              "still instructs VM-side steps in a code block: " + ", ".join(stale))
 
     # 4. The VM: no source, no toolchain, no build context.
     if remote:

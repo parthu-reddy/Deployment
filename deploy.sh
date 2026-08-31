@@ -19,7 +19,10 @@ LOG="$ROOT/Deployment/DEPLOY_LOG.md"
 SSH_KEY="${SSH_KEY:-/Users/parthureddy/Documents/OracleSSH/ssh-key-2026-08-16.key}"
 VM="${VM:-ubuntu@140.245.234.137}"
 REMOTE="Food Delivery.nosync/Deployment"
-HEALTH_TIMEOUT="${HEALTH_TIMEOUT:-180}"
+# Scales with the batch: one service comes up in well under a minute, but 20 JVMs starting
+# together on 4 cores took ~5 minutes. A fixed 180s reported failure on a deploy that had
+# actually succeeded, which teaches people to ignore a red deploy.
+HEALTH_TIMEOUT="${HEALTH_TIMEOUT:-}"
 
 die() { echo "deploy: $*" >&2; exit 1; }
 remote() { ssh -o StrictHostKeyChecking=no -o ConnectTimeout=20 -i "$SSH_KEY" "$VM" "$@" </dev/null; }
@@ -70,6 +73,7 @@ done
 # One round trip. --remove-orphans so undeclared containers cannot accumulate silently.
 remote "cd '$REMOTE' && env $ENVS docker compose pull ${SERVICES[*]} && env $ENVS docker compose up -d --remove-orphans ${SERVICES[*]}"
 
+[[ -n "$HEALTH_TIMEOUT" ]] || HEALTH_TIMEOUT=$(( 120 + 30 * ${#SERVICES[@]} ))
 echo "==> waiting for health (timeout ${HEALTH_TIMEOUT}s)"
 remote "cd '$REMOTE' && end=\$((SECONDS+$HEALTH_TIMEOUT)); while [ \$SECONDS -lt \$end ]; do
   bad=0
