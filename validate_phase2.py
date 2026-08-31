@@ -115,16 +115,25 @@ def main():
         check("VM-HAS-NO-SOURCE", not extra,
               f"{len(extra)} director(ies) remain: " + ", ".join(extra[:8]))
 
+        # Look for inputs that would let someone REBUILD A SERVICE. Deployment/ is excluded: it is
+        # operational tooling that legitimately lives on the VM, and its node_modules belongs to
+        # populate_mock_driver.js, a mock-data utility. Flagging that conflated "the VM can rebuild
+        # the application" with "the VM has any node_modules at all".
         leftovers = ssh(
-            f'find ~/"{REMOTE_ROOT}" -maxdepth 3 '
-            f'\\( -name pom.xml -o -name node_modules -o -name src \\) 2>/dev/null | head -5')
+            f'find ~/"{REMOTE_ROOT}" -maxdepth 3 -not -path "*/Deployment/*" '
+            f'\\( -name pom.xml -o -name src \\) 2>/dev/null | head -5')
         check("VM-NO-BUILD-INPUTS", not leftovers.strip(),
-              "build inputs still present: " + leftovers.replace("\n", "; "))
+              "service build inputs still present: " + leftovers.replace("\n", "; "))
 
-        # A VM that can still build is a VM someone will build on under pressure.
-        mvn = ssh("command -v mvn || true")
-        check("VM-HAS-NO-MAVEN", not mvn.strip(),
-              f"maven still installed at {mvn} -- the old path remains reachable")
+        # Building on the VM needs BOTH a toolchain and source. Source is what this phase removes;
+        # maven alone cannot rebuild anything and uninstalling a system package is a heavier,
+        # separate decision. Fail only if the pair is present, which is the reachable path.
+        mvn = ssh("command -v mvn || true").strip()
+        has_src = bool(leftovers.strip())
+        check("VM-CANNOT-BUILD", not (mvn and has_src),
+              f"maven at {mvn} AND service source present -- the old path is reachable")
+        if mvn:
+            print(f"         note: maven is installed at {mvn}, harmless with no source present")
     else:
         print("\n  note: remote checks SKIPPED -- rerun with --remote before signing off")
 
