@@ -23,8 +23,7 @@ server:
 olamaps:
   api:
     base-url: https://api.olamaps.io
-    key: ***REMOVED***
-
+    key: ${OLA_MAPS_API_KEY:}
 resilience4j:
   circuitbreaker:
     configs:

@@ -25,10 +25,11 @@ done
 
 if [[ "$LOAD_ONLY" != true ]]; then
     echo "==> resetting databases"
+    # reset_remote_db.sh now requires a target; --all is the explicit "reset everything".
     if [[ "$YES" == true ]]; then
-        "$DD/reset_remote_db.sh" --yes
+        "$DD/reset_remote_db.sh" --all --yes
     else
-        "$DD/reset_remote_db.sh"
+        "$DD/reset_remote_db.sh" --all
     fi
 else
     # Loading into schemas that Flyway has not finished building inserts into tables that may not

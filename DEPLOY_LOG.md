@@ -27,3 +27,6 @@
 | 2026-08-31T01:44:55Z | payment-gateway | f838503 | - | false | parthudhanireddy@gmail.com |
 | 2026-08-31T01:44:55Z | restaurant-service | 521e3c4 | - | false | parthudhanireddy@gmail.com |
 | 2026-08-31T01:44:55Z | wallet-service | c4f6e4f | - | false | parthudhanireddy@gmail.com |
+| 2026-08-31T02:10:16Z | customer-service | db7e19b | rollback from eef921e | false | parthudhanireddy@gmail.com |
+| 2026-08-31T02:11:43Z | customer-service | eef921e | rollback from db7e19b | false | parthudhanireddy@gmail.com |
+| 2026-08-31T02:17:57Z | wallet-service | c4f6e4f | - | false | parthudhanireddy@gmail.com |

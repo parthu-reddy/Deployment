@@ -39,8 +39,88 @@ if [[ "${1:-}" == "--sync-env" ]]; then SYNC_ENV=true; shift; fi
 # container itself is suspect (bad state, half-applied config); it does NOT touch volumes, so the
 # database survives -- wiping data is dummy-data.sh's job.
 if [[ "${1:-}" == "--fresh" ]]; then FRESH=true; shift; fi
+
+valid() { awk -F'\t' '!/^#/ && NF>=2 {print $2}' "$MAP"; }
+
+wait_for_health() {
+    local svcs=("$@")
+    [[ -n "$HEALTH_TIMEOUT" ]] || HEALTH_TIMEOUT=$(( 120 + 30 * ${#svcs[@]} ))
+    echo "==> waiting for health (timeout ${HEALTH_TIMEOUT}s)"
+    remote "cd '$REMOTE' && end=\$((SECONDS+$HEALTH_TIMEOUT)); while [ \$SECONDS -lt \$end ]; do
+      bad=0
+      for s in ${svcs[*]}; do
+        st=\$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' \$s 2>/dev/null || echo missing)
+        case \"\$st\" in healthy|running) ;; *) bad=1 ;; esac
+      done
+      [ \$bad -eq 0 ] && exit 0
+      sleep 5
+    done; echo 'TIMEOUT waiting for health'; exit 1"
+}
+
+config_deploy() {
+    [[ $# -gt 0 ]] || die "usage: deploy.sh --config <config.yml>..."
+    
+    # 1. Ship configs
+    "$ROOT/Deployment/publish-config.sh" "$@" || exit $?
+    
+    # 2. Derive services
+    local svcs=() all=false
+    for conf in "$@"; do
+        if [[ "$conf" == "application.yml" ]]; then
+            all=true
+        elif [[ "$conf" == "api-gateway.yml" ]]; then
+            svcs+=("api-gateway")
+        else
+            # Extract spring.application.name using bash native reading
+            local name=""
+            while IFS= read -r line; do
+                if [[ "$line" =~ ^[[:space:]]*name:[[:space:]]*(.+)$ ]]; then
+                    name="${BASH_REMATCH[1]}"
+                    break
+                fi
+            done < "$ROOT/Deployment/$conf"
+            [[ -n "$name" ]] && svcs+=("$name")
+        fi
+    done
+    
+    if [[ "$all" == true ]]; then
+        svcs=()
+        while IFS=$'\t' read -r _ s; do
+            [[ "$s" != "eureka-server" && "$s" != "config-service" ]] && svcs+=("$s")
+        done < <(valid)
+        echo "WARNING: application.yml changed. This will restart EVERY application service."
+        read -p "Continue? [y/N] " confirm </dev/tty
+        [[ "${confirm,,}" == "y" ]] || exit 1
+    fi
+    
+    [[ ${#svcs[@]} -eq 0 ]] && return 0
+    
+    # Deduplicate svcs array (Bash 3.2 compatible)
+    local uniq_svcs=()
+    local s us found
+    for s in "${svcs[@]}"; do
+        found=0
+        for us in "${uniq_svcs[@]:-}"; do
+            if [[ "$s" == "$us" ]]; then found=1; break; fi
+        done
+        [[ $found -eq 0 ]] && uniq_svcs+=("$s")
+    done
+    
+    # 3. Restart and wait
+    echo "==> restarting config consumers"
+    remote "cd '$REMOTE' && docker compose restart ${uniq_svcs[*]}"
+    wait_for_health "${uniq_svcs[@]}"
+    echo "==> config restart complete"
+}
+
+if [[ "${1:-}" == "--config" ]]; then
+    shift
+    config_deploy "$@"
+    exit 0
+fi
+
 [[ $# -gt 0 || "$SYNC_ENV" == true ]] \
-    || die "usage: deploy.sh [--rollback <service> | --sync-env | --fresh] <compose-service>..."
+    || die "usage: deploy.sh [--rollback <service> | --sync-env | --fresh | --config <config.yml>] <compose-service>..."
 
 valid() { awk -F'\t' '!/^#/ && NF>=2 {print $2}' "$MAP"; }
 
@@ -190,17 +270,7 @@ UP_FLAGS="--remove-orphans"
 [[ "$FRESH" == true ]] && UP_FLAGS="$UP_FLAGS --force-recreate"
 remote "cd '$REMOTE' && env $ENVS docker compose pull ${SERVICES[*]} && env $ENVS docker compose up -d $UP_FLAGS ${SERVICES[*]}"
 
-[[ -n "$HEALTH_TIMEOUT" ]] || HEALTH_TIMEOUT=$(( 120 + 30 * ${#SERVICES[@]} ))
-echo "==> waiting for health (timeout ${HEALTH_TIMEOUT}s)"
-remote "cd '$REMOTE' && end=\$((SECONDS+$HEALTH_TIMEOUT)); while [ \$SECONDS -lt \$end ]; do
-  bad=0
-  for s in ${SERVICES[*]}; do
-    st=\$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' \$s 2>/dev/null || echo missing)
-    case \"\$st\" in healthy|running) ;; *) bad=1 ;; esac
-  done
-  [ \$bad -eq 0 ] && exit 0
-  sleep 5
-done; echo 'TIMEOUT waiting for health'; exit 1"
+wait_for_health "${SERVICES[@]}"
 
 after="$(remote "cd '$REMOTE' && for s in ${SERVICES[*]}; do printf '%s=%s\n' \"\$s\" \"\$(docker inspect -f '{{.Config.Image}}' \$s 2>/dev/null || echo none)\"; done")"
 
@@ -220,6 +290,15 @@ done
 [[ $fail -eq 0 ]] || die "one or more services are not on the intended image"
 
 persist_env "$ENVS"
+
+# Reclaim disk from superseded image tags. Every deploy pulls a new git-sha tag and the previous one
+# stays behind: 50 images / 16GB accumulated, a third of it reclaimable. This removes only images no
+# container references -- the 27 running services keep theirs -- and anything removed is still in
+# OCIR, so --rollback (which pulls) is unaffected. NO_PRUNE=1 skips it.
+if [[ "${NO_PRUNE:-}" != "1" ]]; then
+    freed="$(remote "docker image prune -a -f 2>/dev/null | tail -1")"
+    [[ -n "$freed" ]] && echo "    pruned superseded images on the VM: $freed"
+fi
 
 # One row per service, not per invocation: --rollback resolves a single service and cannot read a
 # row that lumps twenty together.

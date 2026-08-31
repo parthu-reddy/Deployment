@@ -397,6 +397,7 @@ services:
     ports:
     - 8083:8083
     environment:
+    - OLA_MAPS_API_KEY=${OLA_MAPS_API_KEY:-}
     - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}

@@ -24,7 +24,8 @@ psql_db() {  # database, sql
 }
 
 # One shared list, so this script and reset_remote_db.sh cannot disagree about which schemas exist.
-SENTINELS="$(awk -F'\t' '!/^#/ && NF==2 {printf "%s:%s ", $1, $2}' "$HERE/schema_sentinels.tsv")"
+# The table has 4 columns: database, owning-service, sentinel-table, extensions. We read 1 and 3.
+SENTINELS="$(awk -F'\t' '!/^#/ && NF>=3 {printf "%s:%s ", $1, $3}' "$HERE/schema_sentinels.tsv")"
 [ -n "$SENTINELS" ] || { echo "wait: schema_sentinels.tsv is empty or missing" >&2; exit 1; }
 
 echo "==> waiting for Flyway to finish (timeout ${TIMEOUT}s)"

@@ -19,3 +19,6 @@ __pycache__/
 # Untracked 2026-08-30: generated/editor artefacts that should never be committed
 *.class
 .npm-cache/
+restaurant_logs.txt
+*_logs.txt
+id.json

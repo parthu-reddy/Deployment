@@ -77,9 +77,12 @@ rsync -avz -e "ssh -i path/to/your_private_key.key -o IPQoS=none -o ServerAliveI
 
 Two things that have gone wrong here before:
 
-- **The space in the path.** The destination must keep `Food Delivery.nosync` intact. Quoted wrong,
-  rsync writes to `/home/ubuntu/Food` and the deploy then reads a directory that does not exist.
-  Check the exit code; do not assume it worked.
+- **The space in the path.** Double-quoting the destination is NOT enough — the local shell strips
+  the quotes and the remote shell splits on the space, so rsync writes to `/home/ubuntu/Food` and
+  still exits 0. macOS rsync 2.6.9 has no `--protect-args`. Use single quotes locally with the space
+  backslash-escaped for the remote shell:
+  `'ubuntu@HOST:/home/ubuntu/Food\ Delivery.nosync/Deployment/'`. Verify with md5 on both ends; the
+  exit code will not tell you.
 - **Copying the whole workspace out of habit.** It transfers gigabytes the VM has no use for, and
   leaves stale source lying around that looks authoritative during an incident.
 

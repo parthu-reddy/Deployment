@@ -1,14 +1,19 @@
-# database	sentinel table
+# database	owning-service	sentinel-table	extensions
 # Proof that Flyway finished for that service, not merely that its container started.
-# Read by reset_remote_db.sh and wait_for_schemas.sh -- keep it in ONE place so the two cannot drift.
-# reviews_db and ondc_db are excluded: reviews-service and ondc-integration-service are parked.
-identity_db	users
-customer_db	customers
-delivery_db	delivery_executives
-restaurant_db	brands
-government_id_db	executive_documents
-ledger_db	ledger_entries
-chat_db	chat_sessions
-wallet_db	wallets
-campaign_db	campaigns
-budget_db	qrtz_job_details
+# Read by reset_remote_db.sh, wait_for_schemas.sh and dummy-data.sh -- keep it in ONE place
+# so the scripts cannot drift. Two hand-maintained copies had already drifted (7 vs 10 entries).
+# reviews_db and ondc_db are excluded: those services are parked and would never re-migrate.
+# Extensions live IN the public schema and are dropped with it -- recreating only restaurant_db's
+# postgis left three other services without theirs and their migrations failed on boot.
+identity_db	identity-service	users	-
+customer_db	customer-service	customers	postgis
+delivery_db	delivery-service	delivery_executives	postgis
+restaurant_db	restaurant-service	brands	postgis
+government_id_db	government-id-service	executive_documents	-
+payment_db	payment-gateway	payment_intents	pgcrypto
+notification_db	communication-integration	notification_templates	-
+ledger_db	ledger-service	ledger_entries	-
+chat_db	chat-service	chat_sessions	-
+wallet_db	wallet-service	wallets	-
+campaign_db	campaign-service	campaigns	-
+budget_db	budget-pacing-service	qrtz_job_details	-

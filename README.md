@@ -22,7 +22,14 @@ Deployment/OracleDeployment/03_clean_deploy.sh          # keeps the databases
 Deployment/OracleDeployment/03_clean_deploy.sh --wipe   # destroys volumes too, prompts first
 ```
 
-**3. Dummy data:**
+**3. Config:**
+
+```bash
+Deployment/publish-config.sh <service>.yml      # ship a config and restart its consumers
+Deployment/publish-config.sh --all              # ship all configs and restart all consumers
+```
+
+**4. Dummy data:**
 
 ```bash
 Deployment/dummy-data.sh              # wipe databases, let Flyway rebuild, then load
@@ -43,8 +50,8 @@ are already current, dummy data 3m14s.
 | `SCHEMA_POLICY.md` | migrations are immutable and forward-only |
 
 The VM builds nothing — it holds only this `Deployment/` directory and pulls images from OCIR.
-Config YAMLs are the exception: `config-service` bind-mounts this directory, so changing a
-`<service>.yml` means rsyncing it to the VM and restarting the readers.
+Config YAMLs are the exception: `config-service` bind-mounts this directory. Use `publish-config.sh`
+to sync changes and safely restart only the services that need to read them.
 
 ---
 

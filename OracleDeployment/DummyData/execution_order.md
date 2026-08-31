@@ -3,7 +3,7 @@
 Two scripts, run from the workspace root on the Mac, in this order:
 
 ```bash
-Deployment/OracleDeployment/DummyData/reset_remote_db.sh          # wipe + let Flyway rebuild
+Deployment/OracleDeployment/DummyData/reset_remote_db.sh --all    # wipe + let Flyway rebuild
 Deployment/OracleDeployment/DummyData/run_remote_dummy_data.sh    # insert, in dependency order
 ```
 

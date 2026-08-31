@@ -168,6 +168,20 @@ Modify `Deployment/api-gateway.yml` to add your route rules:
 >   "cd 'Food Delivery.nosync/Deployment' && docker compose restart config-service {service-name}"
 > ```
 >
+> **Quote the remote path so the REMOTE shell cannot split it.** This was hit again on 2026-08-31:
+> `rsync ... ubuntu@host:"/home/ubuntu/Food Delivery.nosync/Deployment/api-gateway.yml"` **exited 0
+> and wrote nothing** — the shell stripped the quotes, the remote shell split on the space, and the
+> file landed at `/home/ubuntu/Food`. macOS ships rsync 2.6.9, which has **no `--protect-args`/`-s`**.
+> The form that works, verified by matching md5 on both ends:
+>
+> ```bash
+> rsync -az -e "ssh -i $SSH_KEY" Deployment/api-gateway.yml \
+>   'ubuntu@140.245.234.137:/home/ubuntu/Food\ Delivery.nosync/Deployment/api-gateway.yml'
+> ```
+>
+> Single quotes locally, backslash-escaped space for the remote shell. **Always compare checksums
+> afterwards** — the exit code is 0 either way.
+>
 > `.env` is excluded on purpose — it holds live credentials and is written on the VM by
 > `fetch_secrets_from_vault.sh`. Overwriting it from here reintroduces plaintext secrets on a laptop.
 
