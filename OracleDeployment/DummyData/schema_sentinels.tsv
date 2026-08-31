@@ -1,0 +1,14 @@
+# database	sentinel table
+# Proof that Flyway finished for that service, not merely that its container started.
+# Read by reset_remote_db.sh and wait_for_schemas.sh -- keep it in ONE place so the two cannot drift.
+# reviews_db and ondc_db are excluded: reviews-service and ondc-integration-service are parked.
+identity_db	users
+customer_db	customers
+delivery_db	delivery_executives
+restaurant_db	brands
+government_id_db	executive_documents
+ledger_db	ledger_entries
+chat_db	chat_sessions
+wallet_db	wallets
+campaign_db	campaigns
+budget_db	qrtz_job_details

@@ -54,38 +54,36 @@ sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 8761 -j ACCEPT
 sudo netfilter-persistent save
 ```
 
-## 4. Transfer Source Code to the VM
-The Ubuntu Minimal image strips out almost all utilities. The most robust way to get your code onto the server is by securely copying it from your local machine using `rsync`, while explicitly ignoring heavy build artifacts.
+## 4. Copy the Deployment directory to the VM
 
-1. **Install rsync on the server**:
-   In your SSH terminal, run:
-   ```bash
-   sudo apt-get update && sudo apt-get install -y rsync
-   ```
+The VM does **not** get the source tree. It compiles nothing: images are built on a Mac or a CI
+runner, pushed to OCIR, and pulled here. What it needs is the `Deployment` directory — the compose
+file, the per-service config YAMLs that `config-service` serves, and the scripts.
 
-2. **Transfer files from your local machine**:
-   Open a *new* terminal on your local machine (do not close the SSH session) and run this highly optimized `rsync` command. It includes specific flags to prevent macOS SSH packet timeouts (`IPQoS`, `ServerAliveInterval`) and excludes massive directories to ensure a lightning-fast transfer:
-   ```bash
-   rsync -avz -e "ssh -i path/to/your_private_key.key -o IPQoS=none -o ServerAliveInterval=15" \
-     --exclude 'target' \
-     --exclude 'node_modules' \
-     --exclude '.git' \
-     --exclude '.github' \
-     --exclude 'dist' \
-     --exclude 'build' \
-     --exclude '.DS_Store' \
-     --exclude '.npm-cache' \
-     --exclude '.idea' \
-     --exclude '.vscode' \
-     --exclude '*.iml' \
-     --exclude '*.log' \
-     --exclude 'customer_logs*.txt' \
-     --exclude 'apache-maven-*' \
-     "/path/to/local/Food Delivery.nosync" ubuntu@<YOUR_PUBLIC_IP>:/home/ubuntu/
-   ```
+From your local machine:
+
+```bash
+rsync -avz -e "ssh -i path/to/your_private_key.key -o IPQoS=none -o ServerAliveInterval=15" \
+  --exclude '.env' \
+  --exclude 'node_modules' \
+  --exclude '__pycache__' \
+  --exclude '*.log' \
+  "/path/to/local/Food Delivery.nosync/Deployment" \
+  ubuntu@<YOUR_PUBLIC_IP>:"/home/ubuntu/Food Delivery.nosync/"
+```
+
+`.env` is excluded deliberately — it holds live credentials and is written on the VM itself by
+`fetch_secrets_from_vault.sh`, so that the only plaintext copy exists there and is transient.
+
+Two things that have gone wrong here before:
+
+- **The space in the path.** The destination must keep `Food Delivery.nosync` intact. Quoted wrong,
+  rsync writes to `/home/ubuntu/Food` and the deploy then reads a directory that does not exist.
+  Check the exit code; do not assume it worked.
+- **Copying the whole workspace out of habit.** It transfers gigabytes the VM has no use for, and
+  leaves stale source lying around that looks authoritative during an incident.
 
 ## 5. Initialize the VM
-Once the file transfer is complete, return to your server's SSH terminal, navigate into the newly copied directory, and run the initialization script to install Java, Maven, and Docker:
 
 ```bash
 cd "Food Delivery.nosync"
@@ -93,4 +91,27 @@ chmod +x Deployment/OracleDeployment/02_vm_init.sh
 ./Deployment/OracleDeployment/02_vm_init.sh
 ```
 
-*(Note: The initialization script will instruct you to reload your group permissions using `newgrp docker` at the very end before running the final deployment script).*
+It installs Docker, the compose plugin and the OCI CLI — no JDK, no Maven, no Node, because
+nothing is built here.
+
+## 6. Log in to the registry
+
+The VM pulls images, so it needs a **pull-only** credential:
+
+```bash
+docker login hyd.ocir.io
+```
+
+Username is `<namespace>/<oci-username>`; the password is an auth token, not your console password.
+Do not give this VM a push credential — a push from here should be refused by IAM. Images are
+published from a Mac or a CI runner only.
+
+## 7. Deploy
+
+From the workspace root on your Mac:
+
+```bash
+export REGISTRY=hyd.ocir.io/<namespace>
+Deployment/OracleDeployment/03_clean_deploy.sh
+```
+

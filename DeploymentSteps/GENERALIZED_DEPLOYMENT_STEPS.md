@@ -1,14 +1,33 @@
 # Generalized Microservice Deployment Instructions
 
-This guide provides a comprehensive checklist and instructions for taking a newly created microservice and deploying it in the existing Food Delivery architecture on the Oracle environment using Docker Compose and Eureka.
+This guide covers taking a new microservice from nothing to running on the Oracle VM.
+
+## How deployment works
+
+The VM builds nothing. Its copy of the workspace contains only `Deployment/` — no source, no jars.
+
+    build (Mac or CI)  ->  publish.sh  ->  OCIR  ->  deploy.sh  ->  VM pulls and runs
+
+**Two different delivery paths, and mixing them up wastes hours:**
+
+| What | How it reaches the VM | To change it |
+|---|---|---|
+| Application code | Baked into an image, tagged with its git sha, pulled from OCIR | `publish.sh` then `deploy.sh` |
+| Config YAML (`Deployment/*.yml`) | Bind-mounted from the VM's `Deployment/` directory into `config-service` at `/config` | rsync `Deployment/`, then restart the readers |
+
+`config-service` runs with `SPRING_PROFILES_ACTIVE=native` and
+`SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=file:/config`, so it serves whatever YAML is on
+the VM's disk. A new image will **not** pick up a config change, and rsyncing config will not
+change any code.
 
 ## Prerequisites
-- Your service should be built on Spring Boot.
-- The service must include the `spring-cloud-starter-netflix-eureka-client` dependency in its `pom.xml`.
-- The service should be added to the parent `pom.xml` under `<modules>` if it's a Maven multi-module project.
-- You must always deploy using the `dev` profile (`SPRING_PROFILES_ACTIVE=dev`) as per our deployment policy.
 
----
+- Spring Boot, with `spring-cloud-starter-netflix-eureka-client` in its `pom.xml`.
+- Registered in the root aggregator `pom.xml` under `<modules>`.
+- Registered in `Deployment/service-map.tsv` — `publish.sh` and `deploy.sh` both refuse a service
+  that is not listed there, and it is the only place the build context is recorded.
+- The `dev` profile is already active: `SPRING_PROFILES_ACTIVE=dev` lives in the VM's `.env` and
+  compose defaults to it. Do not set it per-deploy.
 
 ## Step 1: Create a Dockerfile
 Every microservice needs a `Dockerfile` in its root folder to containerize the application.
@@ -138,36 +157,71 @@ Modify `Deployment/api-gateway.yml` to add your route rules:
 > The `uri: lb://{service-name}` uses Eureka service discovery. The service name must exactly match `spring.application.name` in your `{service-name}.yml`.
 
 > [!WARNING]
-> Remember that the `Deployment/` folder maps directly into the ConfigService. If you add or modify `{service-name}.yml` or `api-gateway.yml`, you **must** sync the `Deployment` folder to the remote Oracle server (e.g., using `rsync` in `deploy_recent_changes.sh`), and you must restart the affected services for the changes to take effect.
+> `config-service` bind-mounts the VM's `Deployment/` directory at `/config`. Adding or editing
+> `{service-name}.yml` or `api-gateway.yml` therefore requires syncing that directory to the VM and
+> restarting the services that read it. Redeploying the image does nothing for a config change.
+>
+> ```bash
+> rsync -avz -e "ssh -i $SSH_KEY" --exclude '.env' --exclude 'node_modules' --exclude '__pycache__' \
+>   "Deployment/" ubuntu@140.245.234.137:"/home/ubuntu/Food Delivery.nosync/Deployment/"
+> ssh -i "$SSH_KEY" ubuntu@140.245.234.137 \
+>   "cd 'Food Delivery.nosync/Deployment' && docker compose restart config-service {service-name}"
+> ```
+>
+> `.env` is excluded on purpose — it holds live credentials and is written on the VM by
+> `fetch_secrets_from_vault.sh`. Overwriting it from here reintroduces plaintext secrets on a laptop.
 
-## Step 6: Create an Individual Deploy Script
-To deploy *just* your service without restarting the entire architecture, create an individual deployment shell script.
+## Step 6: Register the service so it can be published
 
-Create `Deployment/deploy_{ServiceName}.sh`:
+There are no per-service deploy scripts any more. `Deployment/deploy_{ServiceName}.sh` used to run
+`mvn clean package` and `docker compose up --build` on the VM; neither is possible now.
 
-```bash
-#!/bin/bash
-set -e
+Add one tab-separated row to `Deployment/service-map.tsv`:
 
-echo "Deploying {ServiceName}..."
-cd ..
-
-# Build Jar
-mvn clean package -pl {ServiceName} -am -Pdev -DskipTests
-
-# Deploy Container
-cd Deployment
-export SPRING_PROFILES_ACTIVE=dev
-docker compose up --build -d {service-name}
-
-echo "{ServiceName} deployed successfully."
+```
+{ServiceName}	{service-name}	..	{ServiceName}/Dockerfile
 ```
 
-Make it executable: `chmod +x deploy_{ServiceName}.sh`.
+The columns are module directory, compose service name, **build context**, and Dockerfile path.
+None of it is derivable, which is why the file exists:
 
-## Step 7: Complete Re-deployment
-If you are deploying this for the very first time on a fresh VM, you can run the master script `Deployment/OracleDeployment/03_deploy_dev.sh` which tears down and reconstructs everything. 
-*(Note: You must run this script from the root of the repository, not from inside the `Deployment` folder, because it relies on relative paths like `cd ..`)*
+- `CommunicationService` -> `chat-service`, `UserTrackingService` -> `event-tracking-service`;
+  the directory name does not predict the service name.
+- Java services build with the workspace root (`..`) as context because their Dockerfiles do
+  `COPY {Module}/target/*.jar`. The UI builds with its **own** directory as context because its
+  Dockerfile does `COPY nginx.conf`. Assuming one context for everything broke a publish 11 images
+  in.
+
+Then:
+
+```bash
+export REGISTRY=hyd.ocir.io/axekmbadoczl
+mvn package -pl {ServiceName} -am -DskipTests   # a jar must exist; publish.sh rejects a stale one
+Deployment/publish.sh {service-name}
+Deployment/deploy.sh {service-name}
+```
+
+`publish.sh` tags by git sha (never `latest`), records the tag in `Deployment/.versions`, and
+refuses to publish a jar older than its sources. `deploy.sh` pulls, starts, waits for health, and
+then verifies the container actually ended up on the intended image — a deploy that silently
+changes nothing still reports healthy without that check.
+
+## Step 7: Full deployment
+
+```bash
+Deployment/OracleDeployment/03_clean_deploy.sh          # --wipe also destroys volumes
+```
+
+Run it from the workspace root on your Mac. It syncs the image tags into the VM's `.env`, starts
+infrastructure, waits for Postgres, deploys config and discovery first and the remaining services
+second, then reconciles declared against running.
+
+Related:
+
+- `Deployment/deploy.sh --rollback {service-name}` — previous tag, refused across a destructive
+  migration or a missing image.
+- `Deployment/reconcile.sh` — declared vs running, plus image drift. Removes only with `--apply`.
+- `Deployment/SCHEMA_POLICY.md` — migrations are immutable and forward-only.
 
 ---
 
@@ -183,7 +237,7 @@ During deployment, you might encounter some common pitfalls. Always check this l
 2. **Docker Daemon Not Running:**
    - **Error:** `failed to connect to the docker API at unix:///.../docker.sock`
    - **Cause:** The Docker daemon is not active on the host machine, or you are trying to run the deployment scripts locally instead of on the actual Oracle Cloud VM.
-   - **Fix:** Ensure Docker is started (`sudo systemctl start docker` on Linux, or opening Docker Desktop on Mac). If deploying to Oracle, ensure you have successfully SSH'd into the remote VM before running `03_deploy_dev.sh`.
+   - **Fix:** Ensure Docker is started (`sudo systemctl start docker` on Linux, or opening Docker Desktop on Mac). If deploying to Oracle, note that `03_clean_deploy.sh` runs on your Mac and drives the VM over ssh -- Docker must be running **locally** only for `publish.sh`.
 
 2. **Stray Testcontainers (`test_pg`) Surviving Docker Prune:**
    - **Error:** Finding a `test_pg` or other random PostGIS container running even after executing `docker system prune -af`.
@@ -219,11 +273,6 @@ During deployment, you might encounter some common pitfalls. Always check this l
    - **Error:** `Parameter 0 of constructor in ... required a bean of type ... that could not be found.`
    - **Cause:** Often caused when using shared components from a common library (`com.fooddelivery.common`) and your service's `@SpringBootApplication` doesn't scan that package.
    - **Fix:** Update your main application class to include: `@SpringBootApplication(scanBasePackages = {"com.fooddelivery.your_service", "com.fooddelivery.common"})`.
-
-8. **Application Fails to Start (Missing Bean from CommonLibrary on Remote VM):**
-   - **Error:** `Parameter 0 of constructor in ... required a bean of type ... that could not be found.` (even when you verify the bean exists locally and your `@SpringBootApplication` has `scanBasePackages` set correctly).
-   - **Cause:** If you modified `CommonLibrary` locally to add the missing bean, but only `rsync`ed your new microservice folder to the remote VM, building the microservice on the VM will pull the *stale, cached* version of `CommonLibrary` from the VM's local `~/.m2` repository.
-   - **Fix:** Always sync the entire workspace (including `CommonLibrary`) to the remote VM. Then, SSH into the VM, navigate to `CommonLibrary`, and run `mvn clean install -DskipTests` to update the VM's local Maven cache *before* rebuilding your microservice container.
 
 9. **Security Context or Web Security Failing to Load in New Service:**
    - **Error:** Security configurations are ignored or missing bean errors related to security filters.
@@ -276,34 +325,14 @@ During deployment, you might encounter some common pitfalls. Always check this l
     - **Fix (App Side):** If you only added `scanBasePackages = "com.fooddelivery.common"` to get access to JPA entities or repositories (like the outbox pattern), remove it! Instead, use precise scanning: `@EnableJpaRepositories(basePackages = {"com.fooddelivery.your_service", "com.fooddelivery.common"})` and `@EntityScan(basePackages = {"com.fooddelivery.your_service", "com.fooddelivery.common"})`.
     - **Fix (Common Library Side):** Ensure that configurations in the common library that depend on environment properties use conditionals. For example, add `@ConditionalOnExpression("!'${your.property:}'.isEmpty()")` on the `@Configuration` class so it only initializes when the consuming microservice actually provides the configuration.
 
-14. **Compilation Failure in Unrelated Shared Module (e.g. CommonLibrary) During Deployment:**
-    - **Error:** When running `mvn clean package -pl {ServiceName} -am -DskipTests`, the build fails in `CommonLibrary` because `testCompile` encounters missing symbols or deprecated warnings.
-    - **Cause:** Maven's `-DskipTests` only skips *executing* the tests, but it still compiles them (meaning the `testCompile` phase runs). If a shared library like `CommonLibrary` has broken tests, it will halt the build of your microservice.
-    - **Fix:** Update your deployment scripts to use `-Dmaven.test.skip=true` instead of `-DskipTests`. This instructs Maven to skip both the compilation and execution of tests, speeding up deployment and avoiding issues caused by broken tests in dependencies.
-
-15. **Permission Denied When Executing Remote Deployment Scripts:**
-    - **Error:** `bash: line 1: ./Deployment/OracleDeployment/03_deploy_dev.sh: Permission denied`
-    - **Cause:** When syncing deployment scripts (e.g. via `rsync`) from a local machine to a remote server like Oracle Cloud, the shell scripts may lose or not have the proper executable (`+x`) permissions on the remote filesystem.
-    - **Fix:** Before executing the deployment script on the remote server, ensure you add execute permissions. For example, run `chmod +x Deployment/OracleDeployment/*.sh` over SSH before invoking the script.
-
 16. **Transient Connection Errors on Fresh Start:**
     - **Error:** `java.net.ConnectException: Connection refused` or `SocketTimeoutException` in Eureka/Kafka during the first 30-60 seconds.
     - **Cause:** Microservices booting concurrently in Docker Compose. Eureka clients attempt to register before Eureka servers are fully initialized, and Kafka clients attempt to connect before Zookeeper/Kafka broker election completes.
     - **Fix:** This is completely normal behavior in distributed systems. The services will retry automatically and resolve themselves once the infrastructure is fully up (usually within a minute). If the logs eventually say `Healthy` and `Started`, no action is required.
 
-17. **Sed Command Fails with "No such file or directory" during deployment on OCI:**
-    - **Error:** `sed: can't read s/...: No such file or directory` when running deployment shell scripts on the Oracle Linux/Ubuntu VM.
-    - **Cause:** macOS uses BSD `sed` while Ubuntu/OCI uses GNU `sed`. On macOS, `sed -i '' "s/...` is required for inline replacement without creating a backup file, but on GNU Linux, `sed -i "s/...` must be used. Using `sed -i ''` on Linux makes it interpret `''` as the file name, which causes it to fail.
-    - **Fix:** Ensure all shell scripts running on the remote Oracle VM use GNU `sed` syntax (`sed -i`). If you edited the deployment script locally on a Mac and tested it, remember to revert it to the Linux syntax before syncing it to OCI.
-
-18. **Deployment Directory Not Found Error:**
-    - **Error:** `Error: 'Deployment' directory not found. Make sure you run this script from the root of the cloned repository.`
-    - **Cause:** You ran the `03_deploy_dev.sh` script while currently inside the `Deployment/OracleDeployment/` directory. The script expects to be executed from the root of the repository (`Food Delivery.nosync/`).
-    - **Fix:** Ensure that the shell command running the script uses the correct relative path from the root. For example: `cd 'Food Delivery.nosync' && bash Deployment/OracleDeployment/03_deploy_dev.sh` instead of `cd 'Food Delivery.nosync/Deployment/OracleDeployment' && bash 03_deploy_dev.sh`.
-
 19. **Complete Tear-down for Fresh Deployments:**
     - **Error:** Stale database data or old cached Docker layers interfere with a newly deployed service.
-    - **Cause:** `docker compose up --build` does not remove existing named volumes (like the Postgres data volume). If you change schema or need dummy data re-inserted, the old volume will persist.
+    - **Cause:** A normal deploy never removes named volumes, so the Postgres data volume survives. To start from an empty database use `03_clean_deploy.sh --wipe`, then recreate the data with `DummyData/reset_remote_db.sh` and `run_remote_dummy_data.sh`.
 20. **Eureka Peer Node Socket Read Timeout (ARM / Low Resource VMs):**
     - **Error:** `It seems to be a socket read timeout exception... you should set property 'eureka.server.peer-node-read-timeout-ms' to a bigger value` in the Eureka Server logs.
     - **Cause:** When deploying on ARM architecture or lower-tier VMs, initial startup and peer replication between Eureka nodes takes longer than the default 200ms read timeout.
@@ -412,11 +441,6 @@ During deployment, you might encounter some common pitfalls. Always check this l
     - **Cause:** When working with DTOs, developers or AI agents might hallucinate fields or methods that look correct but don't exist. If the DTO is auto-generated by OpenAPI or lacks those fields, the local IDE might sometimes not catch it immediately, but the Maven build will fail.
     - **Fix:** Always verify the actual fields in the DTO class before using its builder. If it is an OpenAPI-generated model, you must update the OpenAPI spec (`openapi.yaml`) and regenerate it, or refrain from using non-existent fields and handle the logic elsewhere (e.g., throwing an `IllegalArgumentException` in the service layer).
 
-39. **Intermittent "Package Does Not Exist" Errors for Internal Libraries During Full Deployment**:
-    - **Error:** When running a full deployment script (e.g., `03_deploy_dev.sh`), a downstream service fails to compile with `package com.fooddelivery.common... does not exist`, despite `CommonLibrary` successfully building locally and syncing properly.
-    - **Cause:** Occasionally, running the Maven aggregator build within a complex shell script on resource-constrained VMs can cause transient reactor resolution failures. Maven fails to map the newly compiled library to the downstream service's classpath.
-    - **Fix:** Run the Maven build command manually outside of the script first. From the root of the project: `mvn clean package -Pdev -Dmaven.test.skip=true`. If the problem persists for a specific module, rebuild it with its dependencies explicitly using `mvn clean package -pl :<failed-service-name> -am -Dmaven.test.skip=true`.
-
 40. **JPA Repositories / Entities Not Found in Local Microservice Package:**
     - **Error:** When using `@EnableJpaRepositories` or `@EntityScan` to include the `common` library, the microservice's *own* repositories or entities stop working.
     - **Cause:** Once you explicitly use `@EnableJpaRepositories` or `@EntityScan`, Spring Boot completely turns off its default behavior of scanning the current package. It will *only* scan what you explicitly specify.
@@ -435,24 +459,29 @@ java.lang.Exception: Apparent connection leak detected
 **Resolution**: This is a non-fatal warning generated by `HikariPool-1 housekeeper`. Because the OCI Ampere instances are heavily CPU-constrained during the simultaneous boot-up of 15+ Spring Boot containers, the connection acquisition latency spikes, triggering this false positive. It is safe to ignore as long as the container eventually reaches `Started` state and does not crash.
 
 ### Disk Space Exhaustion on OCI Free Tier (Ampere A1)
-During deployment, running `mvn clean package` or `docker compose build` for multiple microservices simultaneously or retaining old Docker images can quickly exhaust the 45GB root volume on the OCI free tier. 
-**Error**: `failed to solve: process "/bin/sh -c mvn clean package -DskipTests" did not complete successfully: exit code: 1` or `no space left on device`.
+Nothing is built on the VM any more, so the build-time exhaustion is gone. What still fills the disk is **accumulated pulled images**: every deploy pulls a new git-sha tag and the previous one stays. 
+**Error**: `no space left on device`, or a pull that fails partway.
+
+**Fix**: prune old images on the VM — `docker image prune -a -f` removes everything not used by a
+running container, which is safe because any tag can be pulled again from OCIR. `publish.sh`
+already prunes each image locally after pushing it.
 **Resolution**: Always build microservices sequentially rather than in parallel to keep peak memory and disk usage low. Use `docker system prune -a --volumes -f` before fresh deployments to clear old image layers, stopped containers, and anonymous volumes that accumulate from previous builds.
 
 42. **Local Changes Not Reflecting in Remote Deployment (Stale Code):**
-    - **Error:** You make a bug fix locally, execute the remote `03_deploy_dev.sh` script via ssh, but the Docker containers still crash with the exact same error, and inspecting the remote files shows your fix is missing.
-    - **Cause:** The deployment scripts (e.g. `03_deploy_dev.sh`) run *on the remote server* and compile the source code that exists *on the remote server*. They do not automatically pull from git or sync your local filesystem.
-    - **Fix:** You MUST synchronize your local changes to the remote server using `rsync` before triggering the remote deployment script. Ensure you properly escape spaces in the destination path (e.g., `rsync -avz ... ubuntu@HOST:"/home/ubuntu/Food\ Delivery.nosync/"`).
+    - **Error:** You make a bug fix locally, deploy, and the container still crashes with the exact same error.
+    - **Cause:** The VM runs whatever image tag it was told to run. Publishing without rebuilding,
+      or deploying a tag older than your fix, both look like a successful deploy. `publish.sh`
+      rejects a jar older than its sources, and `deploy.sh` verifies the container ended up on the
+      intended image -- check its output rather than assuming.
+    - **Fix:** Only `Deployment/` is ever synced now, and only for config changes -- code reaches
+      the VM as a published image. Quote the destination so the space survives:
+      `ubuntu@HOST:"/home/ubuntu/Food Delivery.nosync/Deployment/"`. Check the exit code; a
+      mis-quoted path writes to `/home/ubuntu/Food` and reports success.
 
 43. **Rsync Dropping Connection or Stalling on Large Transfers:**
     - **Error:** `client_loop: send disconnect: Broken pipe` or `Connection reset by peer` or rsync just hangs during transfer.
     - **Cause:** SSH connections can time out or be dropped by the network/firewall if there is no activity on the control channel, especially on slow network connections or when transferring large codebases.
     - **Fix:** Pass SSH keep-alive options to rsync using the `-e` flag. For example: `rsync -avz -e "ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=3" ...`.
-
-44. **Copying Stale `target/*.jar` Artifacts During Local to Remote Sync:**
-    - **Error:** Remote deployment runs, but it executes an old version of the code, ignoring your recent local changes.
-    - **Cause:** If you don't exclude `target/` directories during `rsync`, you might copy compiled local artifacts to the remote machine. If you haven't run `mvn clean package` locally before the sync, these stale `.jar` files will be transferred and might be picked up by the remote Docker build step, bypassing the remote compilation.
-    - **Fix:** Always explicitly exclude build directories in your `rsync` command. You should append: `--exclude "target/" --exclude "node_modules/" --exclude "dist/" --exclude ".next/" --exclude ".git/" --exclude ".gemini/"` to ensure only raw source code is synced. Never copy `target/*.jar` from a local directory directly unless you have just run `mvn clean package`.
 
 45. **Fixing Schema Validation Errors on Live DB (Flyway Checksum Mismatch):**
     - **Error:** \`FlywayException: Validate failed: Migration checksum mismatch for migration version 1\` after trying to fix a missing column in \`V1__init_schema.sql\`.
@@ -466,8 +495,33 @@ During deployment, running `mvn clean package` or `docker compose build` for mul
 
 47. **Multi-Module Project Parent POM Not Resolving Remotely:**
     - **Error:** Remote deployment fails during Maven build with missing artifact errors for internal dependencies (e.g., `identity-signing:jar is missing` or `dependencies.dependency.version is missing`).
-    - **Cause:** The `FoodDeliveryParent` project contains the dependency management for the entire architecture, but it is not part of the root aggregator POM. Running `mvn clean package` on the root aggregator does not install the parent POM into the local `.m2` repository of the remote server, meaning downstream modules fail to resolve managed versions of new dependencies.
-    - **Fix:** Ensure the deployment scripts (e.g., `03_deploy_dev.sh`) explicitly run `mvn -N install -f FoodDeliveryParent/pom.xml` before executing the `mvn clean package` command for the rest of the workspace.
+    - **Cause:** `FoodDeliveryParent` carries dependency management for the whole architecture but
+      is not part of the root aggregator POM, so building the aggregator never installs it and
+      downstream modules cannot resolve managed versions.
+    - **Fix:** Run `mvn -N install -f FoodDeliveryParent/pom.xml` before building the workspace.
+      This still applies on a Mac and in CI -- it is the reason a clean checkout fails where a
+      warm `~/.m2` succeeds. It no longer has anything to do with the VM.
+
+### Spring Boot `jarmode=tools` extraction fails
+
+- **Error:** `Unsupported jarmode 'tools'` while building the image.
+- **Cause:** `-Djarmode=tools ... extract` exists from Spring Boot 3.3.x. On 3.1.x and earlier the
+  capability is not there in the same form.
+- **Fix:** Move `spring-boot-starter-parent` to 3.3.0+ with a matching `spring-cloud-dependencies`
+  (2023.0.2+). Every Dockerfile in this repo uses the layered extract, so a module left behind on an
+  older parent fails only at image build time, long after its jar built cleanly.
+
+### Why Java services build with the workspace root as context
+
+A service that depends on `CommonLibrary` cannot be built from its own directory — the Docker build
+would not find the sibling module's jar.
+
+1. `mvn package` first, so every module has its jar in `target/`.
+2. `docker-compose.yml` sets `context: ../` with `dockerfile: <Module>/Dockerfile`, and the
+   Dockerfile copies the pre-built `<Module>/target/*.jar` from that context. Nothing runs Maven
+   inside the image build.
+3. `food-delivery-app-ui` is the exception: its context is its own directory because its Dockerfile
+   does `COPY nginx.conf`. This is recorded per-service in `Deployment/service-map.tsv`.
 
 ### Tracing Configuration Checklist
 - Ensure a Jaeger (or OpenTelemetry Collector) container is running and exposed in `docker-compose.yml`.

@@ -1,3 +1,29 @@
-| 2026-08-30T09:49:11Z | api-gateway | df3c350  | parthudhanireddy@gmail.com |
-| 2026-08-30T09:51:47Z | api-gateway | df3c350  | parthudhanireddy@gmail.com |
-| 2026-08-30T16:35:15Z | customer-service | eef921e  | parthudhanireddy@gmail.com |
+| when | service | tag | migrations | destructive | by |
+|---|---|---|---|---|---|
+| 2026-08-30T09:49:11Z | api-gateway | df3c350 | 0 | false | parthudhanireddy@gmail.com |
+| 2026-08-30T09:51:47Z | api-gateway | df3c350 | 0 | false | parthudhanireddy@gmail.com |
+| 2026-08-30T16:35:15Z | customer-service | eef921e | 0 | false | parthudhanireddy@gmail.com |
+| 2026-08-31T01:33:55Z | wallet-service | c4f6e4f | - | false | parthudhanireddy@gmail.com |
+| 2026-08-31T01:34:57Z | wallet-service | c4f6e4f | - | false | parthudhanireddy@gmail.com |
+| 2026-08-31T01:41:34Z | wallet-service | c4f6e4f | - | false | parthudhanireddy@gmail.com |
+| 2026-08-31T01:44:19Z | food-delivery-app-ui | 61d3a07-dirty | - | false | parthudhanireddy@gmail.com |
+| 2026-08-31T01:44:47Z | config-service | 9b53884 | - | false | parthudhanireddy@gmail.com |
+| 2026-08-31T01:44:47Z | eureka-server-1 | 7621a98 | - | false | parthudhanireddy@gmail.com |
+| 2026-08-31T01:44:47Z | eureka-server-2 | 7621a98 | - | false | parthudhanireddy@gmail.com |
+| 2026-08-31T01:44:54Z | api-gateway | a220ee5 | - | false | parthudhanireddy@gmail.com |
+| 2026-08-31T01:44:54Z | bidding-engine | da74354 | - | false | parthudhanireddy@gmail.com |
+| 2026-08-31T01:44:54Z | budget-pacing-service | 3968ebe | - | false | parthudhanireddy@gmail.com |
+| 2026-08-31T01:44:54Z | campaign-service | 82c9bf9 | - | false | parthudhanireddy@gmail.com |
+| 2026-08-31T01:44:54Z | chat-service | b2d7f0d | - | false | parthudhanireddy@gmail.com |
+| 2026-08-31T01:44:54Z | communication-integration | c5d8e41 | - | false | parthudhanireddy@gmail.com |
+| 2026-08-31T01:44:55Z | customer-service | eef921e | - | false | parthudhanireddy@gmail.com |
+| 2026-08-31T01:44:55Z | delivery-service | 8280811 | - | false | parthudhanireddy@gmail.com |
+| 2026-08-31T01:44:55Z | event-tracking-service | 8695bb1 | - | false | parthudhanireddy@gmail.com |
+| 2026-08-31T01:44:55Z | food-delivery-app-ui | 61d3a07-dirty | - | false | parthudhanireddy@gmail.com |
+| 2026-08-31T01:44:55Z | government-id-service | d4f9a8f | - | false | parthudhanireddy@gmail.com |
+| 2026-08-31T01:44:55Z | identity-service | dc54667 | - | false | parthudhanireddy@gmail.com |
+| 2026-08-31T01:44:55Z | ledger-service | abd0269 | - | false | parthudhanireddy@gmail.com |
+| 2026-08-31T01:44:55Z | maps-integration | d10ecb5 | - | false | parthudhanireddy@gmail.com |
+| 2026-08-31T01:44:55Z | payment-gateway | f838503 | - | false | parthudhanireddy@gmail.com |
+| 2026-08-31T01:44:55Z | restaurant-service | 521e3c4 | - | false | parthudhanireddy@gmail.com |
+| 2026-08-31T01:44:55Z | wallet-service | c4f6e4f | - | false | parthudhanireddy@gmail.com |

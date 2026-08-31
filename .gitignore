@@ -18,3 +18,4 @@ __pycache__/
 
 # Untracked 2026-08-30: generated/editor artefacts that should never be committed
 *.class
+.npm-cache/

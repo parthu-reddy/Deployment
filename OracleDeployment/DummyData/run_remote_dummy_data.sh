@@ -9,11 +9,10 @@ REMOTE_HOST="140.245.234.137"
 # or by fetch_secrets_from_vault.sh. This script previously embedded the Postgres password inline;
 # rotating .env would then have broken it, and the quickest fix under pressure is to paste the new
 # password straight back in -- recreating the problem with a fresh secret.
-ENV_FILE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../.env"
-if [[ -f "$ENV_FILE" ]]; then
-    set -a; . "$ENV_FILE"; set +a
-fi
-DB_PASS="${POSTGRES_PASS:?POSTGRES_PASS is not set. Populate Deployment/.env (see .env.example) or export it.}"
+# No credentials on this machine at all. psql runs inside the postgres container and reads the
+# password from that container's own environment, so it appears neither in this script, nor in the
+# ssh command line, nor in the VM's process list. The kartoza/postgis image names it POSTGRES_PASS.
+# The SQL still arrives on stdin, so no statement is ever quoted into a command line.
 COMPOSE_DIR="Food Delivery.nosync/Deployment"
 
 # Helper function to run a SQL file against a specific remote database
@@ -23,7 +22,7 @@ run_sql() {
     
     echo "Running $sql_file on remote database $db_name..."
     ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" "$REMOTE_USER@$REMOTE_HOST" \
-        "cd '$COMPOSE_DIR' && docker compose exec -T -e PGPASSWORD=$DB_PASS postgres psql -h 127.0.0.1 -U postgres -d $db_name" < "$sql_file"
+        "cd '$COMPOSE_DIR' && docker compose exec -T postgres sh -c 'PGPASSWORD=\$POSTGRES_PASS psql -h 127.0.0.1 -U postgres -d $db_name'" < "$sql_file"
         
     if [ $? -eq 0 ]; then
         echo "Successfully executed $sql_file on $db_name"
