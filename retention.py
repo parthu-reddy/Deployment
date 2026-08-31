@@ -4,10 +4,12 @@ OCIR Tag Retention Script (Phase 4)
 
 This script manages the OCIR registry size by deleting old tags.
 It keeps:
-- The currently deployed tag (read from Deployment/.versions).
-- The 4 most recent tags based on git commit time.
+- Every tag that has ever appeared in Deployment/.versions across its full git history.
+- The 4 most recent tags per repo based on git commit time.
 All other tags and their image digests are deleted, UNLESS they share an image
 digest with one of the protected tags.
+
+Dry-run is the default. Pass --apply to actually delete images.
 """
 import urllib.request
 import urllib.parse
@@ -18,7 +20,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-DRY_RUN = "--dry-run" in sys.argv
+DRY_RUN = "--apply" not in sys.argv
 DEPLOYMENT = ROOT / "Deployment"
 VERSIONS_FILE = DEPLOYMENT / ".versions"
 MAP_FILE = DEPLOYMENT / "service-map.tsv"
@@ -116,7 +118,38 @@ def get_tag_timestamp(module_dir, tag):
         return int(out)
     return 0
 
-def process_repo(repo, module_dir, deployed_tag, username, password):
+
+def history_protected_tags():
+    """Every <service>:<tag> that .versions has ever named, across its full git history.
+
+    This mirrors the logic in validate_hardening_phase4.py's protected_tags() so
+    the retention script's protected set is a SUPERSET of the validator's. A tag
+    that has ever been deployed must never become deletable.
+    """
+    tags = {}  # service -> set of tags
+    # Walk every commit that touched .versions
+    r = subprocess.run(
+        ["git", "-C", str(DEPLOYMENT), "log", "--format=%H", "--", ".versions"],
+        capture_output=True, text=True)
+    for sha in r.stdout.split():
+        r2 = subprocess.run(
+            ["git", "-C", str(DEPLOYMENT), "show", f"{sha}:.versions"],
+            capture_output=True, text=True)
+        for line in r2.stdout.splitlines():
+            if "_TAG=" in line:
+                k, v = line.split("=", 1)
+                svc = k.replace("_TAG", "").lower().replace("_", "-")
+                tags.setdefault(svc, set()).add(v.strip())
+    # Also read the current working-tree .versions (may have uncommitted changes)
+    for line in VERSIONS_FILE.read_text(encoding="utf-8").splitlines():
+        if "_TAG=" in line:
+            k, v = line.split("=", 1)
+            svc = k.replace("_TAG", "").lower().replace("_", "-")
+            tags.setdefault(svc, set()).add(v.strip())
+    return tags
+
+
+def process_repo(repo, module_dir, deployed_tag, history_protected, username, password):
     print(f"Processing {repo}...")
     token = get_bearer_token(repo, username, password)
     if not token:
@@ -142,8 +175,13 @@ def process_repo(repo, module_dir, deployed_tag, username, password):
     protected_tags = set()
     if deployed_tag in tags:
         protected_tags.add(deployed_tag)
-    
-    # Keep top 4 most recent
+
+    # Protect every tag from .versions git history for this service
+    for hist_tag in history_protected:
+        if hist_tag in tags:
+            protected_tags.add(hist_tag)
+
+    # Also keep top 4 most recent by commit timestamp
     for info in tag_info[:4]:
         protected_tags.add(info["tag"])
 
@@ -193,16 +231,27 @@ def main():
     total_kept = 0
     total_deleted = 0
     
+    # Build the full protected set from .versions git history
+    all_history = history_protected_tags()
+    history_count = sum(len(v) for v in all_history.values())
+    print(f"Protected set: {history_count} tags from .versions git history across {len(all_history)} services.")
+
+    if DRY_RUN:
+        print("Mode: DRY-RUN (pass --apply to actually delete)\n")
+    else:
+        print("Mode: APPLY (deletions are real)\n")
+
     for svc, module in services.items():
         deployed_tag = deployed_tags.get(svc, "")
-        repo, kept, deleted = process_repo(svc, module, deployed_tag, username, password)
+        hist = all_history.get(svc, set())
+        repo, kept, deleted = process_repo(svc, module, deployed_tag, hist, username, password)
         total_kept += kept
         total_deleted += deleted
 
     action = "would delete" if DRY_RUN else "deleted"
     print(f"\nRetention complete. Kept {total_kept} tags, {action} {total_deleted} digests.")
     if DRY_RUN:
-        print("(dry-run mode: nothing was actually deleted)")
+        print("(dry-run mode: nothing was actually deleted. Pass --apply to delete.)")
     return 0
 
 if __name__ == "__main__":
