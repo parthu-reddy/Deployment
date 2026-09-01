@@ -69,6 +69,14 @@ for svc in "${SERVICES[@]}"; do
     tag="$(tag_for "$module")"
     image="$REGISTRY/food-delivery/$svc:$tag"
 
+    # Skip building if the image already exists in the registry, unless it's a dirty working tree.
+    # Dirty trees must always rebuild because uncommitted changes can mutate under the same tag.
+    if [[ "$tag" != *-dirty ]] && docker manifest inspect "$image" >/dev/null 2>&1; then
+        echo "==> $svc  ($module @ $tag) - SKIPPING (already exists in registry)"
+        record "$svc" "$tag"
+        continue
+    fi
+
     # Every Dockerfile COPYs <Module>/target/*.jar, so the reactor build must have run.
     # The UI is the exception: its Dockerfile copies a Vite dist/.
     if [[ "$module" == "FoodDeliveryAppUI" ]]; then
