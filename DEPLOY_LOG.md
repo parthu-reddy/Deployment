@@ -72,3 +72,9 @@
 | 2026-09-01T05:32:23Z | payment-gateway | f838503 | - | false | parthudhanireddy@gmail.com |
 | 2026-09-01T05:32:23Z | restaurant-service | 521e3c4 | - | false | parthudhanireddy@gmail.com |
 | 2026-09-01T05:32:23Z | wallet-service | c4f6e4f | - | false | parthudhanireddy@gmail.com |
+| 2026-09-01T11:52:18Z | config-service | 9b53884 | - | false | parthudhanireddy@gmail.com |
+| 2026-09-01T11:52:18Z | eureka-server-1 | 7621a98 | - | false | parthudhanireddy@gmail.com |
+| 2026-09-01T11:52:18Z | eureka-server-2 | 7621a98 | - | false | parthudhanireddy@gmail.com |
+| 2026-09-01T11:55:25Z | config-service | 9b53884-a72d84b | additive-or-none | false | parthudhanireddy@gmail.com |
+| 2026-09-01T11:55:25Z | eureka-server-1 | 7621a98-7c5fae2 | additive-or-none | false | parthudhanireddy@gmail.com |
+| 2026-09-01T11:55:26Z | eureka-server-2 | 7621a98-7c5fae2 | additive-or-none | false | parthudhanireddy@gmail.com |
