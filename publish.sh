@@ -134,6 +134,7 @@ for svc in "${SERVICES[@]}"; do
     [[ -f "$ctx_path/$dockerfile" ]] || die "$svc: no Dockerfile at ${ctx_path#$ROOT/}/$dockerfile"
     docker buildx build \
         --platform "$PLATFORM" \
+        --provenance=false \
         -f "$ctx_path/$dockerfile" \
         -t "$image" \
         --push \

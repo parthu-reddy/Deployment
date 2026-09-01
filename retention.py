@@ -112,20 +112,37 @@ def fetch_tags(repo, token):
         print(f"Error fetching tags for {repo}: {e.code}", file=sys.stderr)
         return []
 
-def get_digest(repo, tag, token):
+def get_digests_for_tag(repo, tag, token):
     url = f"https://{REGISTRY_DOMAIN}/v2/{REGISTRY_REPO_PREFIX}/{repo}/manifests/{tag}"
-    req = urllib.request.Request(url, method='HEAD')
+    req = urllib.request.Request(url, method='GET')
     req.add_header('Authorization', f'Bearer {token}')
     # Must accept index types to get the digest for multi-arch/buildx pushes
     accept = 'application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.v2+json'
     req.add_header('Accept', accept)
     try:
         with urllib.request.urlopen(req) as resp:
-            return resp.headers.get('Docker-Content-Digest')
+            content = resp.read()
+            parent_digest = resp.headers.get('Docker-Content-Digest')
+            if not parent_digest:
+                return set()
+            digests = {parent_digest}
+            
+            try:
+                manifest = json.loads(content.decode())
+                media_type = manifest.get("mediaType", "")
+                if "index" in media_type or "list" in media_type:
+                    for child in manifest.get("manifests", []):
+                        child_digest = child.get("digest")
+                        if child_digest:
+                            digests.add(child_digest)
+            except json.JSONDecodeError:
+                pass
+                
+            return digests
     except urllib.error.HTTPError as e:
         if e.code != 404:
-            print(f"Error fetching digest for {repo}:{tag} - {e.code}", file=sys.stderr)
-        return None
+            print(f"Error fetching manifest for {repo}:{tag} - {e.code}", file=sys.stderr)
+        return set()
 
 def delete_digest(repo, digest, token):
     url = f"https://{REGISTRY_DOMAIN}/v2/{REGISTRY_REPO_PREFIX}/{repo}/manifests/{digest}"
@@ -167,10 +184,10 @@ def process_repo(repo, module_dir, deployed_tag, username, password):
     tag_info = []
     # Fetch digests sequentially, usually fast enough per repo.
     for tag in tags:
-        digest = get_digest(repo, tag, token)
-        if digest:
+        digests = get_digests_for_tag(repo, tag, token)
+        if digests:
             ts = get_tag_timestamp(module_dir, tag)
-            tag_info.append({"tag": tag, "digest": digest, "ts": ts})
+            tag_info.append({"tag": tag, "digests": digests, "ts": ts})
 
     tag_info.sort(key=lambda x: x["ts"], reverse=True)
 
@@ -182,11 +199,17 @@ def process_repo(repo, module_dir, deployed_tag, username, password):
     for info in tag_info[:2]:
         protected_tags.add(info["tag"])
 
-    protected_digests = {info["digest"] for info in tag_info if info["tag"] in protected_tags}
+    protected_digests = set()
+    for info in tag_info:
+        if info["tag"] in protected_tags:
+            protected_digests.update(info["digests"])
     
-    to_delete_digests = {info["digest"] for info in tag_info if info["digest"] not in protected_digests}
+    to_delete_digests = set()
+    for info in tag_info:
+        if info["tag"] not in protected_tags:
+            to_delete_digests.update(info["digests"] - protected_digests)
     
-    kept_count = len(tag_info) - len([info for info in tag_info if info["digest"] in to_delete_digests])
+    kept_count = len([info for info in tag_info if info["tag"] in protected_tags])
     deleted_count = len(to_delete_digests)
     
     print(f"  {repo}: Keeping {kept_count} tags (protected), deleting {deleted_count} digests.")
