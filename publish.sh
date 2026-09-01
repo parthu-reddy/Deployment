@@ -57,6 +57,27 @@ record() {       # compose-service, tag  ->  .versions
     rm -f "$VERSIONS.tmp"
 }
 
+hash_jar() {
+    # Hashing the jar file directly includes non-deterministic ZIP entry timestamps.
+    # Streaming the contents with unzip -p bypasses metadata and hashes the pure bytecode and dependencies.
+    if command -v sha256sum >/dev/null 2>&1; then
+        unzip -p "$1" | sha256sum | head -c 7
+    else
+        unzip -p "$1" | shasum -a 256 | head -c 7
+    fi
+}
+
+hash_dir() {
+    (
+        cd "$1" || exit 1
+        if command -v sha256sum >/dev/null 2>&1; then
+            find . -type f -exec sha256sum {} + | sort | sha256sum | head -c 7
+        else
+            find . -type f -exec shasum -a 256 {} + | sort | shasum -a 256 | head -c 7
+        fi
+    )
+}
+
 if [[ "${1:-}" == "--all" ]]; then
     mapfile -t SERVICES < <(all_services)
 else
@@ -66,21 +87,14 @@ fi
 
 for svc in "${SERVICES[@]}"; do
     module="$(module_for "$svc")" || die "unknown service '$svc'. Valid: $(all_services | tr '\n' ' ')"
-    tag="$(tag_for "$module")"
-    image="$REGISTRY/food-delivery/$svc:$tag"
 
-    # Skip building if the image already exists in the registry, unless it's a dirty working tree.
-    # Dirty trees must always rebuild because uncommitted changes can mutate under the same tag.
-    if [[ "$tag" != *-dirty ]] && docker manifest inspect "$image" >/dev/null 2>&1; then
-        echo "==> $svc  ($module @ $tag) - SKIPPING (already exists in registry)"
-        record "$svc" "$tag"
-        continue
-    fi
-
+    # 1. Validate Artifacts and compute Artifact Hash
     # Every Dockerfile COPYs <Module>/target/*.jar, so the reactor build must have run.
     # The UI is the exception: its Dockerfile copies a Vite dist/.
     if [[ "$module" == "FoodDeliveryAppUI" ]]; then
         [[ -d "$ROOT/$module/dist" ]] || die "$module/dist missing -- run: (cd $module && npm ci && npm run build)"
+        # Hash the contents of the dist folder to detect any changes, using relative paths for consistency across environments
+        artifact_hash="$(hash_dir "$ROOT/$module/dist")"
     elif ! ls "$ROOT/$module/target/"*-SNAPSHOT.jar >/dev/null 2>&1; then
         die "$module/target/*-SNAPSHOT.jar missing -- run: bash FoodDeliveryContracts/build_verify.sh"
     else
@@ -93,6 +107,22 @@ for svc in "${SERVICES[@]}"; do
         if [[ -n "$newer" ]]; then
             die "$module: $(basename "$jar") is older than $(basename "$newer"). The jar predates the source. Run: bash FoodDeliveryContracts/build_verify.sh"
         fi
+        artifact_hash="$(hash_jar "$jar")"
+    fi
+
+    # 2. Construct Composite Tag: <Git-SHA>[-dirty]-<Artifact-Hash>
+    # This guarantees that if a shared dependency (like FoodDeliveryParent) changes the compiled binary,
+    # the Docker tag will update even if the service's own Git commit hasn't changed.
+    git_tag="$(tag_for "$module")"
+    tag="${git_tag}-${artifact_hash}"
+    image="$REGISTRY/food-delivery/$svc:$tag"
+
+    # Skip building if the image already exists in the registry.
+    # Note: Even if the tree is dirty, a new compilation changes the artifact_hash, creating a new tag.
+    if docker manifest inspect "$image" >/dev/null 2>&1; then
+        echo "==> $svc  ($module @ $tag) - SKIPPING (already exists in registry)"
+        record "$svc" "$tag"
+        continue
     fi
 
     echo "==> $svc  ($module @ $tag)"

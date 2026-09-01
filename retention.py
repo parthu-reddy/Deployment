@@ -139,7 +139,9 @@ def delete_digest(repo, digest, token):
         return False
 
 def get_tag_timestamp(module_dir, tag):
-    sha = tag.replace("-dirty", "")
+    # Tags can be: <sha>, <sha>-dirty, <sha>-<hash>, or <sha>-dirty-<hash>.
+    # The Git SHA is always the first component before any hyphen.
+    sha = tag.split('-')[0]
     out, rc = run_cmd(["git", "log", "-1", "--format=%ct", sha], cwd=ROOT / module_dir)
     if rc == 0 and out.isdigit():
         return int(out)
