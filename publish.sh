@@ -129,4 +129,4 @@ echo
 echo "Commit .versions -- its git history is the deployment history that --rollback reads."
 echo
 echo "Running retention policy to clean up old registry images..."
-python3 retention.py --apply
+python3 "$ROOT/Deployment/retention.py" --apply
