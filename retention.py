@@ -119,37 +119,10 @@ def get_tag_timestamp(module_dir, tag):
     return 0
 
 
-def history_protected_tags():
-    """Every <service>:<tag> that .versions has ever named, across its full git history.
-
-    This mirrors the logic in validate_hardening_phase4.py's protected_tags() so
-    the retention script's protected set is a SUPERSET of the validator's. A tag
-    that has ever been deployed must never become deletable.
-    """
-    tags = {}  # service -> set of tags
-    # Walk every commit that touched .versions
-    r = subprocess.run(
-        ["git", "-C", str(DEPLOYMENT), "log", "--format=%H", "--", ".versions"],
-        capture_output=True, text=True)
-    for sha in r.stdout.split():
-        r2 = subprocess.run(
-            ["git", "-C", str(DEPLOYMENT), "show", f"{sha}:.versions"],
-            capture_output=True, text=True)
-        for line in r2.stdout.splitlines():
-            if "_TAG=" in line:
-                k, v = line.split("=", 1)
-                svc = k.replace("_TAG", "").lower().replace("_", "-")
-                tags.setdefault(svc, set()).add(v.strip())
-    # Also read the current working-tree .versions (may have uncommitted changes)
-    for line in VERSIONS_FILE.read_text(encoding="utf-8").splitlines():
-        if "_TAG=" in line:
-            k, v = line.split("=", 1)
-            svc = k.replace("_TAG", "").lower().replace("_", "-")
-            tags.setdefault(svc, set()).add(v.strip())
-    return tags
 
 
-def process_repo(repo, module_dir, deployed_tag, history_protected, username, password):
+
+def process_repo(repo, module_dir, deployed_tag, username, password):
     print(f"Processing {repo}...")
     token = get_bearer_token(repo, username, password)
     if not token:
@@ -176,13 +149,8 @@ def process_repo(repo, module_dir, deployed_tag, history_protected, username, pa
     if deployed_tag in tags:
         protected_tags.add(deployed_tag)
 
-    # Protect every tag from .versions git history for this service
-    for hist_tag in history_protected:
-        if hist_tag in tags:
-            protected_tags.add(hist_tag)
-
-    # Also keep top 4 most recent by commit timestamp
-    for info in tag_info[:4]:
+    # Keep top 2 most recent by commit timestamp
+    for info in tag_info[:2]:
         protected_tags.add(info["tag"])
 
     protected_digests = {info["digest"] for info in tag_info if info["tag"] in protected_tags}
@@ -231,11 +199,6 @@ def main():
     total_kept = 0
     total_deleted = 0
     
-    # Build the full protected set from .versions git history
-    all_history = history_protected_tags()
-    history_count = sum(len(v) for v in all_history.values())
-    print(f"Protected set: {history_count} tags from .versions git history across {len(all_history)} services.")
-
     if DRY_RUN:
         print("Mode: DRY-RUN (pass --apply to actually delete)\n")
     else:
@@ -243,8 +206,7 @@ def main():
 
     for svc, module in services.items():
         deployed_tag = deployed_tags.get(svc, "")
-        hist = all_history.get(svc, set())
-        repo, kept, deleted = process_repo(svc, module, deployed_tag, hist, username, password)
+        repo, kept, deleted = process_repo(svc, module, deployed_tag, username, password)
         total_kept += kept
         total_deleted += deleted
 
