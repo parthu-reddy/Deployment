@@ -81,7 +81,7 @@ for svc in "${SERVICES[@]}"; do
     # The UI is the exception: its Dockerfile copies a Vite dist/.
     if [[ "$module" == "FoodDeliveryAppUI" ]]; then
         [[ -d "$ROOT/$module/dist" ]] || die "$module/dist missing -- run: (cd $module && npm ci && npm run build)"
-    elif ! compgen -G "$ROOT/$module/target/*-SNAPSHOT.jar" >/dev/null; then
+    elif ! ls "$ROOT/$module/target/"*-SNAPSHOT.jar >/dev/null 2>&1; then
         die "$module/target/*-SNAPSHOT.jar missing -- run: bash FoodDeliveryContracts/build_verify.sh"
     else
         # Existing is not the same as current. On 2026-08-30 a jar built at 07:52 was published for
