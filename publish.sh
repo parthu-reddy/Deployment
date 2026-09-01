@@ -119,11 +119,11 @@ for svc in "${SERVICES[@]}"; do
 
     # Skip building if the image already exists in the registry.
     # Note: Even if the tree is dirty, a new compilation changes the artifact_hash, creating a new tag.
-    if docker manifest inspect "$image" >/dev/null 2>&1; then
-        echo "==> $svc  ($module @ $tag) - SKIPPING (already exists in registry)"
-        record "$svc" "$tag"
-        continue
-    fi
+    # if docker manifest inspect "$image" >/dev/null 2>&1; then
+    #     echo "==> $svc  ($module @ $tag) - SKIPPING (already exists in registry)"
+    #     record "$svc" "$tag"
+    #     continue
+    # fi
 
     echo "==> $svc  ($module @ $tag)"
     ctx="$(context_for "$svc")"; dockerfile="$(dockerfile_for "$svc")"
