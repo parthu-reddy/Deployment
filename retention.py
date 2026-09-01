@@ -33,12 +33,39 @@ def run_cmd(cmd, cwd=ROOT):
 
 def get_docker_credentials():
     print(f"Fetching docker credentials for {REGISTRY_DOMAIN}...")
-    r = subprocess.run(["docker-credential-desktop", "get"], input=REGISTRY_DOMAIN, text=True, capture_output=True)
-    if r.returncode != 0:
-        print(f"Failed to get credentials: {r.stderr}", file=sys.stderr)
+    import os
+    
+    docker_config_path = Path.home() / ".docker" / "config.json"
+    if "DOCKER_CONFIG" in os.environ:
+        docker_config_path = Path(os.environ["DOCKER_CONFIG"]) / "config.json"
+        
+    if not docker_config_path.exists():
+        print(f"Failed to get credentials: {docker_config_path} missing", file=sys.stderr)
         sys.exit(1)
-    data = json.loads(r.stdout)
-    return data["Username"], data["Secret"]
+        
+    with open(docker_config_path) as f:
+        config = json.load(f)
+        
+    creds_store = config.get("credsStore") or config.get("credStore")
+    
+    if creds_store:
+        try:
+            r = subprocess.run([f"docker-credential-{creds_store}", "get"], input=REGISTRY_DOMAIN, text=True, capture_output=True, check=True)
+            data = json.loads(r.stdout)
+            return data["Username"], data["Secret"]
+        except Exception as e:
+            print(f"Failed to get credentials via credsStore {creds_store}: {e}", file=sys.stderr)
+            sys.exit(1)
+            
+    auths = config.get("auths", {})
+    if REGISTRY_DOMAIN in auths and "auth" in auths[REGISTRY_DOMAIN]:
+        auth_b64 = auths[REGISTRY_DOMAIN]["auth"]
+        auth_decoded = base64.b64decode(auth_b64).decode("utf-8")
+        if ":" in auth_decoded:
+            return auth_decoded.split(":", 1)
+            
+    print(f"Could not find credentials for {REGISTRY_DOMAIN} in {docker_config_path}", file=sys.stderr)
+    sys.exit(1)
 
 def get_bearer_token(repo, username, password, scope="pull,push"):
     # OCIR rejects a scope containing 'delete' with HTTP 400, but the token obtained with
