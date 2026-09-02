@@ -21,9 +21,8 @@ from pathlib import Path
 
 import argparse
 
-ROOT = Path(__file__).resolve().parents[1]
-if ROOT.name == "deps":
-    ROOT = ROOT.parent
+DEPLOYMENT = Path(__file__).resolve().parent
+ROOT = DEPLOYMENT.parent if DEPLOYMENT.parent.name != "deps" else DEPLOYMENT.parent.parent
 
 parser = argparse.ArgumentParser(description="OCIR Tag Retention")
 parser.add_argument("--apply", action="store_true", help="Actually delete images (dry-run by default)")
@@ -31,7 +30,6 @@ parser.add_argument("--service", help="Only run retention for a specific compose
 args = parser.parse_args()
 
 DRY_RUN = not args.apply
-DEPLOYMENT = ROOT / "Deployment"
 VERSIONS_FILE = DEPLOYMENT / ".versions"
 MAP_FILE = DEPLOYMENT / "service-map.tsv"
 REGISTRY_DOMAIN = "hyd.ocir.io"
