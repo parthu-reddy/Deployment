@@ -173,6 +173,8 @@ def get_tag_timestamp(module_dir, tag):
     target_dir = ROOT / module_dir
     if not target_dir.exists():
         target_dir = Path.cwd() / module_dir
+    if not target_dir.exists():
+        target_dir = Path.cwd()
         
     out, rc = run_cmd(["git", "log", "-1", "--format=%ct", sha], cwd=target_dir)
     if rc == 0 and out.isdigit():
