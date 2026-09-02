@@ -19,8 +19,18 @@ import subprocess
 import sys
 from pathlib import Path
 
+import argparse
+
 ROOT = Path(__file__).resolve().parents[1]
-DRY_RUN = "--apply" not in sys.argv
+if ROOT.name == "deps":
+    ROOT = ROOT.parent
+
+parser = argparse.ArgumentParser(description="OCIR Tag Retention")
+parser.add_argument("--apply", action="store_true", help="Actually delete images (dry-run by default)")
+parser.add_argument("--service", help="Only run retention for a specific compose-service (e.g. delivery-service)")
+args = parser.parse_args()
+
+DRY_RUN = not args.apply
 DEPLOYMENT = ROOT / "Deployment"
 VERSIONS_FILE = DEPLOYMENT / ".versions"
 MAP_FILE = DEPLOYMENT / "service-map.tsv"
@@ -159,7 +169,14 @@ def get_tag_timestamp(module_dir, tag):
     # Tags can be: <sha>, <sha>-dirty, <sha>-<hash>, or <sha>-dirty-<hash>.
     # The Git SHA is always the first component before any hyphen.
     sha = tag.split('-')[0]
-    out, rc = run_cmd(["git", "log", "-1", "--format=%ct", sha], cwd=ROOT / module_dir)
+    
+    # In monolithic repo, code is at ROOT / module_dir
+    # In decentralized CI, code is at Path.cwd() / module_dir (due to actions/checkout path)
+    target_dir = ROOT / module_dir
+    if not target_dir.exists():
+        target_dir = Path.cwd() / module_dir
+        
+    out, rc = run_cmd(["git", "log", "-1", "--format=%ct", sha], cwd=target_dir)
     if rc == 0 and out.isdigit():
         return int(out)
     return 0
@@ -257,6 +274,9 @@ def main():
         print("Mode: APPLY (deletions are real)\n")
 
     for svc, module in services.items():
+        if args.service and svc != args.service:
+            continue
+            
         deployed_tag = deployed_tags.get(svc, "")
         repo, kept, deleted = process_repo(svc, module, deployed_tag, username, password)
         total_kept += kept
