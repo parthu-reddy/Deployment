@@ -239,3 +239,4 @@
 | 2026-09-04T02:42:02Z | config-service | fabdf7d97790b99258a673d0dc834ed326f8f989 | - | false | parthudhanireddy@gmail.com |
 | 2026-09-04T02:42:02Z | eureka-server-1 | 2245b862219b1c9bba0064ef14df4fb561422107 | - | false | parthudhanireddy@gmail.com |
 | 2026-09-04T02:42:02Z | eureka-server-2 | 2245b862219b1c9bba0064ef14df4fb561422107 | - | false | parthudhanireddy@gmail.com |
+| 2026-09-04T03:10:51Z | restaurant-service | cd7e644d6dcf2a832213b6564ddc62c7d23df28b | additive-or-none | false | parthudhanireddy@gmail.com |
