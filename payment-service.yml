@@ -60,32 +60,73 @@ resilience4j.circuitbreaker:
       failureRateThreshold: 50
       eventConsumerBufferSize: 10
 
-# Gateway Configs (Must be provided via ENV variables in production)
-razorpay:
-  key:
-    id: ${RAZORPAY_KEY_ID:test_rzp_key_id}
-    secret: ${RAZORPAY_KEY_SECRET:test_rzp_key_secret}
-  webhook:
-    secret: ${RAZORPAY_WEBHOOK_SECRET:test_rzp_webhook_secret}
-
-cashfree:
-  client:
-    id: ${CASHFREE_CLIENT_ID:test_cf_client_id}
-    secret: ${CASHFREE_CLIENT_SECRET:test_cf_client_secret}
-
-vyapargateway:
-  api:
-    key: ${VYAPAR_API_KEY_SECRET:test_vyapar_api_key}
-  base:
-    url: ${VYAPAR_BASE_URL:https://api.vyapargateway.com/v1}
-  webhook:
-    secret: ${VYAPAR_WEBHOOK_SIGNING_SECRET:test_vyapar_webhook_secret}
-
 server:
   port: ${PORT:8080}
 
 cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS:*}
+
+# Gateway credentials.
+#
+# Split by profile on purpose. Under prod these must come from the vault and there is no fallback,
+# so a deployment missing one refuses to start. Outside prod the placeholders below are what the
+# properties resolve to -- only the Mock*Strategy beans are registered there
+# (@Profile("!prod & (debug | dev | default | test | local)")), so nothing ever calls a gateway with
+# them, and a developer can bring the stack up with no secrets at all.
+#
+# Removing the old test_-prefixed defaults without scoping them to a profile left ${RAZORPAY_KEY_ID}
+# unresolvable, and the payment service could not start in dev either.
+---
+spring:
+  config:
+    activate:
+      on-profile: "!prod"
+
+razorpay:
+  key:
+    id: ${RAZORPAY_KEY_ID:dev-placeholder-not-a-credential}
+    secret: ${RAZORPAY_KEY_SECRET:dev-placeholder-not-a-credential}
+  webhook:
+    secret: ${RAZORPAY_WEBHOOK_SECRET:dev-placeholder-not-a-credential}
+
+cashfree:
+  client:
+    id: ${CASHFREE_CLIENT_ID:dev-placeholder-not-a-credential}
+    secret: ${CASHFREE_CLIENT_SECRET:dev-placeholder-not-a-credential}
+
+vyapargateway:
+  api:
+    key: ${VYAPAR_API_KEY_SECRET:dev-placeholder-not-a-credential}
+  base:
+    url: ${VYAPAR_BASE_URL:http://localhost:9999/mock-vyapar}
+  webhook:
+    secret: ${VYAPAR_WEBHOOK_SIGNING_SECRET:dev-placeholder-not-a-credential}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+razorpay:
+  key:
+    id: ${RAZORPAY_KEY_ID}
+    secret: ${RAZORPAY_KEY_SECRET}
+  webhook:
+    secret: ${RAZORPAY_WEBHOOK_SECRET}
+
+cashfree:
+  client:
+    id: ${CASHFREE_CLIENT_ID}
+    secret: ${CASHFREE_CLIENT_SECRET}
+
+vyapargateway:
+  api:
+    key: ${VYAPAR_API_KEY_SECRET}
+  base:
+    url: ${VYAPAR_BASE_URL:https://api.vyapargateway.com/v1}
+  webhook:
+    secret: ${VYAPAR_WEBHOOK_SIGNING_SECRET}
 
 
 

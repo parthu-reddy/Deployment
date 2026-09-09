@@ -1,8 +1,14 @@
+# Every expression below queries a metric with a live producer in src/main. Four of these rules
+# previously named series that were registered as constant zeros in ReconciliationService's
+# constructor purely so a static grep would pass -- they looked configured and could never fire.
 groups:
   - name: money_reconciliation_alerts
     rules:
+      # Gauge read from reconciliation_breaks, so resolving a break lowers it. This was a
+      # monotonically increasing counter, which fired from the first break ever recorded and could
+      # not be cleared by any operator action.
       - alert: MoneyReconciliationBreaks
-        expr: money_reconciliation_breaks_total > 0
+        expr: money_reconciliation_unresolved_breaks > 0
         for: 30m
         labels:
           severity: critical
@@ -10,13 +16,15 @@ groups:
           summary: "Money Reconciliation Breaks detected"
           runbook_url: "https://wiki.fooddelivery.com/runbooks/money-reconciliation-breaks"
 
+      # Ledger events that exhausted their retries land in ledger_rejections, not on a DLQ topic --
+      # LedgerFailureConsumer and the topic constant were deleted. This is the depth that matters.
       - alert: MoneyDlqDepth
-        expr: sum(kafka_consumer_lag_dlq) > 0
+        expr: sum(money_ledger_unresolved_rejections) > 0
         for: 15m
         labels:
           severity: warning
         annotations:
-          summary: "High number of DLQ messages in money topics"
+          summary: "Ledger events stuck unresolved in ledger_rejections"
           runbook_url: "https://wiki.fooddelivery.com/runbooks/money-dlq-depth"
 
       - alert: RefundStuck
@@ -45,3 +53,25 @@ groups:
         annotations:
           summary: "Payment webhook amount mismatch detected"
           runbook_url: "https://wiki.fooddelivery.com/runbooks/payment-webhook-amount-mismatch"
+
+      # Every money movement leaves a service through the outbox. A stalled publisher means no
+      # ledger entry, no refund request and no payout event -- and depth alone cannot distinguish a
+      # deep outbox that is draining from a shallow one that is stuck, so this alerts on age.
+      - alert: MoneyOutboxBacklogStalled
+        expr: max(money_outbox_backlog_age_seconds) > 900
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Outbox events unpublished for over 15 minutes"
+          runbook_url: "https://wiki.fooddelivery.com/runbooks/money-outbox-backlog"
+
+      # A reconciliation run that could not complete every check is not a healthy run.
+      - alert: MoneyReconciliationPartialRun
+        expr: increase(money_reconciliation_partial_runs_total[24h]) > 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Reconciliation completed only partially"
+          runbook_url: "https://wiki.fooddelivery.com/runbooks/money-reconciliation-breaks"
