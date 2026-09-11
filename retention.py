@@ -27,6 +27,7 @@ ROOT = DEPLOYMENT.parent if DEPLOYMENT.parent.name != "deps" else DEPLOYMENT.par
 parser = argparse.ArgumentParser(description="OCIR Tag Retention")
 parser.add_argument("--apply", action="store_true", help="Actually delete images (dry-run by default)")
 parser.add_argument("--service", help="Only run retention for a specific compose-service (e.g. delivery-service)")
+parser.add_argument("--delete-all", action="store_true", help="Delete all images, ignoring retention rules")
 args = parser.parse_args()
 
 DRY_RUN = not args.apply
@@ -209,12 +210,13 @@ def process_repo(repo, module_dir, deployed_tag, username, password):
     tag_info.sort(key=lambda x: x["ts"], reverse=True)
 
     protected_tags = set()
-    if deployed_tag in tags:
-        protected_tags.add(deployed_tag)
+    if not args.delete_all:
+        if deployed_tag in tags:
+            protected_tags.add(deployed_tag)
 
-    # Keep top 2 most recent by commit timestamp
-    for info in tag_info[:2]:
-        protected_tags.add(info["tag"])
+        # Keep top 2 most recent by commit timestamp
+        for info in tag_info[:2]:
+            protected_tags.add(info["tag"])
 
     protected_digests = set()
     for info in tag_info:
