@@ -342,6 +342,8 @@ services:
   payment-gateway:
     image: ${REGISTRY}/food-delivery/payment-gateway:${PAYMENT_GATEWAY_TAG}
     container_name: payment-gateway
+    stdin_open: true
+    tty: true
     mem_limit: 1024m
     ports:
     - 8085:8085
@@ -358,6 +360,9 @@ services:
     - PLATFORM_DEFAULT_CURRENCY=${PLATFORM_DEFAULT_CURRENCY:-INR}
     - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
+    - SPRING_AI_MCP_SERVER_TRANSPORT=WEB_MVC
+    - SPRING_AI_MCP_SERVER_STDIO_ENABLED=false
+    - APP_PAYMENTS_ALLOW_MOCK_GATEWAYS=true
     - PORT=8085
     - DB_URL=jdbc:postgresql://postgres:5432/payment_db
     - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/payment_db
@@ -756,46 +761,45 @@ services:
       retries: 10
       start_period: 120s
     restart: on-failure
-#  ondc-integration-service:
-#    build:
-#      context: ../
-#      dockerfile: ONDCIntegrationService/Dockerfile
-#    container_name: ondc-integration-service
-#    ports:
-#    - 8098:8098
-#    environment:
-#    - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
-#    - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASS}
-#    - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
-#    - EUREKA_USER=${EUREKA_USER:-admin}
-#    - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
-#    - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
-#    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
-#    - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
-#    - DB_URL=jdbc:postgresql://postgres:5432/ondc_db
-#    - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
-#    - REDIS_HOST=redis
-#    - SPRING_DATA_REDIS_HOST=redis
-#    depends_on:
-#      config-service:
-#        condition: service_healthy
-#      eureka-server-1:
-#        condition: service_healthy
-#      postgres:
-#        condition: service_healthy
-#      kafka:
-#        condition: service_healthy
-#      redis:
-#        condition: service_healthy
-#    healthcheck:
-#      test:
-#      - CMD-SHELL
-#      - wget --spider -q http://localhost:8098/ondc/actuator/health || exit 1
-#      interval: 10s
-#      timeout: 5s
-#      retries: 10
-#      start_period: 120s
-#    restart: on-failure
+  ondc-integration-service:
+    image: ${REGISTRY}/food-delivery/ondc-integration-service:${ONDC_INTEGRATION_SERVICE_TAG}
+    container_name: ondc-integration-service
+    mem_limit: 896m
+    ports:
+    - 8098:8098
+    environment:
+    - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+    - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASS}
+    - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+    - EUREKA_USER=${EUREKA_USER:-admin}
+    - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
+    - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
+    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
+    - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
+    - DB_URL=jdbc:postgresql://postgres:5432/ondc_db
+    - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    - REDIS_HOST=redis
+    - SPRING_DATA_REDIS_HOST=redis
+    depends_on:
+      config-service:
+        condition: service_healthy
+      eureka-server-1:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - wget --spider -q http://localhost:8098/ondc/actuator/health || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
+    restart: on-failure
   wallet-service:
     image: ${REGISTRY}/food-delivery/wallet-service:${WALLET_SERVICE_TAG}
     container_name: wallet-service
@@ -1055,45 +1059,45 @@ services:
     volumes:
       - ../public-docs:/usr/share/nginx/html:ro
     restart: unless-stopped
-#  reviews-service:
-#    build:
-#      context: ../
-#      dockerfile: ReviewsService/Dockerfile
-#    container_name: reviews-service
-#    ports:
-#    - 8099:8099
-#    environment:
-#    - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
-#    - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASS}
-#    - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
-#    - EUREKA_USER=${EUREKA_USER:-admin}
-#    - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
-#    - PLATFORM_BUSINESS_ZONE=${PLATFORM_BUSINESS_ZONE:-Asia/Kolkata}
-#    - PLATFORM_DEFAULT_CURRENCY=${PLATFORM_DEFAULT_CURRENCY:-INR}
-#    - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
-#    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
-#    - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
-#    - DB_URL=jdbc:postgresql://postgres:5432/reviews_db
-#    - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
-#    - REDIS_HOST=redis
-#    - SPRING_DATA_REDIS_HOST=redis
-#    depends_on:
-#      config-service:
-#        condition: service_healthy
-#      postgres:
-#        condition: service_healthy
-#      kafka:
-#        condition: service_healthy
-#      redis:
-#        condition: service_healthy
-#    healthcheck:
-#      test:
-#      - CMD-SHELL
-#      - wget --spider -q http://localhost:8085/actuator/health || exit 1
-#      interval: 10s
-#      timeout: 5s
-#      retries: 10
-#      start_period: 120s
+  reviews-service:
+    image: ${REGISTRY}/food-delivery/reviews-service:${REVIEWS_SERVICE_TAG}
+    container_name: reviews-service
+    mem_limit: 896m
+    ports:
+    - 8099:8099
+    environment:
+    - SERVER_PORT=8099
+    - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+    - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASS}
+    - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
+    - EUREKA_USER=${EUREKA_USER:-admin}
+    - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
+    - PLATFORM_BUSINESS_ZONE=${PLATFORM_BUSINESS_ZONE:-Asia/Kolkata}
+    - PLATFORM_DEFAULT_CURRENCY=${PLATFORM_DEFAULT_CURRENCY:-INR}
+    - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
+    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
+    - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
+    - DB_URL=jdbc:postgresql://postgres:5432/reviews_db
+    - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    - REDIS_HOST=redis
+    - SPRING_DATA_REDIS_HOST=redis
+    depends_on:
+      config-service:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - wget --spider -q http://localhost:8099/actuator/health || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
 #    restart: on-failure
 volumes:
   shared_pgdata: null
