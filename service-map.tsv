@@ -24,3 +24,5 @@ MapsIntegration	maps-integration	.	MapsIntegration/Dockerfile
 PaymentGatewayIntegration	payment-gateway	.	PaymentGatewayIntegration/Dockerfile
 RestaurantApplication	restaurant-service	.	RestaurantApplication/Dockerfile
 WalletService	wallet-service	.	WalletService/Dockerfile
+ONDCIntegrationService	ondc-integration-service	.	ONDCIntegrationService/Dockerfile
+ReviewsService	reviews-service	.	ReviewsService/Dockerfile
