@@ -9,6 +9,7 @@ groups:
         annotations:
           summary: "High refund failure rate detected"
           description: "More than 5% of refund processing attempts are failing over the last 5 minutes."
+          runbook_url: "https://wiki.fooddelivery.com/runbooks/high-refund-failure-rate"
 
       - alert: HighPartialRefundFailureRate
         expr: rate(order_saga_refund_partial_failure_total[5m]) > 0.05
@@ -18,6 +19,7 @@ groups:
         annotations:
           summary: "High partial refund failure rate detected"
           description: "More than 5% of partial refund processing attempts are failing over the last 5 minutes."
+          runbook_url: "https://wiki.fooddelivery.com/runbooks/high-partial-refund-failure-rate"
 
       - alert: WalletEventDLQAccumulation
         expr: rate(wallet_event_dlq_total[5m]) > 0
@@ -27,6 +29,7 @@ groups:
         annotations:
           summary: "Wallet DLQ events detected"
           description: "Messages are accumulating in the Wallet Service Dead Letter Queue."
+          runbook_url: "https://wiki.fooddelivery.com/runbooks/wallet-event-dlq-accumulation"
 
       - alert: HighLedgerFailureRate
         expr: rate(ledger_transaction_failures_total[5m]) > 0.01
@@ -36,3 +39,4 @@ groups:
         annotations:
           summary: "High ledger transaction failure rate"
           description: "Ledger transaction failures are elevated, possibly indicating missing ChargeCategory or deserialization issues."
+          runbook_url: "https://wiki.fooddelivery.com/runbooks/high-ledger-failure-rate"

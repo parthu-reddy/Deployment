@@ -26,6 +26,15 @@ migration is what caused the incident below.
 **Naming:** `V<YYYYMMDDHHMMSS>__short_description.sql`. Sequential `V2`, `V3` collide the moment two
 branches each add a migration.
 
+> **When naming and immutability conflict, immutability wins.** A sequentially-named migration that
+> has already been applied cannot be renamed: the version in `flyway_schema_history` would no longer
+> resolve to a file, and the next boot fails with *detected applied migration not resolved locally*.
+> `WalletService/V2__money_timestamps_tz.sql` and `V3__index_wallet_topup_gateway_order_id.sql` are
+> in exactly that position — both are present in the deployed revision — so they are grandfathered
+> in `validate_phase4.py`'s `GRANDFATHERED_VERSIONS`, and `VERSIONS-GRANDFATHER-CURRENT` deletes the
+> exemption if the file ever goes. The naming rule still fails any **new** migration. Recorded
+> 2026-09-11.
+
 **One logical change per file**, named so a reviewer knows what it does without opening it.
 `add_missing_columns` fails that test; `add_city_id_to_delivery_executives` passes.
 
@@ -65,21 +74,25 @@ Every database reachable through the deployed environment currently does: seeded
 registered users, saved delivery addresses, order history. So the immutability rule applies to all
 of them, not just a nominal "production".
 
+Counts verified against the filesystem 2026-09-11; every row had to be corrected or confirmed,
+because the table had drifted since it was written on 2026-08-30 and a stale count is how a service
+looks like it has no migrations to preserve.
+
 | Service | Baseline | Additive migrations |
 |---|---|---|
 | `CampaignService` | 1 | 0 |
 | `CommunicationIntegration` | 1 | 0 |
 | `CommunicationService` | 1 | 0 |
 | `CustomerApplication` | 1 | 0 |
-| `DeliveryExecutiveApplication` | 1 | 3 |
+| `DeliveryExecutiveApplication` | 1 | 5 |
 | `GovernmentIDValidationService` | 1 | 1 |
 | `IdentityService` | 1 | 0 |
 | `LedgerService` | 1 | 0 |
 | `ONDCIntegrationService` | 1 | 0 |
 | `PaymentGatewayIntegration` | 1 | 0 |
-| `RestaurantApplication` | 1 | 3 |
-| `ReviewsService` | 1 | 0 |
-| `WalletService` | 1 | 0 |
+| `RestaurantApplication` | 1 | 5 |
+| `ReviewsService` | 1 | 1 |
+| `WalletService` | 1 | 2 |
 
 `CommonLibrary` is excluded deliberately: `db/migration/common` is a shared overlay applied alongside
 every service's own baseline (see `flyway.locations`), so it has no baseline of its own.

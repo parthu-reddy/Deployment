@@ -97,14 +97,45 @@ def main():
               "SCHEMA_POLICY.md does not state the immutability / forward-only rule")
 
     # 3. Timestamped versions -- sequential numbers collide across branches.
-    bad = []
+    #
+    # GRANDFATHERED, 2026-09-11. Two WalletService migrations were named V2/V3 and shipped before
+    # anyone noticed. They cannot now be renamed: both are present in the deployed revision
+    # (WALLET_SERVICE_TAG eeadbcb), so every wallet_db that has booted against that image carries
+    # rows in flyway_schema_history with versions "2" and "3". Renaming the files makes the next
+    # boot fail with "detected applied migration not resolved locally" -- validate-on-migrate is on
+    # and is not overridden, which check 5 below enforces.
+    #
+    # This is the naming rule losing to the immutability rule, which is the correct outcome: one is
+    # a convention that prevents future collisions, the other prevents a failed startup. Fixing it
+    # would mean hand-editing flyway_schema_history in every environment, which is exactly the kind
+    # of manual surgery SCHEMA_POLICY.md rules out.
+    #
+    # Entries are (service, filename) and are checked for staleness below, so the exemption
+    # disappears with the file rather than outliving it. Adding one is a deliberate, reviewable act;
+    # forgetting to timestamp a NEW migration is not, and still fails.
+    GRANDFATHERED_VERSIONS = {
+        ("WalletService", "V2__money_timestamps_tz.sql"),
+        ("WalletService", "V3__index_wallet_topup_gateway_order_id.sql"),
+    }
+
+    bad, seen = [], set()
     for svc, d in dirs.items():
         for f in sorted(d.glob("V*.sql")):
             v = f.name.split("__", 1)[0][1:]
-            if v != "1" and not re.fullmatch(r"\d{14}", v):
-                bad.append(f"{svc}/{f.name}")
+            if v == "1" or re.fullmatch(r"\d{14}", v):
+                continue
+            if (svc, f.name) in GRANDFATHERED_VERSIONS:
+                seen.add((svc, f.name))
+                continue
+            bad.append(f"{svc}/{f.name}")
     check("VERSIONS-TIMESTAMPED", not bad,
           f"{len(bad)}: " + ", ".join(bad[:5]) + " -- use V<YYYYMMDDHHMMSS>__")
+
+    # An exemption that outlives the file it excused silently weakens the rule above.
+    stale = sorted(f"{s}/{n}" for s, n in GRANDFATHERED_VERSIONS - seen)
+    check("VERSIONS-GRANDFATHER-CURRENT", not stale,
+          f"{len(stale)} exemption(s) match no migration: " + ", ".join(stale)
+          + " -- remove them from GRANDFATHERED_VERSIONS")
 
     # 4. Hibernate must never own the schema.
     wrong = []

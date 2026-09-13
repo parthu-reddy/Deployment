@@ -42,7 +42,13 @@ resilience4j:
         waitDuration: 500ms
 
 server:
-  port: 8085
+  # 8085 was hardcoded here and belongs to payment-gateway (docker-compose.yml publishes 8085:8085
+  # for it). This service publishes 8099:8099 and healthchecks 8099, while compose passes
+  # SERVER_PORT=8099 -- which a literal here overrides, since the config server's property source
+  # outranks the environment. The container therefore bound a port nobody probed, on a number
+  # already taken. ${SERVER_PORT:8099} agrees with compose under either precedence and matches the
+  # form wallet, campaign, bidding and event-tracking already use.
+  port: ${SERVER_PORT:8099}
 
 eureka:
   client:
