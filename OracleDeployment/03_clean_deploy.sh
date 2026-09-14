@@ -66,6 +66,13 @@ fi
 # Secrets and image tags. .env holds the credentials; without REGISTRY and the *_TAG values written
 # alongside them the VM cannot resolve its own image names, and every compose command run there by
 # hand operates on a different world than the one running.
+if [[ -n "${OCI_VAULT_ID:-}" ]]; then
+    echo "==> fetching secrets from vault into the VM's .env"
+    remote "export OCI_VAULT_ID=\"$OCI_VAULT_ID\" && cd '$REMOTE/OracleDeployment' && ./fetch_secrets_from_vault.sh"
+else
+    echo "==> skipping vault fetch (OCI_VAULT_ID not set); relying on existing secrets"
+fi
+
 echo "==> syncing REGISTRY and image tags into the VM's .env"
 "$DEPLOY/deploy.sh" --sync-env
 

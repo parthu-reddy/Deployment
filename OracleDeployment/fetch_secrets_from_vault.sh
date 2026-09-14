@@ -63,6 +63,7 @@ if [[ -z "$VAULT_ID" ]]; then
   echo "FATAL: OCI_VAULT_ID is not set." >&2
   exit 1
 fi
+[[ -d "$HOME/bin" ]] && export PATH="$HOME/bin:$PATH"
 command -v oci >/dev/null 2>&1 || { echo "FATAL: the oci CLI is not installed." >&2; exit 1; }
 
 echo "Fetching ${#SECRET_NAMES[@]} secrets from OCI Vault using the instance principal..."
