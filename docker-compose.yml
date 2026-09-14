@@ -113,7 +113,7 @@ services:
     volumes:
     - ./:/config
     environment:
-    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+    - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_PROFILES_ACTIVE=native
@@ -139,7 +139,7 @@ services:
     ports:
     - 8761:8761
     environment:
-    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+    - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - EUREKA_USER=${EUREKA_USER:-admin}
@@ -167,7 +167,7 @@ services:
     ports:
     - 8762:8761
     environment:
-    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+    - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - EUREKA_USER=${EUREKA_USER:-admin}
@@ -195,7 +195,7 @@ services:
     ports:
     - 8092:8092
     environment:
-    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+    - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
@@ -245,7 +245,7 @@ services:
     ports:
     - 8094:8094
     environment:
-    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+    - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
@@ -296,7 +296,7 @@ services:
     ports:
     - 8095:8095
     environment:
-    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+    - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
@@ -348,7 +348,7 @@ services:
     ports:
     - 8085:8085
     environment:
-    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+    - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
@@ -403,7 +403,7 @@ services:
     - 8083:8083
     environment:
     - OLA_MAPS_API_KEY=${OLA_MAPS_API_KEY:-}
-    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+    - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
@@ -448,7 +448,7 @@ services:
     ports:
     - 8081:8081
     environment:
-    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+    - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
@@ -504,7 +504,7 @@ services:
     volumes:
     - ./certs:/certs
     environment:
-    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+    - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - OLA_MAPS_API_KEY=${OLA_MAPS_API_KEY}
@@ -553,7 +553,7 @@ services:
     volumes:
     - ./certs:/certs
     environment:
-    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+    - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
@@ -604,7 +604,7 @@ services:
     ports:
     - 8087:8087
     environment:
-    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+    - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
@@ -673,7 +673,7 @@ services:
     ports:
     - 8089:8089
     environment:
-    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+    - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
@@ -718,7 +718,7 @@ services:
     ports:
     - 8096:8096
     environment:
-    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+    - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
@@ -807,7 +807,7 @@ services:
     ports:
     - 8120:8120
     environment:
-    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+    - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
@@ -874,7 +874,7 @@ services:
     ports:
     - 8088:8088
     environment:
-    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+    - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - PLATFORM_BUSINESS_ZONE=${PLATFORM_BUSINESS_ZONE:-Asia/Kolkata}
@@ -920,7 +920,7 @@ services:
     ports:
     - 8102:8102
     environment:
-    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+    - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - PLATFORM_BUSINESS_ZONE=${PLATFORM_BUSINESS_ZONE:-Asia/Kolkata}
@@ -964,7 +964,7 @@ services:
     ports:
     - 8103:8103
     environment:
-    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+    - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - PLATFORM_BUSINESS_ZONE=${PLATFORM_BUSINESS_ZONE:-Asia/Kolkata}
@@ -1012,7 +1012,7 @@ services:
     ports:
     - 8104:8104
     environment:
-    - OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+    - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
@@ -1067,6 +1067,7 @@ services:
     - 8099:8099
     environment:
     - SERVER_PORT=8099
+    - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
     - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASS}
     - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
