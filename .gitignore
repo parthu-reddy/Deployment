@@ -22,3 +22,4 @@ __pycache__/
 restaurant_logs.txt
 *_logs.txt
 id.json
+.env.local
