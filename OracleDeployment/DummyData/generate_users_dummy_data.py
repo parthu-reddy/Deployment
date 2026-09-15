@@ -14,8 +14,7 @@ IMAGE_URLS = [
     "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/Fried_Chicken_Bucket_spicy_202607250834.jpeg",
     "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/Kurkure_Chaat_snacks_with_onions_202607250834.jpeg",
     "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/Mutton_Kheema_Dosa_with_gravy_202607250833.jpeg",
-    "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/Triple_Schezwan_Veg_Rice_202607250834.jpeg",
-    None, None, None, None
+    "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/Triple_Schezwan_Veg_Rice_202607250834.jpeg"
 ]
 
 def get_image_sql_val():
