@@ -95,7 +95,7 @@ done; echo 'postgres did not become ready'; exit 1"
 echo "==> wave 1: configuration and discovery"
 "$DEPLOY/deploy.sh" $WAVE1
 
-echo "==> wave 2: application services"
+echo "==> wave 2: application services (strict event chain is ordered producer-first by deploy.sh)"
 "$DEPLOY/deploy.sh" $WAVE2
 
 echo "==> reconciling declared against running"

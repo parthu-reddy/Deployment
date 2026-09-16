@@ -44,9 +44,9 @@ valid() { awk -F'\t' '!/^#/ && NF>=2 {print $2}' "$MAP"; }
 
 wait_for_health() {
     local svcs=("$@")
-    [[ -n "$HEALTH_TIMEOUT" ]] || HEALTH_TIMEOUT=$(( 120 + 30 * ${#svcs[@]} ))
-    echo "==> waiting for health (timeout ${HEALTH_TIMEOUT}s)"
-    remote "cd '$REMOTE' && end=\$((SECONDS+$HEALTH_TIMEOUT)); while [ \$SECONDS -lt \$end ]; do
+    local timeout="${HEALTH_TIMEOUT:-$(( 120 + 30 * ${#svcs[@]} ))}"
+    echo "==> waiting for health (timeout ${timeout}s)"
+    remote "cd '$REMOTE' && end=\$((SECONDS+$timeout)); while [ \$SECONDS -lt \$end ]; do
       bad=0
       for s in ${svcs[*]}; do
         st=\$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' \$s 2>/dev/null || echo missing)
@@ -247,6 +247,43 @@ $(valid | sed 's/^/  /')"
     IMAGES+=("$REGISTRY/food-delivery/$svc:$tag")
 done
 
+contains_service() {
+    local wanted="$1" service
+    shift
+    for service in "$@"; do
+        [[ "$service" == "$wanted" ]] && return 0
+    done
+    return 1
+}
+
+desired_image_for() {
+    local service="$1" variable tag
+    variable="$(echo "$service" | tr 'a-z-' 'A-Z_')_TAG"
+    tag="$(awk -F= -v v="$variable" '$1==v {print $2}' "$VERSIONS")"
+    [[ -n "$tag" ]] || die "no tag recorded for contract producer $service"
+    echo "$REGISTRY/food-delivery/$service:$tag"
+}
+
+# These services exchange strict, required-field Kafka contracts. A consumer may be deployed only
+# after its producer is on the intended workspace version. When both are selected below, startup is
+# serialized producer-first. When only the consumer is selected, this guard verifies the producer
+# already matches .versions before any image is pulled or container is changed.
+CONTRACT_CHAIN=(customer-service restaurant-service delivery-service maps-integration)
+for chain_index in 1 2 3; do
+    consumer="${CONTRACT_CHAIN[$chain_index]}"
+    producer="${CONTRACT_CHAIN[$((chain_index - 1))]}"
+    contains_service "$consumer" "${SERVICES[@]}" || continue
+    contains_service "$producer" "${SERVICES[@]}" && continue
+
+    wanted_producer="$(desired_image_for "$producer")"
+    running_producer="$(remote "docker inspect -f '{{.Config.Image}}' '$producer' 2>/dev/null || echo none")"
+    [[ "$running_producer" == "$wanted_producer" ]] || die "refusing to deploy $consumer before its contract producer.
+$producer is running: $running_producer
+$producer must run:   $wanted_producer
+Deploy both in one producer-first operation:
+  Deployment/deploy.sh $producer $consumer"
+done
+
 echo "==> deploying ${#SERVICES[@]} service(s) to $VM"
 for i in "${!SERVICES[@]}"; do echo "    ${SERVICES[$i]} -> ${IMAGES[$i]}"; done
 
@@ -265,12 +302,32 @@ for i in "${!SERVICES[@]}"; do
     ENVS="$ENVS $(echo "${SERVICES[$i]}" | tr 'a-z-' 'A-Z_')_TAG=${IMAGES[$i]##*:}"
 done
 
-# One round trip. --remove-orphans so undeclared containers cannot accumulate silently.
+# Pull first so a registry failure cannot interrupt the ordered startup after only some consumers
+# have moved. --remove-orphans keeps undeclared containers from accumulating silently.
 UP_FLAGS="--remove-orphans"
 [[ "$FRESH" == true ]] && UP_FLAGS="$UP_FLAGS --force-recreate"
-remote "cd '$REMOTE' && env $ENVS docker compose pull ${SERVICES[*]} && env $ENVS docker compose up -d $UP_FLAGS ${SERVICES[*]}"
+remote "cd '$REMOTE' && env $ENVS docker compose pull ${SERVICES[*]}"
 
-wait_for_health "${SERVICES[@]}"
+# Unrelated services can start together. Contract-linked services are deliberately excluded from
+# this batch and then started one at a time in producer-to-consumer order. Waiting for each producer
+# to become healthy closes the version-skew window that previously allowed RestaurantApplication to
+# consume an ORDER_PAID payload from an older CustomerApplication.
+declare -a OTHER_SERVICES=()
+for svc in "${SERVICES[@]}"; do
+    contains_service "$svc" "${CONTRACT_CHAIN[@]}" || OTHER_SERVICES+=("$svc")
+done
+if [[ ${#OTHER_SERVICES[@]} -gt 0 ]]; then
+    echo "==> starting independent services: ${OTHER_SERVICES[*]}"
+    remote "cd '$REMOTE' && env $ENVS docker compose up -d $UP_FLAGS ${OTHER_SERVICES[*]}"
+    wait_for_health "${OTHER_SERVICES[@]}"
+fi
+
+for svc in "${CONTRACT_CHAIN[@]}"; do
+    contains_service "$svc" "${SERVICES[@]}" || continue
+    echo "==> starting contract service: $svc"
+    remote "cd '$REMOTE' && env $ENVS docker compose up -d $UP_FLAGS $svc"
+    wait_for_health "$svc"
+done
 
 after="$(remote "cd '$REMOTE' && for s in ${SERVICES[*]}; do printf '%s=%s\n' \"\$s\" \"\$(docker inspect -f '{{.Config.Image}}' \$s 2>/dev/null || echo none)\"; done")"
 
