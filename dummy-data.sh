@@ -44,6 +44,4 @@ echo "==> loading dummy data"
 echo
 echo "=========================================================="
 echo " Dummy data loaded."
-echo " Drivers only appear online while the simulator runs:"
-echo "   (cd Deployment/OracleDeployment/DummyData && python3 remote_rider_simulator.py)"
 echo "=========================================================="
