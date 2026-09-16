@@ -23,3 +23,6 @@ restaurant_logs.txt
 *_logs.txt
 id.json
 .env.local
+
+# GitHub Action error logs
+.action_logs/
