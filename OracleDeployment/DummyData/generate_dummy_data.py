@@ -10,14 +10,14 @@ radius_km = 1.0
 customer_radius_km = 1.0
 
 IMAGE_URLS = [
-    "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/1eace54b-6c8b-4de4-9247-3e028bfad925_dadf2264-a4fb-4ef2-a24a-71a7d5cd526a.jpg",
-    "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/740a92bd202ffd40813bc354b86005db.avif",
-    "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/991da0faa53554ef91bfac714da24c29.avif",
-    "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/Fried_Chicken_Bucket_spicy_202607250834.jpeg",
-    "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/Kurkure_Chaat_snacks_with_onions_202607250834.jpeg",
-    "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/Lasagna_food_photography_bolognese_202607241754.jpeg",
-    "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/Mutton_Kheema_Dosa_with_gravy_202607250833.jpeg",
-    "https://pub-331840c6b8de469a8750b945b9159673.r2.dev/SampleImages/Triple_Schezwan_Veg_Rice_202607250834.jpeg"
+    "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1499028344343-cd173ffc68a9?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1565958011703-44f9829ba187?auto=format&fit=crop&w=800&q=80"
 ]
 
 def get_image_sql_val():
