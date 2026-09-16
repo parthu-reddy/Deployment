@@ -693,3 +693,5 @@
 | 2026-09-16T01:32:55Z | restaurant-service | 2b3640784042c0c91b35b78ea7d3c4843bd9f0ad | - | false | parthudhanireddy@gmail.com |
 | 2026-09-16T01:32:55Z | reviews-service | 103b7b1fad6f637c281b37592dfa40e7c57eac2f | - | false | parthudhanireddy@gmail.com |
 | 2026-09-16T01:32:55Z | wallet-service | 1755d0719d9de0f302542cd6706f79066e009ec6 | - | false | parthudhanireddy@gmail.com |
+| 2026-09-16T07:10:23Z | customer-service | 72be211-6fe475a | additive-or-none | false | parthudhanireddy@gmail.com |
+| 2026-09-16T07:13:20Z | maps-integration | 13ada96-1e10c16 | additive-or-none | false | parthudhanireddy@gmail.com |
