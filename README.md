@@ -60,3 +60,4 @@ to sync changes and safely restart only the services that need to read them.
 - **PostgreSQL**: Relational database for core domain data (Orders, Users, Restaurants).
 - **Redis**: In-memory data store for caching and temporary state (e.g., JWT blacklisting).
 - **Service Configurations**: YAML files (e.g., `api-gateway.yml`, `customer-service.yml`) that are served by the `ConfigService`.
+
