@@ -55,5 +55,3 @@ python3 generate_users_dummy_data.py    # identities first
 python3 generate_dummy_data.py          # restaurants, orders, addresses
 ```
 
-Finally, `python3 remote_rider_simulator.py` populates Redis with driver locations and keeps them
-online. Redis is flushed by the reset, so without this step no driver appears available.

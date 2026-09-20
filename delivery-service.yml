@@ -59,4 +59,7 @@ eureka:
   instance:
     prefer-ip-address: true
 
-
+app:
+  rider:
+    biometric-verification:
+      enabled: false
