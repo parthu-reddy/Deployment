@@ -18,7 +18,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 DEPLOY="$ROOT/Deployment"
-VERSIONS="$DEPLOY/.versions"
+ENV_DIR="$DEPLOY/env_deployments/dev"
 SSH_KEY="${SSH_KEY:-/Users/parthureddy/Documents/OracleSSH/ssh-key-2026-08-16.key}"
 VM="${VM:-ubuntu@140.245.234.137}"
 REMOTE="Food Delivery.nosync/Deployment"
@@ -29,19 +29,18 @@ die() { echo "clean-deploy: $*" >&2; exit 1; }
 remote() { ssh -o StrictHostKeyChecking=no -o ConnectTimeout=20 -i "$SSH_KEY" "$VM" "$@" </dev/null; }
 
 [[ -n "${REGISTRY:-}" ]] || die "REGISTRY is not set. export REGISTRY=hyd.ocir.io/<namespace>"
-[[ -f "$VERSIONS" ]] || die "missing $VERSIONS -- run Deployment/publish.sh first"
+ls "$ENV_DIR"/*.env >/dev/null 2>&1 || die "missing env files in $ENV_DIR -- run Deployment/publish.sh first"
 
 # Infrastructure and third-party images. These are NOT built or published by us: postgres, redis,
 # kafka, zookeeper, clickhouse and jaeger are upstream images, and api-docs is plain nginx:alpine.
-# That is why .versions carries 20 tags while compose declares 27 services.
+# That is why env_deployments/dev carries 21 environments while compose declares 27 services.
 INFRA="zookeeper kafka postgres redis clickhouse jaeger api-docs"
 
 # Ordered waves. Everything at once put 27 JVMs on a 4-core box and drove load average past 120;
 # config and discovery also have to be answering before anything else asks them for configuration.
 WAVE1="config-service eureka-server-1 eureka-server-2"
 
-APP="$(awk -F= '/_TAG=/{print $1}' "$VERSIONS" \
-      | sed 's/_TAG$//' | tr 'A-Z_' 'a-z-' | sort)"
+APP="$(for f in "$ENV_DIR"/*.env; do basename "$f" .env; done | sort)"
 WAVE2="$(echo "$APP" | grep -vxE "$(echo $WAVE1 | tr ' ' '|')" | tr '\n' ' ')"
 
 echo "=========================================================="
