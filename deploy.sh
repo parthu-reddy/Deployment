@@ -14,7 +14,8 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MAP="$ROOT/Deployment/service-map.tsv"
-VERSIONS="$ROOT/Deployment/.versions"
+VERSIONS_DIR="$ROOT/Deployment/env_deployments/dev"
+VERSIONS_LEGACY="$ROOT/Deployment/.versions"
 LOG="$ROOT/Deployment/DEPLOY_LOG.md"
 SSH_KEY="${SSH_KEY:-/Users/parthureddy/Documents/OracleSSH/ssh-key-2026-08-16.key}"
 VM="${VM:-ubuntu@140.245.234.137}"
@@ -28,7 +29,7 @@ die() { echo "deploy: $*" >&2; exit 1; }
 remote() { ssh -o StrictHostKeyChecking=no -o ConnectTimeout=20 -i "$SSH_KEY" "$VM" "$@" </dev/null; }
 
 [[ -f "$MAP" ]] || die "missing $MAP"
-[[ -f "$VERSIONS" ]] || die "missing $VERSIONS -- publish an image first"
+[[ -d "$VERSIONS_DIR" ]] || die "missing $VERSIONS_DIR -- publish an image first"
 [[ -n "${REGISTRY:-}" ]] || die "REGISTRY is not set"
 ROLLBACK=false
 SYNC_ENV=false
@@ -126,11 +127,14 @@ valid() { awk -F'\t' '!/^#/ && NF>=2 {print $2}' "$MAP"; }
 
 # Every REGISTRY/tag pair, straight from .versions.
 versions_envs() {
-    local e="REGISTRY=$REGISTRY" line
-    while IFS= read -r line; do
-        case "$line" in ''|\#*) continue;; esac
-        e="$e $line"
-    done < "$VERSIONS"
+    local e="REGISTRY=$REGISTRY" f line
+    for f in "$VERSIONS_DIR"/*.env; do
+        [[ -f "$f" ]] || continue
+        while IFS= read -r line; do
+            case "$line" in ''|\#*) continue;; esac
+            e="$e $line"
+        done < "$f"
+    done
     echo "$e"
 }
 
@@ -198,16 +202,27 @@ if [[ "$ROLLBACK" == true ]]; then
     svc="$1"
     valid | grep -qx "$svc" || die "unknown service '$svc'"
     var="$(echo "$svc" | tr 'a-z-' 'A-Z_')_TAG"
-    cur="$(awk -F= -v v="$var" '$1==v {print $2}' "$VERSIONS")"
+    cur=""
+    if [[ -f "$VERSIONS_DIR/$svc.env" ]]; then
+        cur="$(awk -F= -v v="$var" '$1==v {print $2}' "$VERSIONS_DIR/$svc.env")"
+    else
+        cur="$(awk -F= -v v="$var" '$1==v {print $2}' "$VERSIONS_LEGACY")"
+    fi
 
-    # .versions is committed on every publish, so its git history IS the deployment history.
+    # The git history IS the deployment history.
     prev=""
     while IFS= read -r sha; do
-        t="$(git -C "$ROOT/Deployment" show "$sha:service-map.tsv" >/dev/null 2>&1; \
-             git -C "$ROOT/Deployment" show "$sha:.versions" 2>/dev/null | awk -F= -v v="$var" '$1==v {print $2}')"
+        t="$(git -C "$ROOT/Deployment" show "$sha:env_deployments/dev/$svc.env" 2>/dev/null | awk -F= -v v="$var" '$1==v {print $2}')"
         [[ -n "$t" && "$t" != "$cur" ]] && { prev="$t"; break; }
-    done < <(git -C "$ROOT/Deployment" log --format=%H -- .versions)
-    [[ -n "$prev" ]] || die "no previous tag for $svc in .versions history -- nothing to roll back to"
+    done < <(git -C "$ROOT/Deployment" log --format=%H -- "env_deployments/dev/$svc.env" 2>/dev/null || true)
+    
+    if [[ -z "$prev" ]]; then
+        while IFS= read -r sha; do
+            t="$(git -C "$ROOT/Deployment" show "$sha:.versions" 2>/dev/null | awk -F= -v v="$var" '$1==v {print $2}')"
+            [[ -n "$t" && "$t" != "$cur" ]] && { prev="$t"; break; }
+        done < <(git -C "$ROOT/Deployment" log --format=%H -- .versions 2>/dev/null || true)
+    fi
+    [[ -n "$prev" ]] || die "no previous tag for $svc in history -- nothing to roll back to"
 
     # Confirm the target image still exists in the registry BEFORE anything is stopped. A rollback
     # that discovers the image is gone after taking the service down has turned a bad deploy into an
@@ -230,9 +245,8 @@ Recovery from here is a forward fix, not a rollback."
     fi
 
     echo "==> rolling back $svc: $cur -> $prev"
-    # Point .versions at the previous tag so compose and the verification below agree.
-    tmp="$(mktemp)"; grep -v "^${var}=" "$VERSIONS" > "$tmp"; echo "${var}=${prev}" >> "$tmp"
-    LC_ALL=C sort -o "$VERSIONS" "$tmp"; rm -f "$tmp"
+    # Point .env at the previous tag so compose and the verification below agree.
+    echo "${var}=${prev}" > "$VERSIONS_DIR/$svc.env"
 fi
 
 declare -a SERVICES=() IMAGES=()
@@ -241,7 +255,12 @@ for svc in "$@"; do
 valid services:
 $(valid | sed 's/^/  /')"
     var="$(echo "$svc" | tr 'a-z-' 'A-Z_')_TAG"
-    tag="$(awk -F= -v v="$var" '$1==v {print $2}' "$VERSIONS")"
+    tag=""
+    if [[ -f "$VERSIONS_DIR/$svc.env" ]]; then
+        tag="$(awk -F= -v v="$var" '$1==v {print $2}' "$VERSIONS_DIR/$svc.env")"
+    else
+        tag="$(awk -F= -v v="$var" '$1==v {print $2}' "$VERSIONS_LEGACY")"
+    fi
     [[ -n "$tag" ]] || die "no tag recorded for $svc -- run: Deployment/publish.sh $svc"
     SERVICES+=("$svc")
     IMAGES+=("$REGISTRY/food-delivery/$svc:$tag")
@@ -259,7 +278,12 @@ contains_service() {
 desired_image_for() {
     local service="$1" variable tag
     variable="$(echo "$service" | tr 'a-z-' 'A-Z_')_TAG"
-    tag="$(awk -F= -v v="$variable" '$1==v {print $2}' "$VERSIONS")"
+    tag=""
+    if [[ -f "$VERSIONS_DIR/$service.env" ]]; then
+        tag="$(awk -F= -v v="$variable" '$1==v {print $2}' "$VERSIONS_DIR/$service.env")"
+    else
+        tag="$(awk -F= -v v="$variable" '$1==v {print $2}' "$VERSIONS_LEGACY")"
+    fi
     [[ -n "$tag" ]] || die "no tag recorded for contract producer $service"
     echo "$REGISTRY/food-delivery/$service:$tag"
 }

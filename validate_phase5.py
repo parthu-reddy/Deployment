@@ -13,7 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 DEPLOY_DIR = ROOT / "Deployment"
 COMPOSE = DEPLOY_DIR / "docker-compose.yml"
-VERSIONS = DEPLOY_DIR / ".versions"
+VERSIONS_DIR = DEPLOY_DIR / "env_deployments" / "dev"
 LOG = DEPLOY_DIR / "DEPLOY_LOG.md"
 SSH_KEY = "/Users/parthureddy/Documents/OracleSSH/ssh-key-2026-08-16.key"
 VM = "ubuntu@140.245.234.137"
@@ -42,8 +42,8 @@ def main():
     # 1. Rollback exists and is bounded.
     check("ROLLBACK-EXISTS", "--rollback" in body, "deploy.sh has no --rollback")
     check("ROLLBACK-READS-HISTORY",
-          re.search(r"git\b[^\n]*\blog\b[^\n]*\.versions", body) is not None,
-          "rollback does not resolve the previous tag from .versions history")
+          re.search(r"git\b[^\n]*\blog\b[^\n]*env_deployments", body) is not None,
+          "rollback does not resolve the previous tag from env_deployments history")
     check("ROLLBACK-RESPECTS-SCHEMA-BOUNDARY",
           re.search(r"destructive", body) is not None,
           "rollback does not consult the destructive-migration flag; it can start an old image "
@@ -69,14 +69,15 @@ def main():
           "deploy.sh can leave undeclared containers running")
 
     # 2. History exists and is actually usable for rollback.
-    check("VERSIONS-COMMITTED", VERSIONS.is_file(), f"{VERSIONS} missing")
-    if VERSIONS.is_file():
-        dirty = git("status", "--porcelain", "--", ".versions", cwd=DEPLOY_DIR).strip()
+    check("VERSIONS-COMMITTED", VERSIONS_DIR.is_dir(), f"{VERSIONS_DIR} missing")
+    if VERSIONS_DIR.is_dir():
+        dirty = git("status", "--porcelain", "--", "env_deployments/dev", cwd=DEPLOY_DIR).strip()
         check("VERSIONS-NOT-DIRTY", not dirty,
-              ".versions has uncommitted changes -- rollback history has a hole")
-        revs = [l for l in git("log", "--format=%H", "--", ".versions", cwd=DEPLOY_DIR).splitlines() if l]
-        check("VERSIONS-HAS-HISTORY", len(revs) >= 2,
-              f"only {len(revs)} revision(s); rollback needs a previous tag to resolve")
+              "env files have uncommitted changes -- rollback history has a hole")
+        revs = [l for l in git("log", "--format=%H", "--", "env_deployments/dev", cwd=DEPLOY_DIR).splitlines() if l]
+        legacy_revs = [l for l in git("log", "--format=%H", "--", ".versions", cwd=DEPLOY_DIR).splitlines() if l]
+        check("VERSIONS-HAS-HISTORY", len(revs) + len(legacy_revs) >= 2,
+              f"not enough revision(s); rollback needs a previous tag to resolve")
 
     check("DEPLOY-LOG-EXISTS", LOG.is_file(), f"{LOG} missing")
     if LOG.is_file():

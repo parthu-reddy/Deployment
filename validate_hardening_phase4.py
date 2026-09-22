@@ -11,7 +11,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DEPLOY = ROOT / "Deployment"
-VERSIONS = DEPLOY / ".versions"
+VERSIONS_DIR = DEPLOY / "env_deployments" / "dev"
+VERSIONS_LEGACY = DEPLOY / ".versions"
 REGISTRY = "hyd.ocir.io/axekmbadoczl"
 
 failures = []
@@ -30,16 +31,32 @@ def git(*a):
 def protected_tags():
     """Every <service>:<tag> the deployment history has ever named."""
     tags = set()
+    # History from env_deployments
+    for env_file in VERSIONS_DIR.glob("*.env"):
+        for sha in git("log", "--format=%H", "--", str(env_file.relative_to(DEPLOY))).split():
+            for line in git("show", f"{sha}:{env_file.relative_to(DEPLOY)}").splitlines():
+                if "_TAG=" in line:
+                    k, v = line.split("=", 1)
+                    svc = k[:-4].lower().replace("_", "-")
+                    tags.add(f"{svc}:{v.strip()}")
+        # Current state
+        for line in env_file.read_text(encoding="utf-8").splitlines():
+            if "_TAG=" in line:
+                k, v = line.split("=", 1)
+                tags.add(f"{k[:-4].lower().replace('_','-')}:{v.strip()}")
+
+    # History from legacy .versions
     for sha in git("log", "--format=%H", "--", ".versions").split():
         for line in git("show", f"{sha}:.versions").splitlines():
             if "_TAG=" in line:
                 k, v = line.split("=", 1)
                 svc = k[:-4].lower().replace("_", "-")
                 tags.add(f"{svc}:{v.strip()}")
-    for line in VERSIONS.read_text(encoding="utf-8").splitlines():
-        if "_TAG=" in line:
-            k, v = line.split("=", 1)
-            tags.add(f"{k[:-4].lower().replace('_','-')}:{v.strip()}")
+    if VERSIONS_LEGACY.is_file():
+        for line in VERSIONS_LEGACY.read_text(encoding="utf-8").splitlines():
+            if "_TAG=" in line:
+                k, v = line.split("=", 1)
+                tags.add(f"{k[:-4].lower().replace('_','-')}:{v.strip()}")
     return tags
 
 
@@ -72,8 +89,8 @@ def main():
     # If a script exists, it must consult the protected set and default to dry-run.
     for s in scripts:
         body = re.sub(r"#[^\n]*", "", s.read_text(encoding="utf-8", errors="ignore"))
-        check(f"{s.name}-CONSULTS-VERSIONS", ".versions" in body,
-              f"{s.name} does not read .versions, so it cannot know which tags are protected")
+        check(f"{s.name}-CONSULTS-VERSIONS", "env_deployments" in body or ".versions" in body,
+              f"{s.name} does not read env_deployments, so it cannot know which tags are protected")
         check(f"{s.name}-DRY-RUN-DEFAULT",
               re.search(r"dry[-_]?run", body, re.I) is not None,
               f"{s.name} has no dry-run mode")

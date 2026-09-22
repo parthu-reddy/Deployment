@@ -15,7 +15,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MAP="$ROOT/Deployment/service-map.tsv"
-VERSIONS="$ROOT/Deployment/.versions"
+VERSIONS_DIR="$ROOT/Deployment/env_deployments/dev"
 PLATFORM="linux/arm64"   # the VM is aarch64; this Mac is arm64, so builds are native
 
 die() { echo "publish: $*" >&2; exit 1; }
@@ -48,13 +48,10 @@ tag_for() {      # module dir -> <short-sha>[-dirty]
     echo "$sha"
 }
 
-record() {       # compose-service, tag  ->  .versions
+record() {       # compose-service, tag  ->  env_deployments/dev/<svc>.env
     local var="$(echo "$1" | tr 'a-z-' 'A-Z_')_TAG"
-    touch "$VERSIONS"
-    grep -v "^${var}=" "$VERSIONS" > "$VERSIONS.tmp" 2>/dev/null || true
-    echo "${var}=$2" >> "$VERSIONS.tmp"
-    LC_ALL=C sort -o "$VERSIONS" "$VERSIONS.tmp"
-    rm -f "$VERSIONS.tmp"
+    mkdir -p "$VERSIONS_DIR"
+    echo "${var}=$2" > "$VERSIONS_DIR/$1.env"
 }
 
 hash_jar() {
@@ -152,12 +149,12 @@ for svc in "${SERVICES[@]}"; do
 done
 
 echo
-echo "Recorded in Deployment/.versions:"
+echo "Recorded in Deployment/env_deployments/dev/:"
 for svc in "${SERVICES[@]}"; do
-    grep "^$(echo "$svc" | tr 'a-z-' 'A-Z_')_TAG=" "$VERSIONS" | sed 's/^/  /'
+    cat "$VERSIONS_DIR/$svc.env" | sed 's/^/  /'
 done
 echo
-echo "Commit .versions -- its git history is the deployment history that --rollback reads."
+echo "Commit env files -- their git history is the deployment history that --rollback reads."
 echo
 echo "Running retention policy to clean up old registry images..."
 python3 "$ROOT/Deployment/retention.py" --apply

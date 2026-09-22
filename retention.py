@@ -31,7 +31,8 @@ parser.add_argument("--delete-all", action="store_true", help="Delete all images
 args = parser.parse_args()
 
 DRY_RUN = not args.apply
-VERSIONS_FILE = DEPLOYMENT / ".versions"
+VERSIONS_DIR = DEPLOYMENT / "env_deployments" / "dev"
+VERSIONS_LEGACY = DEPLOYMENT / ".versions"
 MAP_FILE = DEPLOYMENT / "service-map.tsv"
 REGISTRY_DOMAIN = "hyd.ocir.io"
 REGISTRY_REPO_PREFIX = "axekmbadoczl/food-delivery"
@@ -243,7 +244,7 @@ def process_repo(repo, module_dir, deployed_tag, username, password):
     return repo, kept_count, deleted_count
 
 def main():
-    if not MAP_FILE.exists() or not VERSIONS_FILE.exists():
+    if not MAP_FILE.exists():
         print("Required files missing.", file=sys.stderr)
         return 1
 
@@ -257,14 +258,23 @@ def main():
                 services[parts[1]] = parts[0] # compose_service -> module_dir
 
     deployed_tags = {}
-    with open(VERSIONS_FILE) as f:
-        for line in f:
-            line = line.strip()
-            if "=" in line and not line.startswith("#"):
-                k, v = line.split("=", 1)
-                k_norm = k.replace("_TAG", "").lower().replace("_", "-")
-                deployed_tags[k_norm] = v
-                
+    if VERSIONS_DIR.exists():
+        for env_file in VERSIONS_DIR.glob("*.env"):
+            with open(env_file) as f:
+                for line in f:
+                    line = line.strip()
+                    if "=" in line and not line.startswith("#"):
+                        k, v = line.split("=", 1)
+                        k_norm = k.replace("_TAG", "").lower().replace("_", "-")
+                        deployed_tags[k_norm] = v
+    elif VERSIONS_LEGACY.exists():
+        with open(VERSIONS_LEGACY) as f:
+            for line in f:
+                line = line.strip()
+                if "=" in line and not line.startswith("#"):
+                    k, v = line.split("=", 1)
+                    k_norm = k.replace("_TAG", "").lower().replace("_", "-")
+                    deployed_tags[k_norm] = v
     username, password = get_docker_credentials()
     
     total_kept = 0

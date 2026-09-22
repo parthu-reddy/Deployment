@@ -13,7 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 COMPOSE = ROOT / "Deployment/docker-compose.yml"
-VERSIONS = ROOT / "Deployment/.versions"
+VERSIONS_DIR = ROOT / "Deployment/env_deployments/dev"
 SSH_KEY = "/Users/parthureddy/Documents/OracleSSH/ssh-key-2026-08-16.key"
 VM = "ubuntu@140.245.234.137"
 REMOTE_DIR = "Food Delivery.nosync/Deployment"
@@ -85,21 +85,25 @@ def main():
     latest = [k for k, v in ours.items() if re.search(r"image:.*:latest\b", v)]
     check("NO-LATEST-TAG", not latest, f"{', '.join(sorted(latest))}")
 
-    # 4. .versions covers every service and every tag looks like a git sha.
-    if not VERSIONS.is_file():
-        check("VERSIONS-FILE", False, f"{VERSIONS} does not exist")
+    # 4. env_deployments/dev covers every service and every tag looks like a git sha.
+    if not VERSIONS_DIR.is_dir():
+        check("VERSIONS-DIR", False, f"{VERSIONS_DIR} does not exist")
         tags = {}
     else:
-        tags = dict(
-            re.findall(r"^([A-Z0-9_]+)_TAG=(\S+)$", VERSIONS.read_text(encoding="utf-8"), re.M))
-        check("VERSIONS-FILE", True)
+        tags = {}
+        for f in VERSIONS_DIR.glob("*.env"):
+            for line in f.read_text(encoding="utf-8").splitlines():
+                m = re.match(r"^([A-Z0-9_]+)_TAG=(\S+)$", line)
+                if m:
+                    tags[m.group(1)] = m.group(2)
+        check("VERSIONS-DIR", True)
         expected = {k.upper().replace("-", "_") for k in ours}
         missing = sorted(expected - set(tags))
         check("VERSIONS-COMPLETE", not missing,
               f"{len(missing)} service(s) have no tag recorded: {', '.join(missing[:5])}")
-        bad = sorted(k for k, t in tags.items() if not re.fullmatch(r"[0-9a-f]{7,40}(-dirty)?", t))
+        bad = sorted(k for k, t in tags.items() if not re.fullmatch(r"[0-9a-f]{7,40}(-dirty)?(-[0-9a-f]{7,40})?", t))
         check("VERSIONS-SHA-SHAPED", not bad,
-              f"not a git sha: {', '.join(f'{k}={tags[k]}' for k in bad[:5])}")
+              f"not a valid tag: {', '.join(f'{k}={tags[k]}' for k in bad[:5])}")
 
     # 5. What is actually running -- the check that catches a correct-looking file.
     if remote:
