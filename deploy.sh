@@ -29,6 +29,13 @@ die() { echo "deploy: $*" >&2; exit 1; }
 remote() { ssh -o StrictHostKeyChecking=no -o ConnectTimeout=20 -i "$SSH_KEY" "$VM" "$@" </dev/null; }
 
 [[ -f "$MAP" ]] || die "missing $MAP"
+
+# Pull the latest image tags that CI pushed after build_services.sh. Without this, a deploy
+# after a CI build uses stale local tags and docker pull fails with "not found".
+if git -C "$ROOT/Deployment" diff --quiet 2>/dev/null; then
+    git -C "$ROOT/Deployment" pull --rebase --quiet origin main 2>/dev/null || true
+fi
+
 [[ -d "$VERSIONS_DIR" ]] || die "missing $VERSIONS_DIR -- publish an image first"
 [[ -n "${REGISTRY:-}" ]] || die "REGISTRY is not set"
 ROLLBACK=false
