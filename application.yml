@@ -55,7 +55,7 @@ logging:
     name: logs/${spring.application.name}.log
   pattern:
     level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
-    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} %5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}] [%t] %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX,UTC} %5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}] [%t] %logger{36} - %msg%n"
   logback:
     rollingpolicy:
       max-file-size: 10MB
@@ -85,7 +85,6 @@ r2:
 # The two MUST share the same value or every tracking pixel is rejected.
 # Override with AUCTION_TOKEN_SECRET in every non-dev environment.
 platform:
-  business-zone: ${PLATFORM_BUSINESS_ZONE:UTC}
   auction:
     token-secret: ${AUCTION_TOKEN_SECRET:}
 

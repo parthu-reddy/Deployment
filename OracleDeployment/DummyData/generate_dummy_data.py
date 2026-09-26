@@ -62,8 +62,8 @@ for i, brand_name in enumerate(brand_names):
         'id': brand_id,
         'owner_id': owner_id,
         'name': brand_name,
-        'created_at': '2026-01-01 00:00:00',
-        'updated_at': '2026-01-01 00:00:00'
+        'created_at': '2026-01-01 00:00:00+00',
+        'updated_at': '2026-01-01 00:00:00+00'
     })
     
     # 10 categories per brand
@@ -157,7 +157,9 @@ with open("dummy_data.sql", "w") as f:
         
     for o in outlets:
         # Use ST_SetSRID(ST_Point(lng, lat), 4326)
-        f.write(f"INSERT INTO outlets (id, brand_id, name, location, cuisine, rating, reviews_count, banner_url) VALUES ('{o['id']}', '{o['brand_id']}', '{o['name']}', ST_SetSRID(ST_Point({o['lng']}, {o['lat']}), 4326), '{o['cuisine']}', {o['rating']}, {o['reviews_count']}, {get_image_sql_val()});\n")
+        # Every outlet names its IANA time zone (NOT NULL since TimezoneCorrectness_2026-09-25); the
+        # generated outlets are all around Bengaluru.
+        f.write(f"INSERT INTO outlets (id, brand_id, name, location, cuisine, rating, reviews_count, banner_url, time_zone) VALUES ('{o['id']}', '{o['brand_id']}', '{o['name']}', ST_SetSRID(ST_Point({o['lng']}, {o['lat']}), 4326), '{o['cuisine']}', {o['rating']}, {o['reviews_count']}, {get_image_sql_val()}, 'Asia/Kolkata');\n")
         
     for c in categories:
         f.write(f"INSERT INTO categories (id, brand_id, name, description, active) VALUES ('{c['id']}', '{c['brand_id']}', '{c['name']}', '{c['description']}', true);\n")

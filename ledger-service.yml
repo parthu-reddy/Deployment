@@ -53,4 +53,8 @@ management:
       exposure:
         include: health,info,metrics,prometheus
 
-
+# The zone the ledger's books close in: which day reconciliation counts an entry, payment or order
+# against, and when the nightly run fires (AccountingCalendar). Required and without a default: a ledger
+# that doesn't know its zone must not start. RandomDocuments/TimezoneCorrectness_2026-09-25.
+platform:
+  accounting-zone: ${PLATFORM_ACCOUNTING_ZONE}

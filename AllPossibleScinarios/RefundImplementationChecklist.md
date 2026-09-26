@@ -225,7 +225,7 @@ Each state handler that sets `requiresRefund = true` is verified.
 | 10.5 | `RefundRetrySweeper` has max retry limit | Same sweeper | ❌ NOT IMPLEMENTED | **No retry counter.** Sweeper will retry REFUND_FAILED intents **indefinitely** every 5 minutes until it succeeds. No cap or escalation to admin after N failures. |
 | 10.6 | Wallet consumer Kafka retry | `GenericWalletEventConsumer @RetryableTopic` | ✅ IMPLEMENTED | 3 attempts, 1s/2s/4s backoff |
 | 10.7 | Wallet DLQ handler | Same consumer | ✅ IMPLEMENTED | `handleDltWalletEvent()` |
-| 10.8 | Admin DLQ retry endpoint (OrderEventConsumer) | `AdminDlqController` | ✅ IMPLEMENTED | `POST /api/v1/internal/admin/orders/dlq/retry` — republishes to main topic |
+| 10.8 | Admin DLQ retry endpoint (OrderEventConsumer) | `AdminDlqController` | ✅ IMPLEMENTED | `POST /api/v1/internal/admin/orders/dlq/retry` with `{dltTopic, partition, offset}` — reads that DLT record and replays it to its original topic with its own key, value and headers (`DeadLetterReplayer`, 2026-09-25; the old JSON-body retry dropped `eventType` and every typed listener ignored it) |
 | 10.9 | Payment service DLQ retry endpoint | N/A | ❌ NOT IMPLEMENTED | No admin endpoint to manually re-trigger failed payment refund events that landed in DLQ |
 | 10.10 | Wallet service DLQ retry endpoint | N/A | ❌ NOT IMPLEMENTED | No admin endpoint to manually re-trigger failed wallet refund events |
 
@@ -266,7 +266,7 @@ Each state handler that sets `requiresRefund = true` is verified.
 | 13.1 | Admin cancel endpoint exists | `AdminOrderManualController.cancelOrder()` | ⚠️ RESTRICTED | Only allows cancel for `MANUAL_INTERVENTION_REQUIRED` delivery status. Admin **cannot** cancel orders in other states via this endpoint. |
 | 13.2 | Admin cancel publishes `ORDER_CANCELLED_BY_ADMIN` | Same endpoint | ✅ IMPLEMENTED | Published to Kafka `TOPIC_ORDER_EVENTS` |
 | 13.3 | Admin manual driver assignment | `AdminOrderManualController.assignDriver()` | ✅ IMPLEMENTED | Publishes `FORCE_ASSIGN_DRIVER` event |
-| 13.4 | Admin DLQ event replay | `AdminDlqController.retryDlqEvent()` | ✅ IMPLEMENTED | Republishes event to main `TOPIC_ORDER_EVENTS` |
+| 13.4 | Admin DLQ event replay | `AdminDlqController.retryDlqEvent()` | ✅ IMPLEMENTED | Replays the DLT record at the given coordinates to the topic named in its `kafka_original-topic` / `kafka_dlt-original-topic` header |
 | 13.5 | Admin endpoint to cancel ANY order (non-MANUAL_INTERVENTION) | N/A | ❌ NOT IMPLEMENTED | Current admin cancel is gated by `MANUAL_INTERVENTION_REQUIRED`. No "force cancel" endpoint for orders in `PREPARING`, `ACCEPTED`, etc. The state machine has `handleOrderCancelledByAdmin()` handlers, but no HTTP API to trigger them for arbitrary states. |
 | 13.6 | Admin endpoint to manually trigger refund for stuck orders | N/A | ❌ NOT IMPLEMENTED | No endpoint to re-trigger refund for an order where the automated flow failed and the refund sweeper isn't picking it up |
 | 13.7 | Admin RBAC protection | All admin endpoints | ✅ IMPLEMENTED | `@PreAuthorize("hasRole('ADMIN')")` on all admin endpoints |
