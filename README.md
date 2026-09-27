@@ -44,6 +44,7 @@ are already current, dummy data 3m14s.
 | | |
 |---|---|
 | `deploy.sh <service>...` | pull and start on the VM (what `ship.sh` calls) |
+| `deploy.sh --sync-compose [--fresh] <service>...` | explicitly sync Compose, then recreate selected services when wiring changed |
 | `deploy.sh --rollback <service>` | back to the previous tag |
 | `publish.sh <service>...` | build and push images only |
 | `reconcile.sh` | declared vs running, plus image drift |
@@ -51,7 +52,10 @@ are already current, dummy data 3m14s.
 
 The VM builds nothing — it holds only this `Deployment/` directory and pulls images from OCIR.
 Config YAMLs are the exception: `config-service` bind-mounts this directory. Use `publish-config.sh`
-to sync changes and safely restart only the services that need to read them.
+to sync changes and safely restart only the services that need to read them. Compose is separate:
+`deploy.sh` refuses service deployment when its local and remote copies differ; use
+`--sync-compose --fresh` for the affected service. The full clean-deploy script performs that sync
+before starting any container.
 
 ---
 

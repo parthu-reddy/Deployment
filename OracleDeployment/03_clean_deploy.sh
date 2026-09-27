@@ -80,6 +80,13 @@ fi
 echo "==> syncing REGISTRY and image tags into the VM's .env"
 "$DEPLOY/deploy.sh" --sync-env
 
+# docker-compose.yml is versioned deployment configuration, but publish-config.sh intentionally
+# excludes it. Sync it explicitly before any `docker compose` command so newly wired environment
+# variables (for example ReviewsService's identity-signing secret) actually reach recreated
+# containers. deploy.sh verifies the local/remote hashes on every later service wave.
+echo "==> syncing docker-compose.yml to the VM"
+"$DEPLOY/deploy.sh" --sync-compose
+
 echo "==> starting infrastructure: $INFRA"
 remote "cd '$REMOTE' && docker compose up -d $INFRA"
 

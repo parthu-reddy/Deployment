@@ -3,6 +3,7 @@
 # Deploy one or more services to the VM. Pulls a tagged image and brings the container up.
 #
 #   Deployment/deploy.sh customer-service [more-services...]
+#   Deployment/deploy.sh --sync-compose --fresh reviews-service
 #
 # It does NOT build, rsync source, or run Maven. Images come from the registry, tagged by
 # publish.sh. See RandomDocuments/DeploymentRedesign_2026-08-29/Phase2_SingleDeployPath.
@@ -36,13 +37,13 @@ if git -C "$ROOT/Deployment" diff --quiet 2>/dev/null; then
     git -C "$ROOT/Deployment" pull --rebase --quiet origin main 2>/dev/null || true
 fi
 
-[[ -d "$VERSIONS_DIR" ]] || die "missing $VERSIONS_DIR -- publish an image first"
-[[ -n "${REGISTRY:-}" ]] || die "REGISTRY is not set"
 ROLLBACK=false
 SYNC_ENV=false
+SYNC_COMPOSE=false
 FRESH=false
 if [[ "${1:-}" == "--rollback" ]]; then ROLLBACK=true; shift; fi
 if [[ "${1:-}" == "--sync-env" ]]; then SYNC_ENV=true; shift; fi
+if [[ "${1:-}" == "--sync-compose" ]]; then SYNC_COMPOSE=true; shift; fi
 # --fresh recreates the container instead of reusing one that already matches. Use it when the
 # container itself is suspect (bad state, half-applied config); it does NOT touch volumes, so the
 # database survives -- wiping data is dummy-data.sh's job.
@@ -127,8 +128,8 @@ if [[ "${1:-}" == "--config" ]]; then
     exit 0
 fi
 
-[[ $# -gt 0 || "$SYNC_ENV" == true ]] \
-    || die "usage: deploy.sh [--rollback <service> | --sync-env | --fresh | --config <config.yml>] <compose-service>..."
+[[ $# -gt 0 || "$SYNC_ENV" == true || "$SYNC_COMPOSE" == true ]] \
+    || die "usage: deploy.sh [--rollback <service> | --sync-env | --sync-compose [--fresh] | --fresh | --config <config.yml>] <compose-service>..."
 
 valid() { awk -F'\t' '!/^#/ && NF>=2 {print $2}' "$MAP"; }
 
@@ -165,10 +166,43 @@ persist_env() {   # env-string
 }
 
 if [[ "$SYNC_ENV" == true ]]; then
+    [[ -d "$VERSIONS_DIR" ]] || die "missing $VERSIONS_DIR -- publish an image first"
+    [[ -n "${REGISTRY:-}" ]] || die "REGISTRY is not set"
     echo "==> syncing REGISTRY and image tags into the VM's .env"
     persist_env "$(versions_envs)"
     exit 0
 fi
+
+sync_compose() {
+    local source="$ROOT/Deployment/docker-compose.yml"
+    local remote_tmp="/tmp/food-delivery-docker-compose.$$"
+    echo "==> syncing docker-compose.yml to the VM"
+    scp -q -o StrictHostKeyChecking=no -o ConnectTimeout=20 -i "$SSH_KEY" \
+        "$source" "$VM:$remote_tmp"
+    remote "install -m 0644 '$remote_tmp' '$REMOTE/docker-compose.yml' && rm -f '$remote_tmp'"
+}
+
+compose_matches_remote() {
+    local local_hash remote_hash
+    local_hash="$(shasum -a 256 "$ROOT/Deployment/docker-compose.yml" | awk '{print $1}')"
+    remote_hash="$(remote "sha256sum '$REMOTE/docker-compose.yml' 2>/dev/null | cut -d' ' -f1" || true)"
+    [[ -n "$remote_hash" && "$local_hash" == "$remote_hash" ]]
+}
+
+if [[ "$SYNC_COMPOSE" == true ]]; then
+    sync_compose
+elif ! compose_matches_remote; then
+    die "local docker-compose.yml differs from the VM. Refusing a false-success deploy with stale environment wiring.
+Sync it explicitly and recreate the selected service:
+  Deployment/deploy.sh --sync-compose --fresh <compose-service>"
+fi
+
+if [[ $# -eq 0 ]]; then
+    echo "==> docker-compose.yml synced; no services requested"
+    exit 0
+fi
+[[ -d "$VERSIONS_DIR" ]] || die "missing $VERSIONS_DIR -- publish an image first"
+[[ -n "${REGISTRY:-}" ]] || die "REGISTRY is not set"
 module_for() { awk -F'\t' -v s="$1" '!/^#/ && $2==s {print $1; f=1} END{exit !f}' "$MAP"; }
 
 # Classify the migrations introduced between two tags of a service.

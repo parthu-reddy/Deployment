@@ -57,9 +57,11 @@ def main():
     example = DEPLOY_DIR / ".env.example"
     check("ENV-EXAMPLE-EXISTS", example.is_file(), f"{example} not found")
     if example.is_file() and COMPOSE.is_file():
+        compose_text = COMPOSE.read_text(encoding="utf-8")
+        compose_for_vars = re.sub(r"#[^\n]*", "", compose_text)
         declared = set(re.findall(r"^([A-Z0-9_]+)=", example.read_text(encoding="utf-8"), re.M))
         used = set()
-        for m in re.finditer(r"\$\{([A-Z0-9_]+)(:-[^}]*)?\}", COMPOSE.read_text(encoding="utf-8")):
+        for m in re.finditer(r"\$\{([A-Z0-9_]+)(:-[^}]*)?\}", compose_for_vars):
             # <SVC>_TAG is injected by deploy.sh from Deployment/.versions, which is deployment
             # state rather than configuration. Declaring it in .env.example would invite someone
             # to hand-edit the tag a container runs.
@@ -69,6 +71,19 @@ def main():
         check("COMPOSE-VARS-DECLARED", not missing,
               f"{len(missing)} var(s) have no default and no .env.example entry: "
               + ", ".join(missing[:6]))
+
+        reviews = re.search(r"^  reviews-service:\n(?P<body>(?:^(?!  [a-z0-9_-]+:).*$\n?)*)",
+                            compose_text, re.M)
+        check("REVIEWS-IDENTITY-SECRET-WIRED",
+              reviews is not None and
+              "IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}" in reviews.group("body"),
+              "reviews-service does not receive the gateway identity HMAC secret")
+
+    clean_deploy = DEPLOY_DIR / "OracleDeployment/03_clean_deploy.sh"
+    clean_body = clean_deploy.read_text(encoding="utf-8") if clean_deploy.is_file() else ""
+    check("FULL-DEPLOY-SYNCS-COMPOSE",
+          'deploy.sh" --sync-compose' in clean_body,
+          "the full deployment can start containers from a stale remote docker-compose.yml")
 
     # 3. No tracked file holds a real value for a secret key.
     leaked = []
