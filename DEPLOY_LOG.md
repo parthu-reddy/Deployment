@@ -1239,3 +1239,6 @@
 | 2026-09-27T06:00:30Z | restaurant-service | bd7b8534ddde4222735d251c0f281532e7e74206 | - | false | parthudhanireddy@gmail.com |
 | 2026-09-27T06:00:30Z | reviews-service | 88e54705b9b53df8595ef010810d649a9bf4182d | - | false | parthudhanireddy@gmail.com |
 | 2026-09-27T06:00:30Z | wallet-service | 4f4ba617c8037b21c333610725df0901ed35cd4b | - | false | parthudhanireddy@gmail.com |
+| 2026-09-27T09:54:27Z | config-service | 894d5c1dab4708b5dbe229977b6a5510b72dc0c4 | - | false | parthudhanireddy@gmail.com |
+| 2026-09-27T09:54:27Z | eureka-server-1 | 65c9b031cb2e23667c61ace32b8bf141a9cd0991 | - | false | parthudhanireddy@gmail.com |
+| 2026-09-27T09:54:27Z | eureka-server-2 | 65c9b031cb2e23667c61ace32b8bf141a9cd0991 | - | false | parthudhanireddy@gmail.com |
