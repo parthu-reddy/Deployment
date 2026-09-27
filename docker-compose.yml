@@ -1055,6 +1055,7 @@ services:
     environment:
     - SERVER_PORT=8099
     - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+    - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
     - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASS}
     - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
@@ -1090,5 +1091,4 @@ volumes:
   shared_pgdata: null
   shared_redis_data: null
   shared_clickhouse_data: null
-
 
