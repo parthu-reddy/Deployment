@@ -1,0 +1,13 @@
+# Dev tests reuse seeded phone numbers across many cases, so auth throttles need a larger budget.
+identity:
+  auth:
+    bucket:
+      capacity: 1000000
+      refill-tokens: 1000000
+      refill-duration: PT1M
+    initiate:
+      max-attempts: 1000000
+      window-minutes: 10
+    verify:
+      max-attempts: 1000000
+      window-minutes: 5

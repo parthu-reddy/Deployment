@@ -1,0 +1,7 @@
+# The shared Dev profile is used by the high-volume UI and integration test runs.
+common:
+  rate-limit:
+    dev:
+      capacity: 1000000
+      refill-tokens: 1000000
+      refill-duration: PT1M

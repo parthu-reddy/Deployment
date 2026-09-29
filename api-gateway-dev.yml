@@ -1,0 +1,6 @@
+# Large Dev test batches share an IP-based gateway key. Keep these finite while avoiding
+# test failures from the conservative production route defaults.
+gateway:
+  rate-limit:
+    replenish-rate: 1000
+    burst-capacity: 10000

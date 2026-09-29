@@ -59,8 +59,8 @@ spring:
         filters:
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 20
-            redis-rate-limiter.burstCapacity: 40
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:20}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:40}
             key-resolver: '#{@ipKeyResolver}'
       - id: restaurant-service
         uri: lb://restaurant-service
@@ -70,8 +70,8 @@ spring:
         filters:
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 20
-            redis-rate-limiter.burstCapacity: 40
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:20}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:40}
             key-resolver: '#{@ipKeyResolver}'
       - id: delivery-service
         uri: lb://delivery-service
@@ -80,8 +80,8 @@ spring:
         filters:
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 20
-            redis-rate-limiter.burstCapacity: 40
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:20}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:40}
             key-resolver: '#{@ipKeyResolver}'
       - id: identity-service
         uri: lb://identity-service
@@ -91,8 +91,8 @@ spring:
         filters:
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 20
-            redis-rate-limiter.burstCapacity: 100
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:20}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:100}
             key-resolver: '#{@ipKeyResolver}'
       - id: payment-service
         uri: lb://payment-service
@@ -106,8 +106,8 @@ spring:
         filters:
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 20
-            redis-rate-limiter.burstCapacity: 40
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:20}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:40}
             key-resolver: '#{@ipKeyResolver}'
       - id: olamaps-proxy
         uri: https://api.olamaps.io
@@ -127,8 +127,8 @@ spring:
         # bucket only has to absorb the cold load. Measured 2026-09-10.
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 100
-            redis-rate-limiter.burstCapacity: 400
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:100}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:400}
             key-resolver: '#{@ipKeyResolver}'
         - RewritePath=/olamaps/(?<segment>.*),/$\{segment}
         - AddRequestParameter=api_key, ${OLA_MAPS_API_KEY:}
@@ -140,8 +140,8 @@ spring:
         filters:
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 20
-            redis-rate-limiter.burstCapacity: 40
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:20}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:40}
             key-resolver: '#{@ipKeyResolver}'
       - id: notification-service
         uri: lb://notification-service
@@ -150,8 +150,8 @@ spring:
         filters:
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 20
-            redis-rate-limiter.burstCapacity: 40
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:20}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:40}
             key-resolver: '#{@ipKeyResolver}'
       - id: government-id-service
         uri: lb://government-id-validation-service
@@ -160,8 +160,8 @@ spring:
         filters:
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 20
-            redis-rate-limiter.burstCapacity: 40
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:20}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:40}
             key-resolver: '#{@ipKeyResolver}'
       - id: ledger-service
         uri: lb://ledger-service
@@ -171,8 +171,28 @@ spring:
         filters:
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 20
-            redis-rate-limiter.burstCapacity: 40
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:20}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:40}
+            key-resolver: '#{@ipKeyResolver}'
+      - id: admin-payment-dlq
+        uri: lb://payment-service
+        predicates:
+        - Path=/api/v1/internal/admin/payments/dlq/**
+        filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:5}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:10}
+            key-resolver: '#{@ipKeyResolver}'
+      - id: admin-wallet-dlq
+        uri: lb://wallet-service
+        predicates:
+        - Path=/api/v1/internal/admin/wallet/dlq/**
+        filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:5}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:10}
             key-resolver: '#{@ipKeyResolver}'
       - id: chat-service
         uri: lb://chat-service
@@ -181,8 +201,8 @@ spring:
         filters:
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 20
-            redis-rate-limiter.burstCapacity: 40
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:20}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:40}
             key-resolver: '#{@ipKeyResolver}'
       - id: chat-service-ws
         uri: lb:ws://chat-service
@@ -191,8 +211,8 @@ spring:
         filters:
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 20
-            redis-rate-limiter.burstCapacity: 40
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:20}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:40}
             key-resolver: '#{@ipKeyResolver}'
 #      - id: ondc-integration-service
 #        uri: lb://ondc-integration-service
@@ -207,8 +227,8 @@ spring:
         filters:
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 20
-            redis-rate-limiter.burstCapacity: 40
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:20}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:40}
             key-resolver: '#{@ipKeyResolver}'
       - id: bidding-engine
         uri: lb://bidding-engine
@@ -217,8 +237,8 @@ spring:
         filters:
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 20
-            redis-rate-limiter.burstCapacity: 40
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:20}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:40}
             key-resolver: '#{@ipKeyResolver}'
       - id: event-tracking-service
         uri: lb://event-tracking-service
@@ -227,8 +247,8 @@ spring:
         filters:
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 20
-            redis-rate-limiter.burstCapacity: 40
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:20}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:40}
             key-resolver: '#{@ipKeyResolver}'
       - id: wallet-service
         uri: lb://wallet-service
@@ -237,8 +257,8 @@ spring:
         filters:
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 20
-            redis-rate-limiter.burstCapacity: 40
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:20}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:40}
             key-resolver: '#{@ipKeyResolver}'
       # Added 2026-09-11. reviews-service has existed and been declared in docker-compose since
       # August, but no route ever pointed at it, so /api/v1/reviews was a 404 from the browser and a
@@ -255,8 +275,8 @@ spring:
         # fails a route that omits this.
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 20
-            redis-rate-limiter.burstCapacity: 40
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:20}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:40}
             key-resolver: '#{@ipKeyResolver}'
       - id: service-docs-customer
         uri: lb://customer-service
@@ -265,8 +285,8 @@ spring:
         filters:
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 20
-            redis-rate-limiter.burstCapacity: 40
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:20}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:40}
             key-resolver: '#{@ipKeyResolver}'
         - RewritePath=/service-docs/customer-service/(.*),/$1
       - id: service-docs-restaurant
@@ -276,8 +296,8 @@ spring:
         filters:
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 20
-            redis-rate-limiter.burstCapacity: 40
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:20}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:40}
             key-resolver: '#{@ipKeyResolver}'
         - RewritePath=/service-docs/restaurant-service/(.*),/$1
       - id: service-docs-delivery
@@ -287,8 +307,8 @@ spring:
         filters:
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 20
-            redis-rate-limiter.burstCapacity: 40
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:20}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:40}
             key-resolver: '#{@ipKeyResolver}'
         - RewritePath=/service-docs/delivery-service/(.*),/$1
       - id: service-docs-identity
@@ -298,8 +318,8 @@ spring:
         filters:
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 20
-            redis-rate-limiter.burstCapacity: 40
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:20}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:40}
             key-resolver: '#{@ipKeyResolver}'
         - RewritePath=/service-docs/identity-service/(.*),/$1
       - id: service-docs-payment
@@ -309,8 +329,8 @@ spring:
         filters:
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 20
-            redis-rate-limiter.burstCapacity: 40
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:20}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:40}
             key-resolver: '#{@ipKeyResolver}'
         - RewritePath=/service-docs/payment-service/(.*),/$1
       - id: service-docs-maps
@@ -320,8 +340,8 @@ spring:
         filters:
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 20
-            redis-rate-limiter.burstCapacity: 40
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:20}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:40}
             key-resolver: '#{@ipKeyResolver}'
         - RewritePath=/service-docs/mapsintegration/(.*),/$1
       - id: service-docs-notification
@@ -331,8 +351,8 @@ spring:
         filters:
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 20
-            redis-rate-limiter.burstCapacity: 40
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:20}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:40}
             key-resolver: '#{@ipKeyResolver}'
         - RewritePath=/service-docs/notification-service/(.*),/$1
       - id: service-docs-ledger
@@ -342,8 +362,8 @@ spring:
         filters:
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 20
-            redis-rate-limiter.burstCapacity: 40
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:20}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:40}
             key-resolver: '#{@ipKeyResolver}'
         - RewritePath=/service-docs/ledger-service/(.*),/$1
       - id: service-docs-chat
@@ -353,8 +373,8 @@ spring:
         filters:
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 20
-            redis-rate-limiter.burstCapacity: 40
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:20}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:40}
             key-resolver: '#{@ipKeyResolver}'
         - RewritePath=/service-docs/chat-service/(.*),/$1
 #      - id: service-docs-ondc
@@ -370,8 +390,8 @@ spring:
         filters:
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 20
-            redis-rate-limiter.burstCapacity: 40
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:20}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:40}
             key-resolver: '#{@ipKeyResolver}'
         - RewritePath=/service-docs/wallet-service/(.*),/$1
       - id: service-docs-campaign
@@ -381,8 +401,8 @@ spring:
         filters:
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 20
-            redis-rate-limiter.burstCapacity: 40
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:20}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:40}
             key-resolver: '#{@ipKeyResolver}'
         - RewritePath=/service-docs/campaign-service/(.*),/$1
       - id: service-docs-bidding
@@ -392,8 +412,8 @@ spring:
         filters:
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 20
-            redis-rate-limiter.burstCapacity: 40
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:20}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:40}
             key-resolver: '#{@ipKeyResolver}'
         - RewritePath=/service-docs/bidding-engine/(.*),/$1
       - id: service-docs-gov-id
@@ -403,8 +423,8 @@ spring:
         filters:
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 20
-            redis-rate-limiter.burstCapacity: 40
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:20}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:40}
             key-resolver: '#{@ipKeyResolver}'
         - RewritePath=/service-docs/government-id-validation-service/(.*),/$1
       - id: service-docs-event
@@ -414,8 +434,8 @@ spring:
         filters:
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 20
-            redis-rate-limiter.burstCapacity: 40
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:20}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:40}
             key-resolver: '#{@ipKeyResolver}'
         - RewritePath=/service-docs/event-tracking-service/(.*),/$1
       - id: service-docs-reviews
@@ -425,8 +445,8 @@ spring:
         filters:
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 20
-            redis-rate-limiter.burstCapacity: 40
+            redis-rate-limiter.replenishRate: ${gateway.rate-limit.replenish-rate:20}
+            redis-rate-limiter.burstCapacity: ${gateway.rate-limit.burst-capacity:40}
             key-resolver: '#{@ipKeyResolver}'
         - RewritePath=/service-docs/reviews-service/(.*),/$1
 eureka:
@@ -542,5 +562,4 @@ springdoc:
       url: /service-docs/event-tracking-service/v3/api-docs
     - name: Reviews Service
       url: /service-docs/reviews-service/v3/api-docs
-
 
