@@ -72,6 +72,32 @@ def main():
 
     check("DRY-RUN", "--dry-run" in body, "no --dry-run; there is no way to see what would ship")
 
+    # A successful config upload must also resolve profile overlays to their actual readers.
+    plan = subprocess.run(
+        ["bash", str(DEPLOY / "deploy.sh"), "--config", "--dry-run",
+         "application-dev.yml", "api-gateway.yml", "api-gateway-dev.yml",
+         "identity-service-dev.yml"],
+        capture_output=True, text=True, timeout=30)
+    plan_text = plan.stdout + plan.stderr
+    restart_line = next((line for line in plan_text.splitlines()
+                         if line.startswith("==> readers to restart sequentially")), "")
+    check("DEV-PROFILE-CONFIG-PLAN",
+          plan.returncode == 0 and all(service in restart_line for service in
+                                      ("customer-service", "identity-service", "api-gateway"))
+          and "eureka-server" not in restart_line
+          and "food-delivery-app-ui" not in restart_line,
+          "Dev profile files must map to config readers, and the shared app overlay must exclude infrastructure and the UI")
+
+    clean_deploy = DEPLOY / "OracleDeployment/03_clean_deploy.sh"
+    clean_body = clean_deploy.read_text(encoding="utf-8") if clean_deploy.is_file() else ""
+    check("FULL-DEPLOY-SYNCS-CONFIG",
+          '"$DEPLOY/publish-config.sh" --all' in clean_body,
+          "the Oracle full-deploy path does not sync the Config Server YAML bundle")
+    check("FULL-DEPLOY-REFRESHES-CONFIG-READERS",
+          '"$DEPLOY/deploy.sh" --fresh $WAVE1' in clean_body
+          and '"$DEPLOY/deploy.sh" --fresh $WAVE2' in clean_body,
+          "the Oracle full-deploy path must recreate its service waves after publishing config")
+
     if remote:
         # Local and VM must agree on every served config file. A mismatch means someone's change
         # did not land -- the exact silent failure this phase addresses.

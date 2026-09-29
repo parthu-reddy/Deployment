@@ -25,9 +25,16 @@ Deployment/OracleDeployment/03_clean_deploy.sh --wipe   # destroys volumes too, 
 **3. Config:**
 
 ```bash
-Deployment/publish-config.sh <service>.yml      # ship a config and restart its consumers
-Deployment/publish-config.sh --all              # ship all configs and restart all consumers
+Deployment/deploy.sh --config --dry-run application-dev.yml api-gateway.yml api-gateway-dev.yml identity-service-dev.yml
+Deployment/deploy.sh --config application-dev.yml api-gateway.yml api-gateway-dev.yml identity-service-dev.yml
 ```
+
+`deploy.sh --config` checks that the requested profile matches the Oracle VM, publishes each file
+with checksum verification, then restarts its config consumers one at a time and waits for health.
+`application-dev.yml` is shared by the application services, so it triggers a reviewed restart of
+all Spring config clients. Profile-specific service files such as `api-gateway-dev.yml` map to the
+same consumer as their base file. `publish-config.sh` is the lower-level upload-only command; it
+does not restart services.
 
 **4. Dummy data:**
 
@@ -51,8 +58,10 @@ are already current, dummy data 3m14s.
 | `SCHEMA_POLICY.md` | migrations are immutable and forward-only |
 
 The VM builds nothing — it holds only this `Deployment/` directory and pulls images from OCIR.
-Config YAMLs are the exception: `config-service` bind-mounts this directory. Use `publish-config.sh`
-to sync changes and safely restart only the services that need to read them. Compose is separate:
+Config YAMLs are separate from images: `config-service` bind-mounts this directory. Use
+`deploy.sh --config` to sync config changes and restart the consumers. The full clean-deploy script
+publishes the config bundle and recreates its service waves so they load the current profile files.
+Compose is separate:
 `deploy.sh` refuses service deployment when its local and remote copies differ; use
 `--sync-compose --fresh` for the affected service. The full clean-deploy script performs that sync
 before starting any container.

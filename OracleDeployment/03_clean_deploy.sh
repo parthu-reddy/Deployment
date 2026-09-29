@@ -87,6 +87,11 @@ echo "==> syncing REGISTRY and image tags into the VM's .env"
 echo "==> syncing docker-compose.yml to the VM"
 "$DEPLOY/deploy.sh" --sync-compose
 
+# Config Server reads these YAML files from the VM's bind-mounted Deployment directory. Images do
+# not carry them, so ship and checksum the complete config bundle before starting any consumers.
+echo "==> syncing Spring Cloud config YAMLs to the VM"
+"$DEPLOY/publish-config.sh" --all
+
 echo "==> starting infrastructure: $INFRA"
 remote "cd '$REMOTE' && docker compose up -d $INFRA"
 
@@ -99,10 +104,10 @@ done; echo 'postgres did not become ready'; exit 1"
 # deploy.sh pulls, starts, waits for health, and then verifies each container actually ended up on
 # the image it was told to run -- the check that makes a silent no-op deploy impossible.
 echo "==> wave 1: configuration and discovery"
-"$DEPLOY/deploy.sh" $WAVE1
+"$DEPLOY/deploy.sh" --fresh $WAVE1
 
 echo "==> wave 2: application services (strict event chain is ordered producer-first by deploy.sh)"
-"$DEPLOY/deploy.sh" $WAVE2
+"$DEPLOY/deploy.sh" --fresh $WAVE2
 
 echo "==> reconciling declared against running"
 "$DEPLOY/reconcile.sh"

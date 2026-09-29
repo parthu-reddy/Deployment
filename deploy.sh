@@ -67,59 +67,136 @@ wait_for_health() {
 }
 
 config_deploy() {
-    [[ $# -gt 0 ]] || die "usage: deploy.sh --config <config.yml>..."
-    
-    # 1. Ship configs
-    "$ROOT/Deployment/publish-config.sh" "$@" || exit $?
-    
-    # 2. Derive services
-    local svcs=() all=false
-    for conf in "$@"; do
-        if [[ "$conf" == "application.yml" ]]; then
+    local dry_run=false assume_yes=false all=false
+    local configs=() requested_services=() unique_services=() restart_order=()
+    local arg conf stem service name active_profile file_profile duplicate found
+
+    for arg in "$@"; do
+        case "$arg" in
+            --dry-run) dry_run=true ;;
+            --yes) assume_yes=true ;;
+            *) configs+=("$arg") ;;
+        esac
+    done
+    [[ -n "${configs[*]:-}" ]] || die "usage: deploy.sh --config [--dry-run] [--yes] <config.yml>..."
+
+    # Compose defaults the Oracle stack to Dev. Respect an explicit profile override when
+    # supplied, and reject a profile overlay for a different profile before publishing it.
+    active_profile="${SPRING_PROFILES_ACTIVE:-dev}"
+    active_profile="${active_profile%%,*}"
+    [[ -n "$active_profile" ]] || active_profile=dev
+
+    # Resolve every file before publishing any of them. Profile overlays use the same service
+    # identity as their base file (for example api-gateway-dev.yml -> api-gateway).
+    for conf in "${configs[@]}"; do
+        [[ "$conf" != */* && "$conf" == *.yml ]] || die "config must be a top-level .yml filename: $conf"
+        [[ -f "$ROOT/Deployment/$conf" ]] || die "$conf not found in Deployment/"
+        stem="${conf%.yml}"
+
+        if [[ "$stem" == "application" ]]; then
             all=true
-        elif [[ "$conf" == "api-gateway.yml" ]]; then
-            svcs+=("api-gateway")
-        else
-            # Extract spring.application.name using bash native reading
-            local name=""
-            while IFS= read -r line; do
-                if [[ "$line" =~ ^[[:space:]]*name:[[:space:]]*(.+)$ ]]; then
-                    name="${BASH_REMATCH[1]}"
-                    break
-                fi
-            done < "$ROOT/Deployment/$conf"
-            [[ -n "$name" ]] && svcs+=("$name")
+            continue
+        elif [[ "$stem" == application-* ]]; then
+            file_profile="${stem#application-}"
+            [[ "$file_profile" == "$active_profile" ]] \
+                || die "$conf targets profile '$file_profile', but this deploy targets '$active_profile'"
+            all=true
+            continue
         fi
-    done
-    
-    if [[ "$all" == true ]]; then
-        svcs=()
-        while IFS=$'\t' read -r _ s; do
-            [[ "$s" != "eureka-server" && "$s" != "config-service" ]] && svcs+=("$s")
+
+        name=""
+        while IFS= read -r service; do
+            if [[ "$stem" == "$service" || "$stem" == "$service-$active_profile" ]]; then
+                name="$service"
+                break
+            fi
         done < <(valid)
-        echo "WARNING: application.yml changed. This will restart EVERY application service."
-        read -p "Continue? [y/N] " confirm </dev/tty
-        [[ "${confirm,,}" == "y" ]] || exit 1
-    fi
-    
-    [[ ${#svcs[@]} -eq 0 ]] && return 0
-    
-    # Deduplicate svcs array (Bash 3.2 compatible)
-    local uniq_svcs=()
-    local s us found
-    for s in "${svcs[@]}"; do
-        found=0
-        for us in "${uniq_svcs[@]:-}"; do
-            if [[ "$s" == "$us" ]]; then found=1; break; fi
-        done
-        [[ $found -eq 0 ]] && uniq_svcs+=("$s")
+
+        # A few legacy config filenames differ from their compose service names. Preserve the
+        # spring.application.name fallback for those, while keeping profile overlays filename-safe.
+        if [[ -z "$name" ]]; then
+            name="$(awk '
+                /^spring:[[:space:]]*$/ { in_spring=1; next }
+                in_spring && /^[^[:space:]#]/ { in_spring=0; in_application=0 }
+                in_spring && /^[[:space:]]+application:[[:space:]]*$/ { in_application=1; next }
+                in_spring && in_application && /^[[:space:]]+name:[[:space:]]*/ {
+                    sub(/^[[:space:]]+name:[[:space:]]*/, "")
+                    sub(/[[:space:]]+#.*/, "")
+                    gsub(/^[[:space:]]+|[[:space:]]+$/, "")
+                    print
+                    exit
+                }
+            ' "$ROOT/Deployment/$conf")"
+        fi
+
+        [[ -n "$name" ]] || die "cannot map $conf to a config consumer; refusing to publish without a restart target"
+        valid | grep -Fxq "$name" || die "$conf maps to '$name', which is not a compose service in service-map.tsv"
+        requested_services+=("$name")
     done
-    
-    # 3. Restart and wait
-    echo "==> restarting config consumers"
-    remote "cd '$REMOTE' && docker compose restart ${uniq_svcs[*]}"
-    wait_for_health "${uniq_svcs[@]}"
-    echo "==> config restart complete"
+
+    if [[ "$all" == true ]]; then
+        requested_services=()
+        while IFS= read -r service; do
+            case "$service" in
+                config-service|eureka-server-*|food-delivery-app-ui) continue ;;
+            esac
+            requested_services+=("$service")
+        done < <(valid)
+    fi
+
+    # Deduplicate while retaining service-map order, then keep Config Server first and the
+    # public API gateway last. Restarting one at a time avoids the CPU spike from a fleet restart.
+    for service in "${requested_services[@]}"; do
+        duplicate=false
+        for found in "${unique_services[@]:-}"; do
+            [[ "$found" == "$service" ]] && duplicate=true && break
+        done
+        [[ "$duplicate" == true ]] || unique_services+=("$service")
+    done
+    for service in "${unique_services[@]}"; do
+        [[ "$service" == "config-service" ]] && restart_order+=("$service")
+    done
+    for service in "${unique_services[@]}"; do
+        [[ "$service" == "config-service" || "$service" == "api-gateway" ]] && continue
+        restart_order+=("$service")
+    done
+    for service in "${unique_services[@]}"; do
+        [[ "$service" == "api-gateway" ]] && restart_order+=("$service")
+    done
+
+    echo "==> config files: ${configs[*]}"
+    echo "==> readers to restart sequentially (${#restart_order[@]}): ${restart_order[*]}"
+
+    if [[ "$dry_run" == true ]]; then
+        "$ROOT/Deployment/publish-config.sh" --dry-run "${configs[@]}"
+        echo "==> dry-run complete; no files were published and no services restarted"
+        return 0
+    fi
+
+    # Do not send a Dev overlay to a differently profiled Oracle stack.
+    local remote_profile
+    remote_profile="$(remote "cd '$REMOTE' && awk -F= '\$1 == \"SPRING_PROFILES_ACTIVE\" {print \$2}' .env | tail -n 1")"
+    remote_profile="${remote_profile%%,*}"
+    [[ -n "$remote_profile" ]] || remote_profile=dev
+    [[ "$remote_profile" == "$active_profile" ]] \
+        || die "Oracle profile is '$remote_profile', but this deploy targets '$active_profile'; no config was published"
+
+    if [[ "$all" == true && "$assume_yes" != true ]]; then
+        echo "WARNING: shared application config changed. This restarts every config-consuming application service, one at a time."
+        [[ -r /dev/tty ]] || die "no interactive terminal; inspect --dry-run output, then rerun with --yes"
+        read -r -p "Continue? [y/N] " confirm </dev/tty
+        [[ "${confirm,,}" == "y" ]] || die "aborted before publishing config"
+    fi
+
+    # Publish only after the target set and Oracle profile have been validated.
+    "$ROOT/Deployment/publish-config.sh" "${configs[@]}"
+
+    for service in "${restart_order[@]}"; do
+        echo "==> restarting config consumer: $service"
+        remote "cd '$REMOTE' && docker compose restart '$service'"
+        wait_for_health "$service"
+    done
+    echo "==> config publish and restart complete"
 }
 
 if [[ "${1:-}" == "--config" ]]; then
@@ -129,7 +206,7 @@ if [[ "${1:-}" == "--config" ]]; then
 fi
 
 [[ $# -gt 0 || "$SYNC_ENV" == true || "$SYNC_COMPOSE" == true ]] \
-    || die "usage: deploy.sh [--rollback <service> | --sync-env | --sync-compose [--fresh] | --fresh | --config <config.yml>] <compose-service>..."
+    || die "usage: deploy.sh [--rollback <service> | --sync-env | --sync-compose [--fresh] | --fresh | --config [--dry-run] [--yes] <config.yml>...] <compose-service>..."
 
 valid() { awk -F'\t' '!/^#/ && NF>=2 {print $2}' "$MAP"; }
 
