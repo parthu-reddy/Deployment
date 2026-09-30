@@ -773,6 +773,7 @@ services:
     - EUREKA_PASSWORD=${EUREKA_PASSWORD:-admin}
     - SPRING_CONFIG_IMPORT=optional:configserver:http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
+    - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - DB_URL=jdbc:postgresql://postgres:5432/ondc_db
     - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
