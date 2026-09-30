@@ -85,7 +85,10 @@ r2:
 # The two MUST share the same value or every tracking pixel is rejected.
 # Override with AUCTION_TOKEN_SECRET in every non-dev environment.
 platform:
+  fleet:
+    # Config Service resolves this once from its non-secret environment and shares the same
+    # canonical operating scope with Delivery, Restaurant, and Customer services.
+    allowed-city-ids: ${FLEET_ALLOWED_CITY_IDS:BLR}
   auction:
     token-secret: ${AUCTION_TOKEN_SECRET:}
-
 

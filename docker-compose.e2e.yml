@@ -1,0 +1,21 @@
+# Explicit, parked overlay for Java browser E2E runs.
+#
+# It is never included by `docker compose` against the base file. The base deployment neither
+# activates the e2e Spring profile nor enables OTP inspection or injects E2E_RUNNER_SECRET into any
+# container. Activation needs an explicit shell `E2E_OTP_ENABLED=true`; the Vault helper rejects
+# `--with-e2e` without it. The ignored, mode-600 .env.e2e file is materialised only then by
+# OracleDeployment/fetch_secrets_from_vault.sh --with-e2e.
+services:
+  api-gateway:
+    env_file:
+      - .env.e2e
+    environment:
+      SPRING_PROFILES_ACTIVE: dev,e2e
+      E2E_OTP_ENABLED: ${E2E_OTP_ENABLED:-false}
+
+  identity-service:
+    env_file:
+      - .env.e2e
+    environment:
+      SPRING_PROFILES_ACTIVE: dev,e2e
+      E2E_OTP_ENABLED: ${E2E_OTP_ENABLED:-false}

@@ -10,7 +10,7 @@
 # anything; run `deploy.sh --config <service>` to bounce the readers.
 #
 # Excluded from shipping (never rsynced regardless of --all):
-#   docker-compose.yml, .env, .env.local, node_modules/, __pycache__/, *.log
+#   docker-compose*.yml, .env, .env.local, node_modules/, __pycache__/, *.log
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -25,13 +25,15 @@ REMOTE_PATH_MD5="/home/ubuntu/Food Delivery.nosync/Deployment"
 die() { echo "publish-config: $*" >&2; exit 1; }
 remote() { ssh -o StrictHostKeyChecking=no -o ConnectTimeout=20 -i "$SSH_KEY" "$VM" "$@" </dev/null; }
 
-# Never ship these; .env is written on the VM by the vault script, node_modules and __pycache__
-# are build artefacts, *.log is transient.
-EXCLUDED_NAMES="docker-compose.yml .env .env.local"
+# Never ship Compose definitions through the Config Server path: deploy.sh --sync-compose owns
+# every docker-compose variant. .env is written on the VM by the Vault helper, node_modules and
+# __pycache__ are build artefacts, and *.log is transient.
+EXCLUDED_NAMES=".env .env.local"
 EXCLUDED_DIRS="node_modules __pycache__ .npm-cache"
 
 is_excluded() {
     local name="$1"
+    [[ "$name" == docker-compose*.yml ]] && return 0
     for ex in $EXCLUDED_NAMES; do [[ "$name" == "$ex" ]] && return 0; done
     for ex in $EXCLUDED_DIRS; do [[ "$name" == "$ex" ]] && return 0; done
     [[ "$name" == *.log ]] && return 0
@@ -49,7 +51,7 @@ done
 set -- "${ARGS[@]+"${ARGS[@]}"}"
 
 if [[ "${1:-}" == "--all" ]]; then
-    # All YAML except docker-compose.yml and excluded files
+    # All Config Server YAML except Compose definitions and excluded files.
     TARGETS=()
     while IFS= read -r f; do
         is_excluded "$f" || TARGETS+=("$f")

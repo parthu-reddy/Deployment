@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   jaeger:
     image: jaegertracing/all-in-one:1.50
@@ -124,6 +123,7 @@ services:
     - SPRING_CONFIG_IMPORT=optional:file:/config/config-service.yml
     - CONFIG_USER=${CONFIG_USER}
     - CONFIG_PASSWORD=${CONFIG_PASSWORD}
+    - FLEET_ALLOWED_CITY_IDS=${FLEET_ALLOWED_CITY_IDS:-BLR}
     - EUREKA_CLIENT_ENABLED=false
     healthcheck:
       test:
@@ -508,8 +508,9 @@ services:
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - OLA_MAPS_API_KEY=${OLA_MAPS_API_KEY}
     - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
-    - ALLOWED_ORIGIN_PATTERNS=${ALLOWED_ORIGIN_PATTERNS}
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
+    - DEV_OTP_ENABLED=${DEV_OTP_ENABLED:-false}
+    - E2E_OTP_ENABLED=${E2E_OTP_ENABLED:-false}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - JWT_PUBLIC_KEY_PATH=file:/certs/public.pem
     - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-1:8761/eureka/,http://${EUREKA_USER:-admin}:${EUREKA_PASSWORD:-admin}@eureka-server-2:8761/eureka/
@@ -555,6 +556,8 @@ services:
     - IDENTITY_HMAC_SECRET=${IDENTITY_HMAC_SECRET}
     - AUCTION_TOKEN_SECRET=${AUCTION_TOKEN_SECRET}
     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
+    - DEV_OTP_ENABLED=${DEV_OTP_ENABLED:-false}
+    - E2E_OTP_ENABLED=${E2E_OTP_ENABLED:-false}
     - CONFIG_SERVER_URL=http://${CONFIG_USER}:${CONFIG_PASSWORD}@config-service:8888
     - JWT_PRIVATE_KEY_PATH=file:/certs/private.pem
     - DB_URL=jdbc:postgresql://postgres:5432/identity_db
@@ -1091,4 +1094,3 @@ volumes:
   shared_pgdata: null
   shared_redis_data: null
   shared_clickhouse_data: null
-

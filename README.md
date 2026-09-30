@@ -66,6 +66,28 @@ Compose is separate:
 `--sync-compose --fresh` for the affected service. The full clean-deploy script performs that sync
 before starting any container.
 
+### Change the Dev tunnel CORS origin
+
+The Dev gateway accepts exactly one external browser origin. Its tracked value is
+`ALLOWED_ORIGINS` in `.env.defaults`; it has no wildcard-origin setting.
+
+When the selected quick-tunnel hostname changes:
+
+1. Replace `ALLOWED_ORIGINS` in both `.env.defaults` and `.env.example` with the new canonical
+   `https://hostname` origin. Use one value, with no trailing slash, comma-separated additions, or
+   wildcard.
+2. Review and publish the Deployment change, then run `Deployment/deploy.sh --sync-oracle-tools`
+   from the workspace so the VM receives the changed defaults.
+3. On the Oracle VM, run `OCI_VAULT_ID=... ./OracleDeployment/fetch_secrets_from_vault.sh` from
+   `Food Delivery.nosync/Deployment`. This rebuilds the mode-600 `.env` from the tracked defaults
+   and Vault secrets without copying a local environment file.
+4. Recreate only the gateway with
+   `Deployment/deploy.sh --sync-compose --fresh api-gateway`, then verify a preflight request from
+   the selected origin is allowed and one from an unrelated origin is not.
+
+Use the normal base compose file for this change. The E2E overlay is a separate, temporary OTP
+harness and does not broaden browser CORS.
+
 ---
 
 ## Key Infrastructure Components

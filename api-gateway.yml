@@ -25,7 +25,6 @@ spring:
         cors-configurations:
           '[/**]':
             allowedOrigins: ${ALLOWED_ORIGINS:http://localhost:3000}
-            allowedOriginPatterns: ${ALLOWED_ORIGIN_PATTERNS:}
             allowedMethods:
             - GET
             - POST
@@ -33,6 +32,11 @@ spring:
             - DELETE
             - OPTIONS
             allowedHeaders: '*'
+            # The Dev UI detects the server-owned Autofill Code capability from the ordinary
+            # OTP-initiation response. Without CORS exposure, a cross-origin Dev UI falls back
+            # to manual code entry because it cannot read this header.
+            exposedHeaders:
+            - X-Dev-OTP-Available
 
       # Rate limiting is declared per route below, NOT here. Spring Cloud Gateway ADDS every
       # default-filter to a route's chain instead of letting the route override it, so a route
@@ -87,7 +91,7 @@ spring:
         uri: lb://identity-service
         predicates:
         - Path=/api/v1/internal/auth/**,/api/v1/internal/users/**,/api/v1/users/**,
-          /api/v1/internal/admin/users/**
+          /api/v1/internal/admin/users/**,/api/v1/internal/e2e/auth/**
         filters:
         - name: RequestRateLimiter
           args:
@@ -562,4 +566,3 @@ springdoc:
       url: /service-docs/event-tracking-service/v3/api-docs
     - name: Reviews Service
       url: /service-docs/reviews-service/v3/api-docs
-

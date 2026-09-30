@@ -1396,3 +1396,5 @@
 | 2026-09-29T06:41:24Z | restaurant-service | bd7b8534ddde4222735d251c0f281532e7e74206 | - | false | parthudhanireddy@gmail.com |
 | 2026-09-29T06:41:24Z | reviews-service | 65b225283dfe2350911216aa12e12a8d03221920 | - | false | parthudhanireddy@gmail.com |
 | 2026-09-29T06:41:24Z | wallet-service | 4f4ba617c8037b21c333610725df0901ed35cd4b | - | false | parthudhanireddy@gmail.com |
+| 2026-09-29T13:25:43Z | customer-service | fd996034854f95828f3bd2f577c2d76c262f77bd | additive-or-none | false | parthudhanireddy@gmail.com |
+| 2026-09-29T13:29:13Z | food-delivery-app-ui | f99219e3a2b60dbc14455d4932c9b2c738ad6a24 | additive-or-none | false | parthudhanireddy@gmail.com |

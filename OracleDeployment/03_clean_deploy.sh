@@ -70,6 +70,11 @@ if [[ -f "$DEPLOY/.env.local" ]]; then
     source "$DEPLOY/.env.local"
 fi
 
+# The Vault helper and its defaults run on the VM itself. They are neither container image content
+# nor Config Server YAML, so make the remote copy exact before using it to generate .env.
+echo "==> syncing Oracle deployment support tools"
+"$DEPLOY/deploy.sh" --sync-oracle-tools
+
 if [[ -n "${OCI_VAULT_ID:-}" ]]; then
     echo "==> fetching secrets from vault into the VM's .env"
     remote "export OCI_VAULT_ID=\"$OCI_VAULT_ID\" && cd '$REMOTE/OracleDeployment' && ./fetch_secrets_from_vault.sh"
@@ -80,11 +85,12 @@ fi
 echo "==> syncing REGISTRY and image tags into the VM's .env"
 "$DEPLOY/deploy.sh" --sync-env
 
-# docker-compose.yml is versioned deployment configuration, but publish-config.sh intentionally
-# excludes it. Sync it explicitly before any `docker compose` command so newly wired environment
-# variables (for example ReviewsService's identity-signing secret) actually reach recreated
-# containers. deploy.sh verifies the local/remote hashes on every later service wave.
-echo "==> syncing docker-compose.yml to the VM"
+# Docker Compose definitions are versioned deployment configuration, but publish-config.sh
+# intentionally excludes them. Sync them explicitly before any `docker compose` command so newly
+# wired environment variables (for example ReviewsService's identity-signing secret) actually
+# reach recreated containers. deploy.sh verifies the local/remote hashes on every later service
+# wave.
+echo "==> syncing Docker Compose definitions to the VM"
 "$DEPLOY/deploy.sh" --sync-compose
 
 # Config Server reads these YAML files from the VM's bind-mounted Deployment directory. Images do

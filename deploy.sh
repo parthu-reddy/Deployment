@@ -3,6 +3,7 @@
 # Deploy one or more services to the VM. Pulls a tagged image and brings the container up.
 #
 #   Deployment/deploy.sh customer-service [more-services...]
+#   Deployment/deploy.sh --sync-oracle-tools
 #   Deployment/deploy.sh --sync-compose --fresh reviews-service
 #
 # It does NOT build, rsync source, or run Maven. Images come from the registry, tagged by
@@ -31,18 +32,18 @@ remote() { ssh -o StrictHostKeyChecking=no -o ConnectTimeout=20 -i "$SSH_KEY" "$
 
 [[ -f "$MAP" ]] || die "missing $MAP"
 
-# Pull the latest image tags that CI pushed after build_services.sh. Without this, a deploy
-# after a CI build uses stale local tags and docker pull fails with "not found".
-if git -C "$ROOT/Deployment" diff --quiet 2>/dev/null; then
-    git -C "$ROOT/Deployment" pull --rebase --quiet origin main 2>/dev/null || true
-fi
+# Deploy exactly the checked-out, reviewed tag files. A deploy command must not silently change
+# that release state or hide a failed update. When CI has committed newer tag files, update and
+# review the Deployment checkout explicitly before invoking this script.
 
 ROLLBACK=false
 SYNC_ENV=false
 SYNC_COMPOSE=false
+SYNC_ORACLE_TOOLS=false
 FRESH=false
 if [[ "${1:-}" == "--rollback" ]]; then ROLLBACK=true; shift; fi
 if [[ "${1:-}" == "--sync-env" ]]; then SYNC_ENV=true; shift; fi
+if [[ "${1:-}" == "--sync-oracle-tools" ]]; then SYNC_ORACLE_TOOLS=true; shift; fi
 if [[ "${1:-}" == "--sync-compose" ]]; then SYNC_COMPOSE=true; shift; fi
 # --fresh recreates the container instead of reusing one that already matches. Use it when the
 # container itself is suspect (bad state, half-applied config); it does NOT touch volumes, so the
@@ -181,6 +182,22 @@ config_deploy() {
     [[ "$remote_profile" == "$active_profile" ]] \
         || die "Oracle profile is '$remote_profile', but this deploy targets '$active_profile'; no config was published"
 
+    local any_changed=false
+    for conf in "${configs[@]}"; do
+        local local_hash remote_hash
+        local_hash="$(shasum -a 256 "$ROOT/Deployment/$conf" | awk '{print $1}')"
+        remote_hash="$(remote "sha256sum '$REMOTE/$conf' 2>/dev/null | cut -d' ' -f1" || true)"
+        if [[ -z "$remote_hash" || "$local_hash" != "$remote_hash" ]]; then
+            any_changed=true
+            break
+        fi
+    done
+
+    if [[ "$any_changed" == false ]]; then
+        echo "==> config files are already up-to-date on the VM; skipping publish and restarts"
+        return 0
+    fi
+
     if [[ "$all" == true && "$assume_yes" != true ]]; then
         echo "WARNING: shared application config changed. This restarts every config-consuming application service, one at a time."
         [[ -r /dev/tty ]] || die "no interactive terminal; inspect --dry-run output, then rerun with --yes"
@@ -205,8 +222,8 @@ if [[ "${1:-}" == "--config" ]]; then
     exit 0
 fi
 
-[[ $# -gt 0 || "$SYNC_ENV" == true || "$SYNC_COMPOSE" == true ]] \
-    || die "usage: deploy.sh [--rollback <service> | --sync-env | --sync-compose [--fresh] | --fresh | --config [--dry-run] [--yes] <config.yml>...] <compose-service>..."
+[[ $# -gt 0 || "$SYNC_ENV" == true || "$SYNC_COMPOSE" == true || "$SYNC_ORACLE_TOOLS" == true ]] \
+    || die "usage: deploy.sh [--rollback <service> | --sync-env | --sync-oracle-tools | --sync-compose [--fresh] | --fresh | --config [--dry-run] [--yes] <config.yml>...] <compose-service>..."
 
 valid() { awk -F'\t' '!/^#/ && NF>=2 {print $2}' "$MAP"; }
 
@@ -251,25 +268,82 @@ if [[ "$SYNC_ENV" == true ]]; then
 fi
 
 sync_compose() {
-    local source="$ROOT/Deployment/docker-compose.yml"
-    local remote_tmp="/tmp/food-delivery-docker-compose.$$"
-    echo "==> syncing docker-compose.yml to the VM"
-    scp -q -o StrictHostKeyChecking=no -o ConnectTimeout=20 -i "$SSH_KEY" \
-        "$source" "$VM:$remote_tmp"
-    remote "install -m 0644 '$remote_tmp' '$REMOTE/docker-compose.yml' && rm -f '$remote_tmp'"
+    local compose_file source remote_tmp
+    for compose_file in docker-compose.yml docker-compose.e2e.yml; do
+        source="$ROOT/Deployment/$compose_file"
+        [[ -f "$source" ]] || die "missing $source"
+        remote_tmp="/tmp/food-delivery-${compose_file}.$$"
+        echo "==> syncing $compose_file to the VM"
+        scp -q -o StrictHostKeyChecking=no -o ConnectTimeout=20 -i "$SSH_KEY" \
+            "$source" "$VM:$remote_tmp"
+        remote "install -m 0644 '$remote_tmp' '$REMOTE/$compose_file' && rm -f '$remote_tmp'"
+    done
+}
+
+# These files run on the Oracle host itself rather than inside an image or Config Server.  Keeping
+# their sync separate from compose/YAML prevents a changed Vault contract from being accidentally
+# left behind on the VM while the services that depend on it are updated.
+sync_oracle_tools() {
+    local relative_path mode source remote_tmp local_hash remote_hash
+    while IFS=$'\t' read -r relative_path mode; do
+        source="$ROOT/Deployment/$relative_path"
+        [[ -f "$source" ]] || die "missing $source"
+        remote_tmp="/tmp/food-delivery-$(basename "$relative_path").$$"
+        echo "==> syncing Oracle deployment tool $relative_path"
+        scp -q -o StrictHostKeyChecking=no -o ConnectTimeout=20 -i "$SSH_KEY" \
+            "$source" "$VM:$remote_tmp"
+        remote "install -D -m '$mode' '$remote_tmp' '$REMOTE/$relative_path' && rm -f '$remote_tmp'"
+
+        local_hash="$(shasum -a 256 "$source" | awk '{print $1}')"
+        remote_hash="$(remote "sha256sum '$REMOTE/$relative_path' 2>/dev/null | cut -d' ' -f1" || true)"
+        [[ -n "$remote_hash" && "$local_hash" == "$remote_hash" ]] \
+            || die "$relative_path failed SHA-256 verification after sync"
+    done <<'EOF'
+OracleDeployment/fetch_secrets_from_vault.sh	0755
+.env.defaults	0644
+EOF
+}
+
+oracle_tools_match_remote() {
+    local relative_path mode source local_hash remote_hash
+    while IFS=$'\t' read -r relative_path mode; do
+        source="$ROOT/Deployment/$relative_path"
+        local_hash="$(shasum -a 256 "$source" | awk '{print $1}')"
+        remote_hash="$(remote "sha256sum '$REMOTE/$relative_path' 2>/dev/null | cut -d' ' -f1" || true)"
+        [[ -n "$remote_hash" && "$local_hash" == "$remote_hash" ]] || return 1
+    done <<'EOF'
+OracleDeployment/fetch_secrets_from_vault.sh	0755
+.env.defaults	0644
+EOF
+    return 0
 }
 
 compose_matches_remote() {
-    local local_hash remote_hash
-    local_hash="$(shasum -a 256 "$ROOT/Deployment/docker-compose.yml" | awk '{print $1}')"
-    remote_hash="$(remote "sha256sum '$REMOTE/docker-compose.yml' 2>/dev/null | cut -d' ' -f1" || true)"
-    [[ -n "$remote_hash" && "$local_hash" == "$remote_hash" ]]
+    local compose_file local_hash remote_hash
+    for compose_file in docker-compose.yml docker-compose.e2e.yml; do
+        local_hash="$(shasum -a 256 "$ROOT/Deployment/$compose_file" | awk '{print $1}')"
+        remote_hash="$(remote "sha256sum '$REMOTE/$compose_file' 2>/dev/null | cut -d' ' -f1" || true)"
+        [[ -n "$remote_hash" && "$local_hash" == "$remote_hash" ]] || return 1
+    done
+    return 0
 }
+
+if [[ "$SYNC_ORACLE_TOOLS" == true ]]; then
+    sync_oracle_tools
+    if [[ $# -eq 0 ]]; then
+        echo "==> Oracle deployment tools synced; no services requested"
+        exit 0
+    fi
+elif ! oracle_tools_match_remote; then
+    die "Oracle deployment support files differ from the VM. Refusing a deploy that could use stale Vault or environment wiring.
+Sync them explicitly before deploying services:
+  Deployment/deploy.sh --sync-oracle-tools"
+fi
 
 if [[ "$SYNC_COMPOSE" == true ]]; then
     sync_compose
 elif ! compose_matches_remote; then
-    die "local docker-compose.yml differs from the VM. Refusing a false-success deploy with stale environment wiring.
+    die "local Docker Compose definitions differ from the VM. Refusing a false-success deploy with stale environment wiring.
 Sync it explicitly and recreate the selected service:
   Deployment/deploy.sh --sync-compose --fresh <compose-service>"
 fi
