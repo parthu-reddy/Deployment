@@ -18,6 +18,7 @@ SSH_KEY="${SSH_KEY:-/Users/parthureddy/Documents/OracleSSH/ssh-key-2026-08-16.ke
 VM="${VM:-ubuntu@140.245.234.137}"
 COMPOSE_DIR="Food Delivery.nosync/Deployment"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$HERE/schema_readiness.sh"
 TABLE="$HERE/schema_sentinels.tsv"
 
 die() { echo "reset: $*" >&2; exit 1; }
@@ -34,7 +35,7 @@ remote() { ssh -o StrictHostKeyChecking=no -o ConnectTimeout=20 -i "$SSH_KEY" "$
 psql_db() {  # database, sql
     local b64
     b64="$(printf '%s' "$2" | base64 | tr -d '\n')"
-    remote "cd '$COMPOSE_DIR' && docker compose exec -T postgres sh -c 'echo $b64 | base64 -d | PGPASSWORD=\$POSTGRES_PASS psql -h 127.0.0.1 -U postgres -d $1 -tA -f -'" 2>/dev/null
+    remote "cd '$COMPOSE_DIR' && docker compose exec -T postgres sh -c 'echo $b64 | base64 -d | PGPASSWORD=\$POSTGRES_PASS psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -U postgres -d $1 -tA -f -'" 2>/dev/null
 }
 
 [ -f "$TABLE" ] || die "schema_sentinels.tsv missing at $TABLE"
@@ -171,8 +172,7 @@ for db in $TARGETS; do
             echo "  ssh -i \$SSH_KEY $VM \"cd '$COMPOSE_DIR' && docker compose logs --tail=100 $(get_db_prop "$db" 2)\"" >&2
             exit 1
         fi
-        exists="$(psql_db "$db" "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema='public' AND table_name='$sentinel');")"
-        case "$exists" in *t*) echo "ok"; break;; esac
+        if schema_is_ready "$db" "$(get_db_prop "$db" 2)" "$sentinel"; then echo "ok"; break; fi
         sleep 5
     done
 done

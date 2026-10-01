@@ -1,0 +1,84 @@
+[
+  {
+    "role": "CUSTOMER",
+    "phone": "8000000501",
+    "userId": "8f3bd8bb-a7d6-57ae-ae28-5a9137b47de9",
+    "scenario": "incomplete-profile"
+  },
+  {
+    "role": "CUSTOMER",
+    "phone": "8000000502",
+    "userId": "db45c5f8-71b5-57ff-94fb-4af8f99930c7",
+    "scenario": "no-address"
+  },
+  {
+    "role": "CUSTOMER",
+    "phone": "8000000503",
+    "userId": "6f9325bd-c469-5cd8-af6d-3e4601f61df6",
+    "scenario": "suspended"
+  },
+  {
+    "role": "CUSTOMER",
+    "phone": "8000000504",
+    "userId": "676217dd-582e-5714-9079-22773837fefe",
+    "scenario": "second-city"
+  },
+  {
+    "role": "DELIVERY",
+    "phone": "7000000031",
+    "userId": "a00bb0f6-85a1-56ba-82c2-b50da35f72af",
+    "scenario": "pending-kyc"
+  },
+  {
+    "role": "DELIVERY",
+    "phone": "7000000032",
+    "userId": "3ab875e7-62c9-5f7e-94da-a7fbac93b89b",
+    "scenario": "rejected-kyc"
+  },
+  {
+    "role": "DELIVERY",
+    "phone": "7000000033",
+    "userId": "b704753b-22f1-5133-8917-b47dcaee1796",
+    "scenario": "approved-offline"
+  },
+  {
+    "role": "DELIVERY",
+    "phone": "7000000034",
+    "userId": "9c517c1f-576e-5287-974c-342afcf28fb5",
+    "scenario": "inactive-rider"
+  },
+  {
+    "role": "RESTAURANT",
+    "phone": "9000000011",
+    "userId": "d5e4cc0d-315d-5f3f-b923-6535a028d07f",
+    "scenario": "no-brand"
+  },
+  {
+    "role": "RESTAURANT",
+    "phone": "9000000012",
+    "userId": "1de2fa20-8064-5c2b-8060-d0b9bb0bf0ba",
+    "scenario": "pending-brand"
+  },
+  {
+    "role": "RESTAURANT",
+    "phone": "9000000013",
+    "userId": "7228bb44-08e1-5f24-af6b-c86fc50962f7",
+    "scenario": "rejected-brand"
+  },
+  {
+    "role": "RESTAURANT",
+    "phone": "9000000014",
+    "userId": "61957f14-78ad-5fba-9500-aa5a0fef59d8",
+    "scenario": "inactive-outlet-and-unavailable-dish"
+  },
+  {
+    "role": "ADMIN",
+    "phone": "1000000001",
+    "scenario": "provisioned-admin-1"
+  },
+  {
+    "role": "ADMIN",
+    "phone": "1000000002",
+    "scenario": "provisioned-admin-2"
+  }
+]

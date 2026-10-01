@@ -1,11 +1,24 @@
 # Dummy Data — Execution Order
 
-Two scripts, run from the workspace root on the Mac, in this order:
+Run the loader from any directory on the Mac. It waits for healthy owning services,
+successful Flyway history and schema markers, then inserts fixtures in dependency order:
 
 ```bash
-Deployment/OracleDeployment/DummyData/reset_remote_db.sh --all    # wipe + let Flyway rebuild
-Deployment/OracleDeployment/DummyData/run_remote_dummy_data.sh    # insert, in dependency order
+bash Deployment/OracleDeployment/DummyData/run_remote_dummy_data.sh
 ```
+
+Inserts now preserve existing rows and can recover a partial load. Conflicting phone/UUID
+mappings fail instead of overwriting accounts. The loader stops on SQL errors and verifies
+expected fixture IDs afterward. This does not restore intentionally changed fixture state.
+
+To add only scenario accounts to an already loaded baseline:
+
+```bash
+bash Deployment/OracleDeployment/DummyData/run_remote_dummy_data.sh --scenarios-only
+```
+
+A schema reset is a separate destructive operation, needed only when deliberately starting
+from an empty schema. `reset_remote_db.sh --all` retains its explicit confirmation prompt.
 
 Neither needs a password. `psql` runs inside the postgres container and reads the credential from
 that container's own environment, so it never appears on this machine, in an ssh command line, or in
@@ -13,7 +26,7 @@ the VM's process list.
 
 This file previously embedded a third copy of that logic as a `init_dummy_data.sh` snippet. It
 inserted into a database named `food_delivery`, **which does not exist** — the customer database is
-`customer_db` — so anything pasted from it failed. The scripts above are the only two that matter.
+`customer_db` — so anything pasted from it failed. Use the maintained loader and readiness scripts above.
 
 ## What the reset actually does
 
@@ -55,3 +68,23 @@ python3 generate_users_dummy_data.py    # identities first
 python3 generate_dummy_data.py          # restaurants, orders, addresses
 ```
 
+
+## Scenario expansion and verification
+
+`generate_scenario_data.py` writes deterministic additive fixtures without regenerating baseline
+UUIDs. It adds four customers, four riders, four restaurant owners and two guarded test admins;
+the existing first administrator's UUID is preserved. `scenario_accounts.json` maps their states.
+
+Expected seed coverage: 504 customers, 1,003 addresses, 34 riders, 13 brands, 104 outlets,
+504 menu items and two active test administrators. Extra live records are allowed.
+The Hyderabad fixtures exercise city separation; their presence does not enable HYD in fleet
+configuration or prove Hyderabad dispatch/serviceability.
+
+```bash
+python3 Deployment/OracleDeployment/DummyData/validate_seed_data.py
+python3 Deployment/OracleDeployment/DummyData/validate_seed_data.py --remote
+bash Deployment/OracleDeployment/DummyData/test_schema_readiness.sh
+```
+
+The baseline generators still generate new UUIDs. Do not rerun them over shared live fixtures;
+regenerating the baseline requires a deliberate coordinated reset of dependent data.

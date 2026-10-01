@@ -91,11 +91,11 @@ for i in range(1, 501):
 with open("dummy_riders_customers_identity.sql", "w") as f:
     f.write("BEGIN;\n\n")
     for r in riders:
-        f.write(f"INSERT INTO users (id, phone_number, name, email) VALUES ('{r['id']}', '{r['phone']}', '{r['name']}', '{r['email']}');\n")
-        f.write(f"INSERT INTO user_roles (id, user_id, service_name, role_name) VALUES ('{str(uuid.uuid4())}', '{r['id']}', 'delivery-service', 'DELIVERY');\n")
+        f.write(f"INSERT INTO users (id, phone_number, name, email) VALUES ('{r['id']}', '{r['phone']}', '{r['name']}', '{r['email']}') ON CONFLICT (id) DO NOTHING;\n")
+        f.write(f"INSERT INTO user_roles (id, user_id, service_name, role_name) VALUES ('{str(uuid.uuid4())}', '{r['id']}', 'delivery-service', 'DELIVERY') ON CONFLICT (user_id, service_name, role_name) DO NOTHING;\n")
     for c in customers:
-        f.write(f"INSERT INTO users (id, phone_number, name, email) VALUES ('{c['id']}', '{c['phone']}', '{c['name']}', '{c['email']}');\n")
-        f.write(f"INSERT INTO user_roles (id, user_id, service_name, role_name) VALUES ('{str(uuid.uuid4())}', '{c['id']}', 'customer-service', 'CUSTOMER');\n")
+        f.write(f"INSERT INTO users (id, phone_number, name, email) VALUES ('{c['id']}', '{c['phone']}', '{c['name']}', '{c['email']}') ON CONFLICT (id) DO NOTHING;\n")
+        f.write(f"INSERT INTO user_roles (id, user_id, service_name, role_name) VALUES ('{str(uuid.uuid4())}', '{c['id']}', 'customer-service', 'CUSTOMER') ON CONFLICT (user_id, service_name, role_name) DO NOTHING;\n")
     f.write("\nCOMMIT;\n")
 
 VEHICLE_TYPES = ['MCWG', 'EV_TWO_WHEELER', 'LMV', 'BICYCLE']
@@ -105,7 +105,7 @@ with open("dummy_riders.sql", "w") as f:
     f.write("BEGIN;\n\n")
     for i, r in enumerate(riders):
         vtype = VEHICLE_TYPES[i % len(VEHICLE_TYPES)]
-        f.write(f"INSERT INTO delivery_executives (id, phone_number, vehicle_number, status, full_name, email, last_known_location, photo_url, verification_status, vehicle_type, is_active, last_biometric_verification_at, city_id) VALUES ('{r['id']}', '{r['phone']}', '{r['vehicle']}', 'ONLINE', '{r['name']}', '{r['email']}', ST_SetSRID(ST_MakePoint({r['lng']}, {r['lat']}), 4326), {get_image_sql_val()}, 'APPROVED', '{vtype}', TRUE, CURRENT_TIMESTAMP, 'BLR');\n")
+        f.write(f"INSERT INTO delivery_executives (id, phone_number, vehicle_number, status, full_name, email, last_known_location, photo_url, verification_status, vehicle_type, is_active, last_biometric_verification_at, city_id) VALUES ('{r['id']}', '{r['phone']}', '{r['vehicle']}', 'ONLINE', '{r['name']}', '{r['email']}', ST_SetSRID(ST_MakePoint({r['lng']}, {r['lat']}), 4326), {get_image_sql_val()}, 'APPROVED', '{vtype}', TRUE, CURRENT_TIMESTAMP, 'BLR') ON CONFLICT (id) DO NOTHING;\n")
     f.write("\nCOMMIT;\n")
 
 with open("dummy_government_id_executives.sql", "w") as f:
@@ -114,25 +114,25 @@ with open("dummy_government_id_executives.sql", "w") as f:
         vtype = VEHICLE_TYPES[i % len(VEHICLE_TYPES)]
         dl_class = 'MCWG' if vtype in ('MCWG', 'EV_TWO_WHEELER') else ('LMV' if vtype == 'LMV' else 'MCWG')
         # Aadhaar
-        f.write(f"INSERT INTO executive_documents (document_id, executive_id, doc_type, document_number, document_url, api_verification_status, created_at) VALUES ('{str(uuid.uuid4())}', '{r['id']}', 'AADHAAR', '123456789012', {get_image_sql_val()}, 'APPROVED', CURRENT_TIMESTAMP);\n")
+        f.write(f"INSERT INTO executive_documents (document_id, executive_id, doc_type, document_number, document_url, api_verification_status, created_at) VALUES ('{str(uuid.uuid4())}', '{r['id']}', 'AADHAAR', '123456789012', {get_image_sql_val()}, 'APPROVED', CURRENT_TIMESTAMP) ON CONFLICT (document_id) DO NOTHING;\n")
         # Driving License with correct vehicle class stored in api_raw_response
-        f.write(f"INSERT INTO executive_documents (document_id, executive_id, doc_type, document_number, document_url, api_verification_status, api_raw_response, created_at) VALUES ('{str(uuid.uuid4())}', '{r['id']}', 'DRIVING_LICENSE', 'DL-{r['phone'][-4:]}', {get_image_sql_val()}, 'APPROVED', '{{\"vehicleClass\": \"{dl_class}\"}}', CURRENT_TIMESTAMP);\n")
+        f.write(f"INSERT INTO executive_documents (document_id, executive_id, doc_type, document_number, document_url, api_verification_status, api_raw_response, created_at) VALUES ('{str(uuid.uuid4())}', '{r['id']}', 'DRIVING_LICENSE', 'DL-{r['phone'][-4:]}', {get_image_sql_val()}, 'APPROVED', '{{\"vehicleClass\": \"{dl_class}\"}}', CURRENT_TIMESTAMP) ON CONFLICT (document_id) DO NOTHING;\n")
         # Vehicle RC
-        f.write(f"INSERT INTO executive_documents (document_id, executive_id, doc_type, document_number, document_url, api_verification_status, created_at) VALUES ('{str(uuid.uuid4())}', '{r['id']}', 'RC', '{r['vehicle']}', {get_image_sql_val()}, 'APPROVED', CURRENT_TIMESTAMP);\n")
+        f.write(f"INSERT INTO executive_documents (document_id, executive_id, doc_type, document_number, document_url, api_verification_status, created_at) VALUES ('{str(uuid.uuid4())}', '{r['id']}', 'RC', '{r['vehicle']}', {get_image_sql_val()}, 'APPROVED', CURRENT_TIMESTAMP) ON CONFLICT (document_id) DO NOTHING;\n")
         # Bank Details
         acct_num = f"1234567890{str(i+1).zfill(2)}"
         ifsc = IFSC_CODES[i % len(IFSC_CODES)]
-        f.write(f"INSERT INTO executive_bank_details (bank_id, executive_id, account_number, ifsc_code, bank_registered_name, penny_drop_status, name_match_score, verified_at) VALUES ('{str(uuid.uuid4())}', '{r['id']}', '{acct_num}', '{ifsc}', '{r['name']}', 'APPROVED', 0.950, CURRENT_TIMESTAMP);\n")
+        f.write(f"INSERT INTO executive_bank_details (bank_id, executive_id, account_number, ifsc_code, bank_registered_name, penny_drop_status, name_match_score, verified_at) VALUES ('{str(uuid.uuid4())}', '{r['id']}', '{acct_num}', '{ifsc}', '{r['name']}', 'APPROVED', 0.950, CURRENT_TIMESTAMP) ON CONFLICT (bank_id) DO NOTHING;\n")
         # Biometric verification record
-        f.write(f"INSERT INTO biometric_verifications (verification_id, executive_id, selfie_url, confidence_score, is_live, verification_time) VALUES ('{str(uuid.uuid4())}', '{r['id']}', '{random.choice([u for u in IMAGE_URLS if u])}', 0.950, TRUE, CURRENT_TIMESTAMP);\n")
+        f.write(f"INSERT INTO biometric_verifications (verification_id, executive_id, selfie_url, confidence_score, is_live, verification_time) VALUES ('{str(uuid.uuid4())}', '{r['id']}', '{random.choice([u for u in IMAGE_URLS if u])}', 0.950, TRUE, CURRENT_TIMESTAMP) ON CONFLICT (verification_id) DO NOTHING;\n")
     f.write("\nCOMMIT;\n")
 
 with open("dummy_customers.sql", "w") as f:
     f.write("BEGIN;\n\n")
     for c in customers:
-        f.write(f"INSERT INTO customers (id, phone_number) VALUES ('{c['id']}', '{c['phone']}');\n")
+        f.write(f"INSERT INTO customers (id, phone_number) VALUES ('{c['id']}', '{c['phone']}') ON CONFLICT (id) DO NOTHING;\n")
         for a in c['addresses']:
-            f.write(f"INSERT INTO customer_addresses (id, customer_id, label, address_line1, city, state, zip_code, latitude, longitude, is_default) VALUES ('{a['id']}', '{c['id']}', '{a['label']}', '{a['line1']}', '{a['city']}', '{a['state']}', '{a['zip']}', {a['lat']}, {a['lng']}, {a['is_default']});\n")
+            f.write(f"INSERT INTO customer_addresses (id, customer_id, label, address_line1, city, state, zip_code, latitude, longitude, is_default, city_id) VALUES ('{a['id']}', '{c['id']}', '{a['label']}', '{a['line1']}', '{a['city']}', '{a['state']}', '{a['zip']}', {a['lat']}, {a['lng']}, {a['is_default']}, 'BLR') ON CONFLICT (id) DO NOTHING;\n")
     f.write("\nCOMMIT;\n")
 
 print("Files created successfully.")

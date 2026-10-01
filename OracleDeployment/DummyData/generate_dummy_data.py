@@ -153,31 +153,31 @@ with open("dummy_data.sql", "w") as f:
     f.write("BEGIN;\n\n")
     
     for b in brands:
-        f.write(f"INSERT INTO brands (id, owner_id, name, created_at, updated_at, logo_url) VALUES ('{b['id']}', '{b['owner_id']}', '{b['name']}', '{b['created_at']}', '{b['updated_at']}', {get_image_sql_val()});\n")
+        f.write(f"INSERT INTO brands (id, owner_id, name, created_at, updated_at, logo_url) VALUES ('{b['id']}', '{b['owner_id']}', '{b['name']}', '{b['created_at']}', '{b['updated_at']}', {get_image_sql_val()}) ON CONFLICT (id) DO NOTHING;\n")
         
     for o in outlets:
         # Use ST_SetSRID(ST_Point(lng, lat), 4326)
         # Every outlet names its IANA time zone (NOT NULL since TimezoneCorrectness_2026-09-25); the
         # generated outlets are all around Bengaluru.
-        f.write(f"INSERT INTO outlets (id, brand_id, name, location, cuisine, rating, reviews_count, banner_url, time_zone) VALUES ('{o['id']}', '{o['brand_id']}', '{o['name']}', ST_SetSRID(ST_Point({o['lng']}, {o['lat']}), 4326), '{o['cuisine']}', {o['rating']}, {o['reviews_count']}, {get_image_sql_val()}, 'Asia/Kolkata');\n")
+        f.write(f"INSERT INTO outlets (id, brand_id, name, location, cuisine, rating, reviews_count, banner_url, time_zone, city_id) VALUES ('{o['id']}', '{o['brand_id']}', '{o['name']}', ST_SetSRID(ST_Point({o['lng']}, {o['lat']}), 4326), '{o['cuisine']}', {o['rating']}, {o['reviews_count']}, {get_image_sql_val()}, 'Asia/Kolkata', 'BLR') ON CONFLICT (id) DO NOTHING;\n")
         
     for c in categories:
-        f.write(f"INSERT INTO categories (id, brand_id, name, description, active) VALUES ('{c['id']}', '{c['brand_id']}', '{c['name']}', '{c['description']}', true);\n")
+        f.write(f"INSERT INTO categories (id, brand_id, name, description, active) VALUES ('{c['id']}', '{c['brand_id']}', '{c['name']}', '{c['description']}', true) ON CONFLICT (id) DO NOTHING;\n")
         
     for m in menu_items:
-        f.write(f"INSERT INTO master_menu_items (id, brand_id, category_id, name, description, base_price, default_prep_time_minutes, image_url) VALUES ('{m['id']}', '{m['brand_id']}', '{m['category_id']}', '{m['name']}', '{m['description']}', {m['base_price']}, {m['default_prep_time_minutes']}, {get_image_sql_val()});\n")
+        f.write(f"INSERT INTO master_menu_items (id, brand_id, category_id, name, description, base_price, default_prep_time_minutes, image_url) VALUES ('{m['id']}', '{m['brand_id']}', '{m['category_id']}', '{m['name']}', '{m['description']}', {m['base_price']}, {m['default_prep_time_minutes']}, {get_image_sql_val()}) ON CONFLICT (id) DO NOTHING;\n")
         
     for ct in category_timings_data:
-        f.write(f"INSERT INTO category_timings (id, category_id, opening_time, closing_time) VALUES ('{ct['id']}', '{ct['category_id']}', '{ct['opening_time']}', '{ct['closing_time']}');\n")
+        f.write(f"INSERT INTO category_timings (id, category_id, opening_time, closing_time) VALUES ('{ct['id']}', '{ct['category_id']}', '{ct['opening_time']}', '{ct['closing_time']}') ON CONFLICT (id) DO NOTHING;\n")
 
     for bct in brand_cat_timings:
-        f.write(f"INSERT INTO brand_category_timings (id, brand_id, category_id, opening_time, closing_time) VALUES ('{bct['id']}', '{bct['brand_id']}', '{bct['category_id']}', '{bct['opening_time']}', '{bct['closing_time']}');\n")
+        f.write(f"INSERT INTO brand_category_timings (id, brand_id, category_id, opening_time, closing_time) VALUES ('{bct['id']}', '{bct['brand_id']}', '{bct['category_id']}', '{bct['opening_time']}', '{bct['closing_time']}') ON CONFLICT (id) DO NOTHING;\n")
         
     for oct in outlet_cat_timings:
-        f.write(f"INSERT INTO outlet_category_timings (id, outlet_id, category_id, opening_time, closing_time) VALUES ('{oct['id']}', '{oct['outlet_id']}', '{oct['category_id']}', '{oct['opening_time']}', '{oct['closing_time']}');\n")
+        f.write(f"INSERT INTO outlet_category_timings (id, outlet_id, category_id, opening_time, closing_time) VALUES ('{oct['id']}', '{oct['outlet_id']}', '{oct['category_id']}', '{oct['opening_time']}', '{oct['closing_time']}') ON CONFLICT (id) DO NOTHING;\n")
 
     for ot in outlet_timings_data:
-        f.write(f"INSERT INTO outlet_timings (id, outlet_id, opening_time, closing_time) VALUES ('{ot['id']}', '{ot['outlet_id']}', '{ot['opening_time']}', '{ot['closing_time']}');\n")
+        f.write(f"INSERT INTO outlet_timings (id, outlet_id, opening_time, closing_time) VALUES ('{ot['id']}', '{ot['outlet_id']}', '{ot['opening_time']}', '{ot['closing_time']}') ON CONFLICT (id) DO NOTHING;\n")
 
     f.write("\nCOMMIT;\n")
 
@@ -191,8 +191,8 @@ with open("dummy_identity_data.sql", "w") as f:
         # Unique phone number per owner for login (9000000001 etc)
         phone = f"900000{str(idx).zfill(4)}" 
         
-        f.write(f"INSERT INTO users (id, phone_number, name, email) VALUES ('{b['owner_id']}', '{phone}', '{owner_name}', '{owner_email}');\n")
-        f.write(f"INSERT INTO user_roles (id, user_id, service_name, role_name) VALUES ('{str(uuid.uuid4())}', '{b['owner_id']}', 'restaurant-service', 'RESTAURANT');\n")
+        f.write(f"INSERT INTO users (id, phone_number, name, email) VALUES ('{b['owner_id']}', '{phone}', '{owner_name}', '{owner_email}') ON CONFLICT (id) DO NOTHING;\n")
+        f.write(f"INSERT INTO user_roles (id, user_id, service_name, role_name) VALUES ('{str(uuid.uuid4())}', '{b['owner_id']}', 'restaurant-service', 'RESTAURANT') ON CONFLICT (user_id, service_name, role_name) DO NOTHING;\n")
 
 
 
@@ -217,9 +217,9 @@ with open("dummy_delivery_data.sql", "w") as f:
 with open("dummy_government_id_brands.sql", "w") as f:
     f.write("BEGIN;\n\n")
     for b in brands:
-        f.write(f"INSERT INTO brand_documents (id, brand_id, doc_type, document_number, api_verification_status, verified_at) VALUES ('{str(uuid.uuid4())}', '{b['id']}', 'GSTIN', 'GSTIN{str(random.randint(100000000, 999999999))}', 'VERIFIED', CURRENT_TIMESTAMP);\n")
-        f.write(f"INSERT INTO brand_documents (id, brand_id, doc_type, document_number, api_verification_status, verified_at) VALUES ('{str(uuid.uuid4())}', '{b['id']}', 'PAN', 'PAN{str(random.randint(10000, 99999))}', 'VERIFIED', CURRENT_TIMESTAMP);\n")
-        f.write(f"INSERT INTO brand_documents (id, brand_id, doc_type, document_number, api_verification_status, verified_at) VALUES ('{str(uuid.uuid4())}', '{b['id']}', 'FSSAI', 'FSSAI{str(random.randint(100000, 999999))}', 'VERIFIED', CURRENT_TIMESTAMP);\n")
+        f.write(f"INSERT INTO brand_documents (id, brand_id, doc_type, document_number, api_verification_status, verified_at) VALUES ('{str(uuid.uuid4())}', '{b['id']}', 'GSTIN', 'GSTIN{str(random.randint(100000000, 999999999))}', 'VERIFIED', CURRENT_TIMESTAMP) ON CONFLICT (id) DO NOTHING;\n")
+        f.write(f"INSERT INTO brand_documents (id, brand_id, doc_type, document_number, api_verification_status, verified_at) VALUES ('{str(uuid.uuid4())}', '{b['id']}', 'PAN', 'PAN{str(random.randint(10000, 99999))}', 'VERIFIED', CURRENT_TIMESTAMP) ON CONFLICT (id) DO NOTHING;\n")
+        f.write(f"INSERT INTO brand_documents (id, brand_id, doc_type, document_number, api_verification_status, verified_at) VALUES ('{str(uuid.uuid4())}', '{b['id']}', 'FSSAI', 'FSSAI{str(random.randint(100000, 999999))}', 'VERIFIED', CURRENT_TIMESTAMP) ON CONFLICT (id) DO NOTHING;\n")
     f.write("\nCOMMIT;\n")
 
 print("Files generated successfully.")
