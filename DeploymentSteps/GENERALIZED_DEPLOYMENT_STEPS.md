@@ -541,3 +541,8 @@ would not find the sibling module's jar.
 - Ensure a Jaeger (or OpenTelemetry Collector) container is running and exposed in `docker-compose.yml`.
 - Ensure all microservices have `OTLP_ENDPOINT=http://jaeger:4318/v1/traces` correctly injected in their `environment:` block so they don't spam errors trying to connect to their own internal `localhost:4318`.
 - Failure to do this will result in `java.net.ConnectException` logs filling up memory and causing health check timeouts.
+
+48. **Clean Deploy Fails Due to Missing Image:**
+    - **Error:** `Error response from daemon: failed to resolve reference ...: not found` during `03_clean_deploy.sh`.
+    - **Cause:** The image tag pinned in the `Deployment/env_deployments/dev/*.env` file has not been built and pushed to the registry.
+    - **Fix:** Build the missing image using GitHub Actions (e.g. `bash FoodDeliveryContracts/ci/build_services.sh --only LedgerService`), then `git pull --rebase` to fetch the updated `.env` file, and retry the deployment.
