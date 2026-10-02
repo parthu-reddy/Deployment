@@ -1,5 +1,10 @@
 services:
   jaeger:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "2"
     image: jaegertracing/all-in-one:1.50
     container_name: shared_jaeger
     environment:
@@ -15,6 +20,11 @@ services:
     mem_limit: 512m
     restart: unless-stopped
   zookeeper:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "2"
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: shared_zookeeper
     mem_limit: 320m
@@ -25,6 +35,11 @@ services:
     - 2181:2181
     restart: unless-stopped
   kafka:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "2"
     image: confluentinc/cp-kafka:7.5.0
     container_name: shared_kafka
     mem_limit: 1600m
@@ -53,6 +68,11 @@ services:
     restart: unless-stopped
 
   postgres:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "2"
     image: kartoza/postgis:16-3.4
     container_name: shared_postgres
     mem_limit: 768m
@@ -79,6 +99,11 @@ services:
       start_period: 120s
     restart: unless-stopped
   redis:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "2"
     image: redis:7.2
     container_name: shared_redis
     mem_limit: 192m
@@ -106,6 +131,11 @@ services:
       retries: 10
       start_period: 120s
   config-service:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "2"
     image: ${REGISTRY}/food-delivery/config-service:${CONFIG_SERVICE_TAG}
     container_name: config-service
     mem_limit: 512m
@@ -136,6 +166,11 @@ services:
       start_period: 120s
     restart: unless-stopped
   eureka-server-1:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "2"
     image: ${REGISTRY}/food-delivery/eureka-server-1:${EUREKA_SERVER_1_TAG}
     container_name: eureka-server-1
     mem_limit: 512m
@@ -164,6 +199,11 @@ services:
       start_period: 120s
     restart: unless-stopped
   eureka-server-2:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "2"
     image: ${REGISTRY}/food-delivery/eureka-server-2:${EUREKA_SERVER_2_TAG}
     container_name: eureka-server-2
     mem_limit: 512m
@@ -192,6 +232,11 @@ services:
       start_period: 120s
     restart: unless-stopped
   customer-service:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "2"
     image: ${REGISTRY}/food-delivery/customer-service:${CUSTOMER_SERVICE_TAG}
     container_name: customer-service
     mem_limit: 896m
@@ -241,6 +286,11 @@ services:
       start_period: 120s
     restart: on-failure
   restaurant-service:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "2"
     image: ${REGISTRY}/food-delivery/restaurant-service:${RESTAURANT_SERVICE_TAG}
     container_name: restaurant-service
     mem_limit: 896m
@@ -291,6 +341,11 @@ services:
       start_period: 120s
     restart: on-failure
   delivery-service:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "2"
     image: ${REGISTRY}/food-delivery/delivery-service:${DELIVERY_SERVICE_TAG}
     container_name: delivery-service
     mem_limit: 896m
@@ -341,6 +396,11 @@ services:
       start_period: 120s
     restart: on-failure
   payment-gateway:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "2"
     image: ${REGISTRY}/food-delivery/payment-gateway:${PAYMENT_GATEWAY_TAG}
     container_name: payment-gateway
     stdin_open: true
@@ -397,6 +457,11 @@ services:
       start_period: 120s
     restart: on-failure
   maps-integration:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "2"
     image: ${REGISTRY}/food-delivery/maps-integration:${MAPS_INTEGRATION_TAG}
     container_name: maps-integration
     mem_limit: 896m
@@ -442,6 +507,11 @@ services:
       start_period: 120s
     restart: on-failure
   communication-integration:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "2"
     image: ${REGISTRY}/food-delivery/communication-integration:${COMMUNICATION_INTEGRATION_TAG}
     container_name: communication-integration
     mem_limit: 1024m
@@ -494,6 +564,11 @@ services:
       start_period: 120s
     restart: on-failure
   api-gateway:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "2"
     image: ${REGISTRY}/food-delivery/api-gateway:${API_GATEWAY_TAG}
     container_name: api-gateway
     mem_limit: 896m
@@ -543,6 +618,11 @@ services:
       start_period: 120s
     restart: on-failure
   identity-service:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "2"
     image: ${REGISTRY}/food-delivery/identity-service:${IDENTITY_SERVICE_TAG}
     container_name: identity-service
     mem_limit: 896m
@@ -598,6 +678,11 @@ services:
       start_period: 120s
     restart: on-failure
   government-id-service:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "2"
     image: ${REGISTRY}/food-delivery/government-id-service:${GOVERNMENT_ID_SERVICE_TAG}
     container_name: government-id-service
     mem_limit: 1024m
@@ -649,6 +734,11 @@ services:
       start_period: 120s
     restart: on-failure
   food-delivery-app-ui:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "2"
     image: ${REGISTRY}/food-delivery/food-delivery-app-ui:${FOOD_DELIVERY_APP_UI_TAG}
     container_name: food-delivery-app-ui
     mem_limit: 128m
@@ -666,6 +756,11 @@ services:
       start_period: 10s
     restart: on-failure
   ledger-service:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "2"
     image: ${REGISTRY}/food-delivery/ledger-service:${LEDGER_SERVICE_TAG}
     container_name: ledger-service
     mem_limit: 896m
@@ -711,6 +806,11 @@ services:
       start_period: 120s
     restart: on-failure
   chat-service:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "2"
     image: ${REGISTRY}/food-delivery/chat-service:${CHAT_SERVICE_TAG}
     container_name: chat-service
     mem_limit: 896m
@@ -760,6 +860,11 @@ services:
       start_period: 120s
     restart: on-failure
   ondc-integration-service:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "2"
     image: ${REGISTRY}/food-delivery/ondc-integration-service:${ONDC_INTEGRATION_SERVICE_TAG}
     container_name: ondc-integration-service
     mem_limit: 896m
@@ -800,6 +905,11 @@ services:
       start_period: 120s
     restart: on-failure
   wallet-service:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "2"
     image: ${REGISTRY}/food-delivery/wallet-service:${WALLET_SERVICE_TAG}
     container_name: wallet-service
     mem_limit: 896m
@@ -845,6 +955,11 @@ services:
       start_period: 120s
     restart: on-failure
   clickhouse:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "2"
     image: clickhouse/clickhouse-server:latest
     container_name: shared_clickhouse
     mem_limit: 1024m
@@ -866,6 +981,11 @@ services:
       retries: 5
       start_period: 30s
   campaign-service:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "2"
     image: ${REGISTRY}/food-delivery/campaign-service:${CAMPAIGN_SERVICE_TAG}
     container_name: campaign-service
     mem_limit: 896m
@@ -910,6 +1030,11 @@ services:
       start_period: 120s
     restart: on-failure
   bidding-engine:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "2"
     image: ${REGISTRY}/food-delivery/bidding-engine:${BIDDING_ENGINE_TAG}
     container_name: bidding-engine
     mem_limit: 896m
@@ -952,6 +1077,11 @@ services:
       start_period: 120s
     restart: on-failure
   budget-pacing-service:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "2"
     image: ${REGISTRY}/food-delivery/budget-pacing-service:${BUDGET_PACING_SERVICE_TAG}
     container_name: budget-pacing-service
     mem_limit: 896m
@@ -998,6 +1128,11 @@ services:
       start_period: 120s
     restart: on-failure
   event-tracking-service:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "2"
     image: ${REGISTRY}/food-delivery/event-tracking-service:${EVENT_TRACKING_SERVICE_TAG}
     container_name: event-tracking-service
     mem_limit: 896m
@@ -1042,6 +1177,11 @@ services:
       start_period: 120s
     restart: on-failure
   api-docs:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "2"
     image: nginx:alpine
     container_name: api-docs
     mem_limit: 64m
@@ -1051,6 +1191,11 @@ services:
       - ../public-docs:/usr/share/nginx/html:ro
     restart: unless-stopped
   reviews-service:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "2"
     image: ${REGISTRY}/food-delivery/reviews-service:${REVIEWS_SERVICE_TAG}
     container_name: reviews-service
     mem_limit: 896m

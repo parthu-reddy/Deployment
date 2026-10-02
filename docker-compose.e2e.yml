@@ -7,6 +7,11 @@
 # OracleDeployment/fetch_secrets_from_vault.sh --with-e2e.
 services:
   api-gateway:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "2"
     env_file:
       - .env.e2e
     environment:
@@ -14,6 +19,11 @@ services:
       E2E_OTP_ENABLED: ${E2E_OTP_ENABLED:-false}
 
   identity-service:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "2"
     env_file:
       - .env.e2e
     environment:
