@@ -49,12 +49,11 @@ spring:
       - id: customer-service
         uri: lb://customer-service
         predicates:
-        # /api/v1/customer (singular) is CustomerOrderController's refund-request surface; the plural
-        # /api/v1/customers/** above does not match it. /api/v1/money/{customer,restaurant,driver} is
+        # /api/v1/money/{customer,restaurant,driver} is
         # the money BFF that also lives in CustomerApplication -- only the advertiser slice of that
         # surface is served elsewhere (wallet-service, below). Added 2026-09-10: none of these were
         # routed here, so every wallet, earnings and refund screen 404'd in a real deployment.
-        - Path=/api/v1/customers/**,/api/v1/customer/**,/api/v1/orders/**,/api/v1/places/**,
+        - Path=/api/v1/customers/**,/api/v1/orders/**,/api/v1/places/**,
           /api/v1/restaurants/nearby, /api/v1/restaurants/brands/*/outlets,
           /api/v1/restaurants/*/delivery-availability, /api/v1/restaurants/*/delivery-pricing,
           /api/v1/money/customer/**, /api/v1/money/restaurant/**, /api/v1/money/driver/**,
@@ -476,9 +475,6 @@ rbac:
     - /api/v1/verification
     customer:
     - /api/v1/customers
-    # Singular. CustomerOrderController serves /api/v1/customer/orders/**, which the plural prefix
-    # above does not match -- rbac matches on `equals` or `startsWith(prefix + "/")`.
-    - /api/v1/customer
     - /api/v1/money/customer
     - /api/v1/orders
     - /api/v1/places
