@@ -19,6 +19,8 @@ spring:
       max-lifetime: 1200000
       leak-detection-threshold: 2000
   jpa:
+    # A status stream can live for ten minutes; release JDBC resources after each read.
+    open-in-view: false
     hibernate:
       ddl-auto: validate
     properties:

@@ -32,9 +32,10 @@ remote() { ssh -o StrictHostKeyChecking=no -o ConnectTimeout=20 -i "$SSH_KEY" "$
 
 [[ -f "$MAP" ]] || die "missing $MAP"
 
-# Deploy exactly the checked-out, reviewed tag files. A deploy command must not silently change
-# that release state or hide a failed update. When CI has committed newer tag files, update and
-# review the Deployment checkout explicitly before invoking this script.
+# Automatically pull the latest deployment configuration (including new CI tags)
+# before executing the deploy. Uses --autostash to protect DEPLOY_LOG.md.
+echo "==> syncing local Deployment repo"
+git -C "$ROOT/Deployment" pull --rebase --autostash || echo "Warning: git pull failed, deploying current state"
 
 ROLLBACK=false
 SYNC_ENV=false

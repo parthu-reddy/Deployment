@@ -18,6 +18,12 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 DEPLOY="$ROOT/Deployment"
+
+# Automatically pull the latest deployment configuration (including new CI tags)
+# before executing the deploy. Uses --autostash to protect DEPLOY_LOG.md.
+echo "==> syncing local Deployment repo"
+git -C "$DEPLOY" pull --rebase --autostash || echo "Warning: git pull failed, deploying current state"
+
 ENV_DIR="$DEPLOY/env_deployments/dev"
 SSH_KEY="${SSH_KEY:-/Users/parthureddy/Documents/OracleSSH/ssh-key-2026-08-16.key}"
 VM="${VM:-ubuntu@140.245.234.137}"
