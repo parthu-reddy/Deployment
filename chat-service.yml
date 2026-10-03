@@ -4,6 +4,10 @@ server:
 spring:
   application:
     name: chat-service
+  cloud:
+    openfeign:
+      circuitbreaker:
+        enabled: true
   servlet:
     multipart:
       max-file-size: 5MB
@@ -43,5 +47,4 @@ eureka:
       defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://eureka-server:8761/eureka}
   instance:
     prefer-ip-address: true
-
 
