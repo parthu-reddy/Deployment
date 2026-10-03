@@ -52,9 +52,7 @@ management:
 
   otlp:
     tracing:
-      endpoint: ${OTLP_ENDPOINT:http://localhost:4318/v1/traces}
-      export:
-        enabled: false
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://jaeger:4318}/v1/traces
 
 logging:
   file:
