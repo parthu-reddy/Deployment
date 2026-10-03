@@ -38,6 +38,9 @@ eureka:
 
 
 management:
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://jaeger:4318}/v1/traces
   metrics:
     distribution:
       percentiles-histogram:

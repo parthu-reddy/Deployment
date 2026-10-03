@@ -29,6 +29,7 @@ spring:
             - GET
             - POST
             - PUT
+            - PATCH
             - DELETE
             - OPTIONS
             allowedHeaders: '*'
@@ -464,6 +465,9 @@ eureka:
     lease-renewal-interval-in-seconds: 15
     lease-expiration-duration-in-seconds: 30
 management:
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://jaeger:4318}/v1/traces
   endpoints:
     web:
       exposure:

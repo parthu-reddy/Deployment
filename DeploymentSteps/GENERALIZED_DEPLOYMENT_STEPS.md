@@ -554,3 +554,17 @@ would not find the sibling module's jar.
 50. **OTLP environment name mismatch (2026-10-03):**
     - Compose supplies OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318, while shared Spring configuration reads OTLP_ENDPOINT and defaults to localhost. The two repaired service configurations now map the supplied variable to management.otlp.tracing.endpoint, appending /v1/traces.
     - Use the existing config-only deploy with sequential reader restarts. Verify actual Oracle files, health, restart counts and fresh exporter logs; configured values alone are not runtime proof. No workflow script changes or database reset are needed.
+
+## 51. Verify authorization clients, scheduled publishers and deployed Kafka codecs (2026-10-03)
+
+A healthy Wallet/Ledger can still inject ownership fallbacks instead of real Feign clients. Verify
+actual app context and transport, owner/non-owner requests. Gateway CORS must include used verbs such
+as PATCH; @Scheduled publishers require enabled scheduling. Check exact retained outbox status after
+deployment. Notification listeners bind raw String JSON: deployed StringDeserializer/StringSerializer
+must preserve ad-event/retry bytes, unlike the old NotificationRequestEvent global JsonDeserializer.
+
+notification-service.yml's spring application name differs from compose communication-integration.
+Protected deploy.sh --config rejects that legacy mapping. Use existing publish-config.sh exact file
+(after dry-run), then deploy.sh --fresh communication-integration to reload unchanged image. Verify
+Dev profile, config hashes, healthy/no fresh errors, hardening and report-only reconcile. No workflow
+script changed. Four other scoped services received Jaeger endpoint overrides using the Compose env.
