@@ -103,6 +103,7 @@ def main():
             if db=='restaurant':
                 expected_orgs=','.join("('"+b['id']+"'::uuid,'"+b['organisation_id']+"'::uuid)" for b in tables['restaurant.brands'])
                 checks.append("DO $$ BEGIN IF EXISTS (SELECT FROM (VALUES "+expected_orgs+") AS expected(id,org) LEFT JOIN brands b USING(id) WHERE b.organisation_id IS DISTINCT FROM expected.org) THEN RAISE EXCEPTION 'Seed brand organisation mismatch'; END IF; END $$;")
+                checks.append("DO $$ BEGIN IF NOT EXISTS (SELECT FROM outlet_category_timings WHERE outlet_id='"+canonical['id']+"' AND category_id='"+food['id']+"' AND opening_time='00:00:00'::time AND closing_time='23:59:59'::time) THEN RAISE EXCEPTION 'Canonical Dev Food category must be orderable overnight'; END IF; END $$;")
             if db=='identity':
                 org_ids=','.join("'"+o['id']+"'" for o in tables['identity.organisations'])
                 checks.append("DO $$ BEGIN IF EXISTS (SELECT FROM organisations o LEFT JOIN organisation_members m ON m.organisation_id=o.id AND m.role='OWNER' AND m.status='ACTIVE' WHERE o.id IN ("+org_ids+") GROUP BY o.id HAVING count(m.id)<>1) THEN RAISE EXCEPTION 'Seed organisations require exactly one ACTIVE OWNER'; END IF; END $$;")
