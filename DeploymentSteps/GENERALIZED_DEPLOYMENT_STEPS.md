@@ -568,3 +568,10 @@ Protected deploy.sh --config rejects that legacy mapping. Use existing publish-c
 (after dry-run), then deploy.sh --fresh communication-integration to reload unchanged image. Verify
 Dev profile, config hashes, healthy/no fresh errors, hardening and report-only reconcile. No workflow
 script changed. Four other scoped services received Jaeger endpoint overrides using the Compose env.
+
+
+## 52. Recreate explicitly disposable Dev schemas through published clean artifacts (2026-10-03T21:14:33+05:30)
+
+The owner confirms all current data is Dev/disposable until an explicit production report or reversal. For the reviewed Business Platform baseline consolidation, retain final table/column/index/trigger definitions and Flyway validation, prove complete PostgreSQL/PostGIS schemas and actual seeds, and clean every consumer output so retired resources cannot survive. Publish the shared library, current producer stubs, and tested dependent service/UI images before the authorised full clean-deploy --wipe. Verify exclusively Dev profiles from service-map.tsv, commit tags and provenance, run the existing workflow with its explicit WIPE acknowledgement, then dummy-data.sh --load-only after healthy schemas. Never apply changed baselines to retained volumes, repair checksums, infer legacy owners, or use this exception after production is declared.
+
+The native publisher requires a live Docker builder and already packaged jars/dist. Its first O2 invocation stopped before any push because the Docker Desktop socket was absent; start the existing builder, check docker info and rerun the unchanged publisher. Derive Compose service names from the map (government-id-service), not Java directory names. Preserve unrelated DEPLOY_LOG and visibility state. After deployment inspect every service's fresh logs, exact image identity, restarts, config checksums and relationships; health alone is insufficient.
