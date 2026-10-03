@@ -20,6 +20,9 @@ spring:
           organisation-service:
             connectTimeout: 500
             readTimeout: 800
+          restaurant-access:
+            connectTimeout: 500
+            readTimeout: 800
           default:
             connectTimeout: 5000
             readTimeout: 5000
@@ -94,4 +97,3 @@ platform:
     allowed-city-ids: ${FLEET_ALLOWED_CITY_IDS:BLR}
   auction:
     token-secret: ${AUCTION_TOKEN_SECRET:}
-

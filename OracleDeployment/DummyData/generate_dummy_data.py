@@ -58,9 +58,11 @@ cuisine_types = ["Italian", "Indian", "Chinese", "Mexican", "Continental", "Amer
 for i, brand_name in enumerate(brand_names):
     brand_id = str(uuid.uuid4())
     owner_id = str(uuid.uuid4())
+    organisation_id = str(uuid.uuid4())
     brands.append({
         'id': brand_id,
         'owner_id': owner_id,
+        'organisation_id': organisation_id,
         'name': brand_name,
         'created_at': '2026-01-01 00:00:00+00',
         'updated_at': '2026-01-01 00:00:00+00'
@@ -153,7 +155,7 @@ with open("dummy_data.sql", "w") as f:
     f.write("BEGIN;\n\n")
     
     for b in brands:
-        f.write(f"INSERT INTO brands (id, owner_id, name, created_at, updated_at, logo_url) VALUES ('{b['id']}', '{b['owner_id']}', '{b['name']}', '{b['created_at']}', '{b['updated_at']}', {get_image_sql_val()}) ON CONFLICT (id) DO NOTHING;\n")
+        f.write(f"INSERT INTO brands (id, organisation_id, name, created_at, updated_at, logo_url) VALUES ('{b['id']}', '{b['organisation_id']}', '{b['name']}', '{b['created_at']}', '{b['updated_at']}', {get_image_sql_val()}) ON CONFLICT (id) DO NOTHING;\n")
         
     for o in outlets:
         # Use ST_SetSRID(ST_Point(lng, lat), 4326)
@@ -193,6 +195,8 @@ with open("dummy_identity_data.sql", "w") as f:
         
         f.write(f"INSERT INTO users (id, phone_number, name, email) VALUES ('{b['owner_id']}', '{phone}', '{owner_name}', '{owner_email}') ON CONFLICT (id) DO NOTHING;\n")
         f.write(f"INSERT INTO user_roles (id, user_id, service_name, role_name) VALUES ('{str(uuid.uuid4())}', '{b['owner_id']}', 'restaurant-service', 'RESTAURANT') ON CONFLICT (user_id, service_name, role_name) DO NOTHING;\n")
+        f.write(f"INSERT INTO organisations (id, display_name, status, created_by, created_at, updated_at) VALUES ('{b['organisation_id']}', '{b['name']}', 'ACTIVE', '{b['owner_id']}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) ON CONFLICT (id) DO NOTHING;\n")
+        f.write(f"INSERT INTO organisation_members (id, organisation_id, user_id, role, status, added_by, created_at, updated_at) VALUES ('{str(uuid.uuid4())}', '{b['organisation_id']}', '{b['owner_id']}', 'OWNER', 'ACTIVE', '{b['owner_id']}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) ON CONFLICT (organisation_id, user_id) DO NOTHING;\n")
 
 
 

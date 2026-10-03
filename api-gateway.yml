@@ -70,7 +70,7 @@ spring:
         uri: lb://restaurant-service
         predicates:
         - Path=/api/v1/brands/**,/api/v1/restaurants/**,/api/v1/outlets/**,/api/v1/categories/**,
-          /api/v1/internal/admin/restaurants/**, /api/v1/images/**
+          /api/v1/internal/admin/restaurants/**, /api/v1/internal/restaurants/**, /api/v1/images/**
         filters:
         - name: RequestRateLimiter
           args:

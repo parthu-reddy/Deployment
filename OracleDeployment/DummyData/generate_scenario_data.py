@@ -49,10 +49,17 @@ for role, entries in groups.items():
                     doc_type=doc, document_number='E2E-'+phone+'-'+doc, api_verification_status=status)))
             sql['government_id'].append(insert('executive_bank_details', dict(bank_id=uid(phone+'-bank'), executive_id=user,
                 account_number=phone, ifsc_code='HDFC0000001', bank_registered_name='E2E '+scenario, penny_drop_status=status)))
-        elif scenario != 'no-brand':
+        elif role == 'RESTAURANT':
+            organisation = uid(phone+'-organisation')
+            sql['identity'].append(insert('organisations', dict(id=organisation, display_name='E2E '+scenario, status='ACTIVE',
+                created_by=user, created_at='2026-10-03 00:00:00+00', updated_at='2026-10-03 00:00:00+00')))
+            sql['identity'].append(insert('organisation_members', dict(id=uid(phone+'-member'), organisation_id=organisation,
+                user_id=user, role='OWNER', status='ACTIVE', added_by=user,
+                created_at='2026-10-03 00:00:00+00', updated_at='2026-10-03 00:00:00+00')))
+            if scenario == 'no-brand': continue
             brand = uid(phone+'-brand'); category = uid(phone+'-category')
             status = 'PENDING' if scenario == 'pending-brand' else 'REJECTED' if scenario == 'rejected-brand' else 'APPROVED'
-            sql['restaurant'].append(insert('brands', dict(id=brand, owner_id=user, name='E2E '+scenario, kyc_status=status,
+            sql['restaurant'].append(insert('brands', dict(id=brand, organisation_id=organisation, name='E2E '+scenario, kyc_status=status,
                 penny_drop_status=status, is_gstin_verified=status == 'APPROVED', is_bank_verified=status == 'APPROVED')))
             sql['restaurant'].append(insert('categories', dict(id=category, brand_id=brand, name='Scenario Food', active=True)))
             for doc in ['PAN','GSTIN']:

@@ -46,7 +46,7 @@ def main():
                     table,cols,data=m.groups();cols=[c.strip() for c in cols.split(',')];data=values(data)
                     assert len(cols)==len(data),(name,table,'invalid column/value count')
                     tables[db+'.'+table].append(dict(zip(cols,data)));databases[db+'.'+table]=db
-    expected={'identity.users':554,'customer.customers':504,'customer.customer_addresses':1003,
+    expected={'identity.organisations':14,'identity.organisation_members':14,'identity.users':554,'customer.customers':504,'customer.customer_addresses':1003,
               'delivery.delivery_executives':34,'restaurant.brands':13,'restaurant.outlets':104,
               'restaurant.categories':103,'restaurant.master_menu_items':504}
     for table,count in expected.items():assert len(tables[table])==count,(table,len(tables[table]),count)
@@ -62,7 +62,9 @@ def main():
     for table,column,parent in [
         ('identity.user_roles','user_id','identity.users'),
         ('customer.customers','id','identity.users'),('customer.customer_addresses','customer_id','customer.customers'),
-        ('delivery.delivery_executives','id','identity.users'),('restaurant.brands','owner_id','identity.users'),
+        ('delivery.delivery_executives','id','identity.users'),('restaurant.brands','organisation_id','identity.organisations'),
+        ('identity.organisations','created_by','identity.users'),('identity.organisation_members','user_id','identity.users'),
+        ('identity.organisation_members','organisation_id','identity.organisations'),
         ('restaurant.outlets','brand_id','restaurant.brands'),('restaurant.categories','brand_id','restaurant.brands'),
         ('restaurant.master_menu_items','brand_id','restaurant.brands'),('restaurant.master_menu_items','category_id','restaurant.categories'),
         ('restaurant.outlet_menu_overrides','outlet_id','restaurant.outlets'),('restaurant.outlet_menu_overrides','master_menu_item_id','restaurant.master_menu_items'),
@@ -70,12 +72,17 @@ def main():
         ('government_id.executive_bank_details','executive_id','delivery.delivery_executives'),
         ('government_id.brand_documents','brand_id','restaurant.brands'),('government_id.brand_bank_details','brand_id','restaurant.brands')]:
         references(table,column,parent)
+    assert len({b['organisation_id'] for b in tables['restaurant.brands']}) == len(tables['restaurant.brands']), 'One brand per organisation'
+    for organisation in tables['identity.organisations']:
+        owners=[m for m in tables['identity.organisation_members'] if m['organisation_id']==organisation['id'] and m['role']=='OWNER' and m['status']=='ACTIVE']
+        assert len(owners)==1, (organisation['id'],'Expected exactly one active owner')
+        assert owners[0]['user_id']==organisation['created_by'], (organisation['id'],'Seed owner mismatch')
     for table in ['customer.customer_addresses','restaurant.outlets','delivery.delivery_executives']:
         for row in tables[table]:assert re.fullmatch('[A-Z][A-Z0-9_-]{0,63}',row.get('city_id','')),(table,'missing/invalid city_id')
     identities={row['id']:row['phone_number'] for row in tables['identity.users']}
     for table in ['customer.customers','delivery.delivery_executives']:
         for row in tables[table]:assert identities[row['id']]==row['phone_number'],(table,'phone/UUID mismatch')
-    print('Static seed validation passed: 554 identities, 504 customers, 1003 addresses, 34 riders, 13 brands, 104 outlets, 504 dishes')
+    print('Static seed validation passed: 14 organisations with one ACTIVE OWNER each, 554 identities, 504 customers, 1003 addresses, 34 riders, 13 brands, 104 outlets, 504 dishes')
     if args.remote:
         ssh=['ssh','-o','BatchMode=yes','-o','ConnectTimeout=20','-i',os.environ.get('SSH_KEY','/Users/parthureddy/Documents/OracleSSH/ssh-key-2026-08-16.key'),os.environ.get('VM','ubuntu@140.245.234.137')]
         for db in FILES:
@@ -88,7 +95,12 @@ def main():
                 literals=','.join("'"+value+"'" for value in sorted(ids))
                 checks.append(f"SELECT '{key}=' || COUNT(*) FROM {key.split('.')[1]} WHERE {pk} IN ({literals});")
                 checks[-1]+=f"\nDO $$ BEGIN IF (SELECT COUNT(*) FROM {key.split('.')[1]} WHERE {pk} IN ({literals})) <> {len(ids)} THEN RAISE EXCEPTION 'Missing fixtures in {key}'; END IF; END $$;"
+            if db=='restaurant':
+                expected_orgs=','.join("('"+b['id']+"'::uuid,'"+b['organisation_id']+"'::uuid)" for b in tables['restaurant.brands'])
+                checks.append("DO $$ BEGIN IF EXISTS (SELECT FROM (VALUES "+expected_orgs+") AS expected(id,org) LEFT JOIN brands b USING(id) WHERE b.organisation_id IS DISTINCT FROM expected.org) THEN RAISE EXCEPTION 'Seed brand organisation mismatch'; END IF; END $$;")
             if db=='identity':
+                org_ids=','.join("'"+o['id']+"'" for o in tables['identity.organisations'])
+                checks.append("DO $$ BEGIN IF EXISTS (SELECT FROM organisations o LEFT JOIN organisation_members m ON m.organisation_id=o.id AND m.role='OWNER' AND m.status='ACTIVE' WHERE o.id IN ("+org_ids+") GROUP BY o.id HAVING count(m.id)<>1) THEN RAISE EXCEPTION 'Seed organisations require exactly one ACTIVE OWNER'; END IF; END $$;")
                 checks.append("DO $$ BEGIN IF (SELECT COUNT(DISTINCT u.id) FROM users u JOIN user_roles r ON r.user_id=u.id WHERE u.phone_number IN ('1000000001','1000000002') AND u.is_active AND r.role_name='ADMIN' AND lower(r.service_name) IN ('admin','adminapplication'))<>2 THEN RAISE EXCEPTION 'Expected two provisioned test administrators'; END IF; END $$;")
             sql='BEGIN READ ONLY;\n'+'\n'.join(checks)+'\nCOMMIT;'
             cmd='cd '+shlex.quote('Food Delivery.nosync/Deployment')+f' && docker compose exec -T -u postgres postgres psql -X -qAt -v ON_ERROR_STOP=1 -d {db}_db'
