@@ -546,3 +546,11 @@ would not find the sibling module's jar.
     - **Error:** `Error response from daemon: failed to resolve reference ...: not found` during `03_clean_deploy.sh`.
     - **Cause:** The image tag pinned in the `Deployment/env_deployments/dev/*.env` file has not been built and pushed to the registry.
     - **Fix:** Build the missing image using GitHub Actions (e.g. `bash FoodDeliveryContracts/ci/build_services.sh --only LedgerService`), then `git pull --rebase` to fetch the updated `.env` file, and retry the deployment.
+
+49. **Shared audit crashes database-free services (2026-10-03):**
+    - Bidding and Tracking exclude datasource/JPA auto-configuration in Compose. Unconditional audit components require EntityManagerFactory and prevent startup. Register audit beans through an auto-configuration after Hibernate JPA, conditional on the factory. Test actual Compose exclusions, alongside a real JPA audit context.
+    - Publish the tested shared package and rebuild affected executable jars; verify the embedded library before image publication. An H2-backed context is insufficient proof for these services.
+
+50. **OTLP environment name mismatch (2026-10-03):**
+    - Compose supplies OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318, while shared Spring configuration reads OTLP_ENDPOINT and defaults to localhost. The two repaired service configurations now map the supplied variable to management.otlp.tracing.endpoint, appending /v1/traces.
+    - Use the existing config-only deploy with sequential reader restarts. Verify actual Oracle files, health, restart counts and fresh exporter logs; configured values alone are not runtime proof. No workflow script changes or database reset are needed.

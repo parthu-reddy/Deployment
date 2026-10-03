@@ -3,6 +3,10 @@ server:
 spring:
   application:
     name: bidding-engine
+management:
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://jaeger:4318}/v1/traces
 outbox:
   enabled: false
   kafka:
@@ -18,5 +22,4 @@ eureka:
       defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://eureka-server:8761/eureka}
   instance:
     prefer-ip-address: true
-
 
