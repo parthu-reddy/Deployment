@@ -539,7 +539,7 @@ would not find the sibling module's jar.
 
 ### Tracing Configuration Checklist
 - Ensure a Jaeger (or OpenTelemetry Collector) container is running and exposed in `docker-compose.yml`.
-- Ensure all microservices have `OTLP_ENDPOINT=http://jaeger:4318/v1/traces` correctly injected in their `environment:` block so they don't spam errors trying to connect to their own internal `localhost:4318`.
+- Compose supplies `OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318`. Shared `application.yml` maps it to `management.otlp.tracing.endpoint`, appending `/v1/traces`. Check the pinned Spring Boot configuration metadata before relying on exporter properties.
 - Failure to do this will result in `java.net.ConnectException` logs filling up memory and causing health check timeouts.
 
 48. **Clean Deploy Fails Due to Missing Image:**
@@ -552,7 +552,8 @@ would not find the sibling module's jar.
     - Publish the tested shared package and rebuild affected executable jars; verify the embedded library before image publication. An H2-backed context is insufficient proof for these services.
 
 50. **OTLP environment name mismatch (2026-10-03):**
-    - Compose supplies OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318, while shared Spring configuration reads OTLP_ENDPOINT and defaults to localhost. The two repaired service configurations now map the supplied variable to management.otlp.tracing.endpoint, appending /v1/traces.
+    - Compose supplies OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318, while the old shared Spring configuration read OTLP_ENDPOINT and defaulted to localhost. Scoped overrides repaired seven consumers earlier; the fresh full rollout exposed the same error in eleven remaining applications. The shared endpoint now maps the supplied variable and appends /v1/traces.
+    - Remove the unrecognised management.otlp.tracing.export.enabled property rather than treat it as proof that export is disabled. Keep tracing enabled and verify Jaeger receives spans. Healthy containers can still log exporter errors.
     - Use the existing config-only deploy with sequential reader restarts. Verify actual Oracle files, health, restart counts and fresh exporter logs; configured values alone are not runtime proof. No workflow script changes or database reset are needed.
 
 ## 51. Verify authorization clients, scheduled publishers and deployed Kafka codecs (2026-10-03)

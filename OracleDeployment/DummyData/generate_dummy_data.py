@@ -148,6 +148,17 @@ for i, brand_name in enumerate(brand_names):
                     'closing_time': f"{end_hour:02d}:00:00"
                 })
 
+        # One canonical Dev checkout fixture is orderable overnight. Other categories retain
+        # realistic windows; production opening-hours logic still applies without exceptions.
+        if brand_name == 'Brand 1' and j == 3:
+            outlet_cat_timings.append({
+                'id': str(uuid.uuid5(uuid.NAMESPACE_URL, 'food-delivery:canonical-food-hours:' + outlet_id)),
+                'outlet_id': outlet_id,
+                'category_id': brand_categories[0],
+                'opening_time': '00:00:00',
+                'closing_time': '23:59:59'
+            })
+
 
 
 # Write SQL for Restaurant DB

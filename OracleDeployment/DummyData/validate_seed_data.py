@@ -82,6 +82,11 @@ def main():
     identities={row['id']:row['phone_number'] for row in tables['identity.users']}
     for table in ['customer.customers','delivery.delivery_executives']:
         for row in tables[table]:assert identities[row['id']]==row['phone_number'],(table,'phone/UUID mismatch')
+    canonical=next(row for row in tables['restaurant.outlets'] if row['name']=='Brand 1 Outlet 3')
+    food=next(row for row in tables['restaurant.categories'] if row['brand_id']==canonical['brand_id'] and row['name']=='Food')
+    assert any(row['outlet_id']==canonical['id'] and row['category_id']==food['id']
+               and row['opening_time']=='00:00:00' and row['closing_time']=='23:59:59'
+               for row in tables['restaurant.outlet_category_timings']), 'Canonical Dev Food category must be orderable overnight'
     print('Static seed validation passed: 14 organisations with one ACTIVE OWNER each, 554 identities, 504 customers, 1003 addresses, 34 riders, 13 brands, 104 outlets, 504 dishes')
     if args.remote:
         ssh=['ssh','-o','BatchMode=yes','-o','ConnectTimeout=20','-i',os.environ.get('SSH_KEY','/Users/parthureddy/Documents/OracleSSH/ssh-key-2026-08-16.key'),os.environ.get('VM','ubuntu@140.245.234.137')]

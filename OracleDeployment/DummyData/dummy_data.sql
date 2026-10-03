@@ -1267,4 +1267,7 @@ INSERT INTO outlet_timings (id, outlet_id, opening_time, closing_time) VALUES ('
 INSERT INTO outlet_timings (id, outlet_id, opening_time, closing_time) VALUES ('44632b2a-35b0-4698-8445-ebafa328eac9', '92a6bf1b-2d8b-4191-8149-c6b52cc0341a', '00:00:00', '23:59:59') ON CONFLICT (id) DO NOTHING;
 INSERT INTO outlet_timings (id, outlet_id, opening_time, closing_time) VALUES ('fbdc2c18-88f2-4b19-9b2a-06e34212820a', 'c6a5d8f7-1f67-4ad5-9286-75e88266a60f', '00:00:00', '23:59:59') ON CONFLICT (id) DO NOTHING;
 
+-- Canonical Dev order fixture: Food at Brand 1 Outlet 3 remains orderable during overnight E2E.
+INSERT INTO outlet_category_timings (id, outlet_id, category_id, opening_time, closing_time) VALUES ('fedfac0d-3d82-52b5-b0a7-3a55f8a18ff1', '54ba242d-c529-4772-bd8a-6cfdd5b3d7cc', 'ce5e7f87-7196-4324-896b-c191cc5ef3d7', '00:00:00', '23:59:59') ON CONFLICT (id) DO NOTHING;
+
 COMMIT;
