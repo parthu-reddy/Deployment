@@ -90,7 +90,9 @@ spring:
         uri: lb://identity-service
         predicates:
         - Path=/api/v1/internal/auth/**,/api/v1/internal/users/**,/api/v1/users/**,
-          /api/v1/internal/admin/users/**,/api/v1/internal/e2e/auth/**
+          /api/v1/internal/admin/users/**,/api/v1/internal/e2e/auth/**,
+          /api/v1/organisations/**,/api/v1/organisation-invitations/**,
+          /api/v1/internal/organisations/**,/api/v1/internal/admin/organisations/**,/api/v1/internal/admin/audit-events/**
         filters:
         - name: RequestRateLimiter
           args:
@@ -469,6 +471,8 @@ management:
 rbac:
   rules:
     authenticated:
+    - /api/v1/organisations
+    - /api/v1/organisation-invitations
     - /api/v1/users
     - /api/v1/internal/auth/sessions
     - /api/v1/internal/auth/logout

@@ -17,6 +17,9 @@ spring:
     openfeign:
       client:
         config:
+          organisation-service:
+            connectTimeout: 500
+            readTimeout: 800
           default:
             connectTimeout: 5000
             readTimeout: 5000
