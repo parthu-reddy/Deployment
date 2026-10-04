@@ -30,3 +30,20 @@ All 9000000001–9000000014 restaurant accounts have one ACTIVE OWNER membership
 | Brand 8 | 32126a62-c256-541d-9737-a124b90e639a | 629a09b9-c38a-4ca0-80fc-af80f1314972 |
 | Brand 9 | ac793bc2-8dd1-56cd-a2d5-daf1012f1d91 | 24cce6fa-e8cb-423a-8740-4061489ab7bd |
 | Brand 10 | 42174a67-2f90-515c-9b41-32409a80e990 | c6c75d95-2fb6-4e84-88e8-bb00573188b2 |
+
+## O3 application lifecycle — 2026-10-04
+
+Baseline Brand1–10 and riders7000000001–30 are explicitly APPROVED; all baseline riders seed OFFLINE with their existing successful biometric time and server-authoritative duty must be established before ordering. All approved brands have at least one14-digit synthetic FSSAI outlet. Baseline UUIDs are preserved. Dev legacy provider fixtures are deliberately synthetic; they are not real production checks or private uploaded document proof. Status-changing tests create their own applicant and actual private uploads, never approve/reject/suspend a seeded scenario.
+
+| Phone | Application state | Checks / duty |
+|---|---|---|
+|7000000031|IN_REVIEW|Passed Dev document/bank checks, OFFLINE; human approval still required|
+|7000000032|REJECTED|Reason and rejected checks, OFFLINE|
+|7000000033|APPROVED|OFFLINE; current daily selfie required before duty|
+|7000000034|SUSPENDED|Reason, inactive and OFFLINE|
+|9000000011|No brand|Own organisation, no application yet|
+|9000000012|IN_REVIEW|Passed Dev checks; active nearby outlet remains hidden|
+|9000000013|REJECTED|Reason; active nearby outlet remains hidden|
+|9000000014|APPROVED|One inactive Bengaluru outlet and separate Hyderabad unavailable-item fixture|
+
+The fresh seed validator checks every lifecycle state/reason, manifest mapping and approved-brand FSSAI. This seed change is local and not yet loaded into Oracle; existing retained checkpoints remain valid until the authorised O3 schema wipe. Normal Dev Autofill supports fresh non-admin ten-digit phones; administrative provisioning remains restricted.

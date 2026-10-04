@@ -166,13 +166,13 @@ with open("dummy_data.sql", "w") as f:
     f.write("BEGIN;\n\n")
     
     for b in brands:
-        f.write(f"INSERT INTO brands (id, organisation_id, name, created_at, updated_at, logo_url) VALUES ('{b['id']}', '{b['organisation_id']}', '{b['name']}', '{b['created_at']}', '{b['updated_at']}', {get_image_sql_val()}) ON CONFLICT (id) DO NOTHING;\n")
+        f.write(f"INSERT INTO brands (id, organisation_id, name, created_at, updated_at, logo_url, application_status, kyc_status, penny_drop_status, is_gstin_verified, is_bank_verified) VALUES ('{b['id']}', '{b['organisation_id']}', '{b['name']}', '{b['created_at']}', '{b['updated_at']}', {get_image_sql_val()}, 'APPROVED', 'APPROVED', 'APPROVED', TRUE, TRUE) ON CONFLICT (id) DO NOTHING;\n")
         
-    for o in outlets:
+    for outlet_index, o in enumerate(outlets):
         # Use ST_SetSRID(ST_Point(lng, lat), 4326)
         # Every outlet names its IANA time zone (NOT NULL since TimezoneCorrectness_2026-09-25); the
         # generated outlets are all around Bengaluru.
-        f.write(f"INSERT INTO outlets (id, brand_id, name, location, cuisine, rating, reviews_count, banner_url, time_zone, city_id) VALUES ('{o['id']}', '{o['brand_id']}', '{o['name']}', ST_SetSRID(ST_Point({o['lng']}, {o['lat']}), 4326), '{o['cuisine']}', {o['rating']}, {o['reviews_count']}, {get_image_sql_val()}, 'Asia/Kolkata', 'BLR') ON CONFLICT (id) DO NOTHING;\n")
+        f.write(f"INSERT INTO outlets (id, brand_id, name, location, cuisine, rating, reviews_count, banner_url, time_zone, city_id, fssai_license_number) VALUES ('{o['id']}', '{o['brand_id']}', '{o['name']}', ST_SetSRID(ST_Point({o['lng']}, {o['lat']}), 4326), '{o['cuisine']}', {o['rating']}, {o['reviews_count']}, {get_image_sql_val()}, 'Asia/Kolkata', 'BLR', '{10000000000000+outlet_index}') ON CONFLICT (id) DO NOTHING;\n")
         
     for c in categories:
         f.write(f"INSERT INTO categories (id, brand_id, name, description, active) VALUES ('{c['id']}', '{c['brand_id']}', '{c['name']}', '{c['description']}', true) ON CONFLICT (id) DO NOTHING;\n")
@@ -232,9 +232,9 @@ with open("dummy_delivery_data.sql", "w") as f:
 with open("dummy_government_id_brands.sql", "w") as f:
     f.write("BEGIN;\n\n")
     for b in brands:
-        f.write(f"INSERT INTO brand_documents (id, brand_id, doc_type, document_number, api_verification_status, verified_at) VALUES ('{str(uuid.uuid4())}', '{b['id']}', 'GSTIN', 'GSTIN{str(random.randint(100000000, 999999999))}', 'VERIFIED', CURRENT_TIMESTAMP) ON CONFLICT (id) DO NOTHING;\n")
-        f.write(f"INSERT INTO brand_documents (id, brand_id, doc_type, document_number, api_verification_status, verified_at) VALUES ('{str(uuid.uuid4())}', '{b['id']}', 'PAN', 'PAN{str(random.randint(10000, 99999))}', 'VERIFIED', CURRENT_TIMESTAMP) ON CONFLICT (id) DO NOTHING;\n")
-        f.write(f"INSERT INTO brand_documents (id, brand_id, doc_type, document_number, api_verification_status, verified_at) VALUES ('{str(uuid.uuid4())}', '{b['id']}', 'FSSAI', 'FSSAI{str(random.randint(100000, 999999))}', 'VERIFIED', CURRENT_TIMESTAMP) ON CONFLICT (id) DO NOTHING;\n")
+        f.write(f"INSERT INTO brand_documents (id, brand_id, doc_type, document_number, api_verification_status, verified_at) VALUES ('{str(uuid.uuid4())}', '{b['id']}', 'GSTIN', 'GSTIN{str(random.randint(100000000, 999999999))}', 'APPROVED', CURRENT_TIMESTAMP) ON CONFLICT (id) DO NOTHING;\n")
+        f.write(f"INSERT INTO brand_documents (id, brand_id, doc_type, document_number, api_verification_status, verified_at) VALUES ('{str(uuid.uuid4())}', '{b['id']}', 'PAN', 'PAN{str(random.randint(10000, 99999))}', 'APPROVED', CURRENT_TIMESTAMP) ON CONFLICT (id) DO NOTHING;\n")
+        f.write(f"INSERT INTO brand_documents (id, brand_id, doc_type, document_number, api_verification_status, verified_at) VALUES ('{str(uuid.uuid4())}', '{b['id']}', 'FSSAI', 'FSSAI{str(random.randint(100000, 999999))}', 'APPROVED', CURRENT_TIMESTAMP) ON CONFLICT (id) DO NOTHING;\n")
     f.write("\nCOMMIT;\n")
 
 print("Files generated successfully.")

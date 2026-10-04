@@ -1,0 +1,12 @@
+groups:
+  - name: PartnerApplicationReviews
+    rules:
+      - alert: PartnerApplicationReviewOverdue
+        expr: applications_in_review_oldest_age_seconds > 86400
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Partner application has waited over 24 hours for review"
+          description: "The oldest {{ $labels.type }} application is still IN_REVIEW. Open Partner approvals and inspect its checks and documents."
+          runbook_url: "https://github.com/parthu-reddy/Deployment/blob/main/runbooks/partner-application-review-overdue.md"

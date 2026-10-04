@@ -40,15 +40,19 @@ for role, entries in groups.items():
                     zip_code='500001' if second else '560001', latitude=17.385 if second else 12.990, longitude=78.4867 if second else 77.670,
                     is_default=True, city_id='HYD' if second else 'BLR')))
         elif role == 'DELIVERY':
-            status = 'PENDING' if scenario == 'pending-kyc' else 'REJECTED' if scenario == 'rejected-kyc' else 'APPROVED'
+            status = {'pending-kyc':'IN_REVIEW','rejected-kyc':'REJECTED','approved-offline':'APPROVED','inactive-rider':'SUSPENDED'}[scenario]
+            reason = 'Seeded application requires corrected documents.' if status in ('REJECTED','SUSPENDED') else None
+            checks = 'REJECTED' if status == 'REJECTED' else 'APPROVED'
+            manifest[-1]['applicationStatus'] = status
             sql['delivery'].append(insert('delivery_executives', dict(id=user, phone_number=phone, full_name='E2E '+scenario,
-                email=f'scenario-{phone}@example.com', vehicle_number='KA01E'+phone[-5:], status='OFFLINE', verification_status=status,
+                email=f'scenario-{phone}@example.com', vehicle_number='KA01E'+phone[-5:], status='OFFLINE', application_status=status,
+                rejection_reason=reason, submitted_at='2026-10-03 00:00:00+00',
                 vehicle_type='MCWG', is_active=scenario == 'approved-offline', city_id='BLR')))
             for doc in ['DRIVING_LICENSE','RC']:
                 sql['government_id'].append(insert('executive_documents', dict(document_id=uid(phone+'-'+doc), executive_id=user,
-                    doc_type=doc, document_number='E2E-'+phone+'-'+doc, api_verification_status=status)))
+                    doc_type=doc, document_number='E2E-'+phone+'-'+doc, api_verification_status=checks)))
             sql['government_id'].append(insert('executive_bank_details', dict(bank_id=uid(phone+'-bank'), executive_id=user,
-                account_number=phone, ifsc_code='HDFC0000001', bank_registered_name='E2E '+scenario, penny_drop_status=status)))
+                account_number=phone, ifsc_code='HDFC0000001', bank_registered_name='E2E '+scenario, penny_drop_status=checks)))
         elif role == 'RESTAURANT':
             organisation = uid(phone+'-organisation')
             sql['identity'].append(insert('organisations', dict(id=organisation, display_name='E2E '+scenario, status='ACTIVE',
@@ -58,27 +62,37 @@ for role, entries in groups.items():
                 created_at='2026-10-03 00:00:00+00', updated_at='2026-10-03 00:00:00+00')))
             if scenario == 'no-brand': continue
             brand = uid(phone+'-brand'); category = uid(phone+'-category')
-            status = 'PENDING' if scenario == 'pending-brand' else 'REJECTED' if scenario == 'rejected-brand' else 'APPROVED'
-            sql['restaurant'].append(insert('brands', dict(id=brand, organisation_id=organisation, name='E2E '+scenario, kyc_status=status,
-                penny_drop_status=status, is_gstin_verified=status == 'APPROVED', is_bank_verified=status == 'APPROVED')))
+            status = 'IN_REVIEW' if scenario == 'pending-brand' else 'REJECTED' if scenario == 'rejected-brand' else 'APPROVED'
+            reason = 'Seeded application requires corrected documents.' if status == 'REJECTED' else None
+            checks = 'REJECTED' if status == 'REJECTED' else 'APPROVED'
+            manifest[-1]['applicationStatus'] = status
+            sql['restaurant'].append(insert('brands', dict(id=brand, organisation_id=organisation, name='E2E '+scenario,
+                application_status=status, rejection_reason=reason, submitted_at='2026-10-03 00:00:00+00', kyc_status=checks,
+                penny_drop_status=checks, is_gstin_verified=checks == 'APPROVED', is_bank_verified=checks == 'APPROVED')))
             sql['restaurant'].append(insert('categories', dict(id=category, brand_id=brand, name='Scenario Food', active=True)))
             for doc in ['PAN','GSTIN']:
                 sql['government_id'].append(insert('brand_documents', dict(id=uid(phone+'-'+doc), brand_id=brand,
-                    doc_type=doc, document_number='E2E-'+phone+'-'+doc, api_verification_status=status)))
+                    doc_type=doc, document_number='E2E-'+phone+'-'+doc, api_verification_status=checks)))
             sql['government_id'].append(insert('brand_bank_details', dict(id=uid(phone+'-bank'), brand_id=brand, account_number=phone,
-                ifsc_code='HDFC0000001', bank_registered_name='E2E '+scenario, penny_drop_status=status)))
+                ifsc_code='HDFC0000001', bank_registered_name='E2E '+scenario, penny_drop_status=checks)))
             outlet = uid(phone+'-outlet')
             # Location is a SQL expression, added explicitly after rendering the scalar values.
-            row = insert('outlets', dict(id=outlet, brand_id=brand, name='E2E Inactive Outlet', is_active=False,
-                cuisine='Indian', time_zone='Asia/Kolkata', city_id='BLR'))
+            row = insert('outlets', dict(id=outlet, brand_id=brand,
+                name='E2E Inactive Outlet' if scenario == 'inactive-outlet-and-unavailable-dish' else 'E2E '+scenario+' Outlet',
+                is_active=scenario != 'inactive-outlet-and-unavailable-dish',
+                cuisine='Indian', time_zone='Asia/Kolkata', city_id='BLR', fssai_license_number='1234'+phone))
             sql['restaurant'].append(row)
+            if scenario != 'inactive-outlet-and-unavailable-dish':
+                sql['restaurant'].append(f"UPDATE outlets SET location=ST_SetSRID(ST_Point(77.670,12.990),4326) WHERE id='{outlet}' AND location IS NULL;")
+                sql['restaurant'].append(insert('outlet_timings',dict(id=uid(phone+'-hours'),outlet_id=outlet,opening_time='00:00:00',closing_time='23:59:59')))
+                sql['restaurant'].append(insert('category_timings',dict(id=uid(phone+'-category-hours'),category_id=category,opening_time='00:00:00',closing_time='23:59:59')))
             menu = uid(phone+'-menu')
             sql['restaurant'].append(insert('master_menu_items', dict(id=menu, brand_id=brand, category_id=category,
                 name='E2E Vegetarian Dish', base_price=100, is_veg=True)))
             if scenario == 'inactive-outlet-and-unavailable-dish':
                 hyd = uid(phone+'-hyd-outlet')
                 sql['restaurant'].append(insert('outlets', dict(id=hyd, brand_id=brand, name='E2E Hyderabad Outlet', is_active=True,
-                    cuisine='Indian', time_zone='Asia/Kolkata', city_id='HYD')))
+                    cuisine='Indian', time_zone='Asia/Kolkata', city_id='HYD', fssai_license_number='1235'+phone)))
                 sql['restaurant'].append(f"UPDATE outlets SET location=ST_SetSRID(ST_Point(78.4867,17.385),4326) WHERE id='{hyd}' AND location IS NULL;")
                 sql['restaurant'].append(insert('outlet_menu_overrides', dict(id=uid(phone+'-unavailable'), outlet_id=hyd,
                     master_menu_item_id=menu, is_available=False)))

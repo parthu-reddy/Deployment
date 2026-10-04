@@ -27,25 +27,29 @@
     "role": "DELIVERY",
     "phone": "7000000031",
     "userId": "a00bb0f6-85a1-56ba-82c2-b50da35f72af",
-    "scenario": "pending-kyc"
+    "scenario": "pending-kyc",
+    "applicationStatus": "IN_REVIEW"
   },
   {
     "role": "DELIVERY",
     "phone": "7000000032",
     "userId": "3ab875e7-62c9-5f7e-94da-a7fbac93b89b",
-    "scenario": "rejected-kyc"
+    "scenario": "rejected-kyc",
+    "applicationStatus": "REJECTED"
   },
   {
     "role": "DELIVERY",
     "phone": "7000000033",
     "userId": "b704753b-22f1-5133-8917-b47dcaee1796",
-    "scenario": "approved-offline"
+    "scenario": "approved-offline",
+    "applicationStatus": "APPROVED"
   },
   {
     "role": "DELIVERY",
     "phone": "7000000034",
     "userId": "9c517c1f-576e-5287-974c-342afcf28fb5",
-    "scenario": "inactive-rider"
+    "scenario": "inactive-rider",
+    "applicationStatus": "SUSPENDED"
   },
   {
     "role": "RESTAURANT",
@@ -57,19 +61,22 @@
     "role": "RESTAURANT",
     "phone": "9000000012",
     "userId": "1de2fa20-8064-5c2b-8060-d0b9bb0bf0ba",
-    "scenario": "pending-brand"
+    "scenario": "pending-brand",
+    "applicationStatus": "IN_REVIEW"
   },
   {
     "role": "RESTAURANT",
     "phone": "9000000013",
     "userId": "7228bb44-08e1-5f24-af6b-c86fc50962f7",
-    "scenario": "rejected-brand"
+    "scenario": "rejected-brand",
+    "applicationStatus": "REJECTED"
   },
   {
     "role": "RESTAURANT",
     "phone": "9000000014",
     "userId": "61957f14-78ad-5fba-9500-aa5a0fef59d8",
-    "scenario": "inactive-outlet-and-unavailable-dish"
+    "scenario": "inactive-outlet-and-unavailable-dish",
+    "applicationStatus": "APPROVED"
   },
   {
     "role": "ADMIN",
